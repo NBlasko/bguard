@@ -1,0 +1,62 @@
+{
+  "name": "bguard",
+  "private": false,
+  "license": "MIT",
+  "version": "0.0.1",
+  "main": "lib/index.js",
+  "module": "lib/index.mjs",
+  "types": "lib/index.d.ts",
+  "files": [
+    "/lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NBlasko/bguard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NBlasko/bguard/issues"
+  },
+  "keywords": [
+    "dependency injection container",
+    "di container",
+    "ioc",
+    "inversion of control container"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:package": "tsup src/index.ts --format cjs,esm --dts --out-dir ./lib",
+    "watch": "tsc -w",
+    "start": "node build/src/index.js",
+    "test": "jest --config=./jest/config.ts",
+    "test:watch": "jest --watch --config=./jest/config.ts",
+    "test:coverage": "jest --watchAll=false --runInBand --config=./jest/config.ts --coverage",
+    "lint": "eslint \"**/*.ts\"",
+    "lint:fix": "eslint \"**/*.ts\" --fix",
+    "prettier": "prettier --check src",
+    "prettier:fix": "prettier --write src",
+    "lint:check": "npm run prettier && npm run lint",
+    "release:package": "npm run build:package && changeset publish",
+    "change:start": "changeset",
+    "change:version": "changeset version",
+    "change:publish": "changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.7",
+    "@eslint/eslintrc": "^3.1.0",
+    "@eslint/js": "^9.8.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.1",
+    "@typescript-eslint/parser": "^8.0.1",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jest": "^28.8.0",
+    "globals": "^15.9.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.4",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.2.4",
+    "typescript": "^5.5.4"
+  }
+}
