@@ -2,12 +2,18 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
   "files": [
-    "/lib"
+    "/lib",
+    "/lib/asserts/common",
+    "/lib/asserts/array",
+    "/lib/asserts/object",
+    "/lib/asserts/boolean",
+    "/lib/asserts/string",
+    "/lib/asserts/number"
   ],
   "repository": {
     "type": "git",
@@ -89,5 +95,35 @@
       "cjs",
       "esm"
     ]
+  },
+  "exports": {
+    ".": {
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.js"
+    },
+    "./asserts/string/*": {
+      "import": "./lib/asserts/string/*",
+      "require": "./lib/asserts/string/*"
+    },
+    "./asserts/boolean/*": {
+      "import": "./lib/asserts/boolean/*",
+      "require": "./lib/asserts/boolean/*"
+    },
+    "./asserts/number/*": {
+      "import": "./lib/asserts/number/*",
+      "require": "./lib/asserts/number/*"
+    },
+    "./asserts/array/*": {
+      "import": "./lib/asserts/array/*",
+      "require": "./lib/asserts/array/*"
+    },
+    "./asserts/object/*": {
+      "import": "./lib/asserts/object/*",
+      "require": "./lib/asserts/object/*"
+    },
+    "./asserts/common/*": {
+      "import": "./lib/asserts/common/*",
+      "require": "./lib/asserts/common/*"
+    }
   }
 }
