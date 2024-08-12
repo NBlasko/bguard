@@ -17,10 +17,21 @@
     "url": "https://github.com/NBlasko/bguard/issues"
   },
   "keywords": [
-    "dependency injection container",
-    "di container",
-    "ioc",
-    "inversion of control container"
+    "typescript",
+    "validation",
+    "schema",
+    "validators",
+    "type-safety",
+    "data-validation",
+    "custom-validators",
+    "input-validation",
+    "type-inference",
+    "bguard",
+    "assertions",
+    "data-schemas",
+    "runtime-validation",
+    "type-checking",
+    "typescript-schema"
   ],
   "scripts": {
     "build": "tsc",
@@ -30,8 +41,8 @@
     "test": "jest --config=./jest/config.ts",
     "test:watch": "jest --watch --config=./jest/config.ts",
     "test:coverage": "jest --watchAll=false --runInBand --config=./jest/config.ts --coverage",
-    "lint": "eslint \"**/*.ts\"",
-    "lint:fix": "eslint \"**/*.ts\" --fix",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "prettier": "prettier --check src",
     "prettier:fix": "prettier --write src",
     "lint:check": "npm run prettier && npm run lint",
