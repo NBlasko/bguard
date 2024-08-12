@@ -1,62 +1,12 @@
-import { ctxSymbol } from './core';
-import { ArraySchema, ExtractFromArray, WithArray } from './schemas/ArraySchema';
-import { BooleanSchema, ExtractFromBoolean, WithBoolean } from './schemas/BooleanSchema';
-import {
-  CommonSchema,
-  ExtractFromMix,
-  MapMixTypes,
-  ObjectShapeSchemaType,
-  PrimitiveType,
-  ValidatorContext,
-  WithMix,
-  WithNull,
-  WithUndefined,
-} from './schemas/CommonSchema';
-import { ExtractFromNumber, NumberSchema, WithNumber } from './schemas/NumberSchema';
-import { ObjectSchema, WithObject } from './schemas/ObjectSchema';
-import { ExtractFromString, StringSchema, WithString } from './schemas/StringSchema';
-
-class ValidatorSchema {
-  [ctxSymbol]: ValidatorContext;
-  constructor(ctx: ValidatorContext) {
-    this[ctxSymbol] = ctx;
-  }
-
-  oneOfTypes<T extends PrimitiveType[]>(valueTypes: T): WithMix<MapMixTypes<T>> {
-    this[ctxSymbol].type = valueTypes;
-    return new CommonSchema(this[ctxSymbol]) as WithMix<MapMixTypes<T>>;
-  }
-
-  string() {
-    this[ctxSymbol].type = ['string'];
-    return new StringSchema(this[ctxSymbol]);
-  }
-
-  number() {
-    this[ctxSymbol].type = ['number'];
-    return new NumberSchema(this[ctxSymbol]);
-  }
-
-  boolean() {
-    this[ctxSymbol].type = ['boolean'];
-    return new BooleanSchema(this[ctxSymbol]);
-  }
-
-  array<T extends CommonSchema>(arraySchema: T): WithArray<T> {
-    return new ArraySchema(this[ctxSymbol], arraySchema) as WithArray<T>;
-  }
-
-  object<T extends ObjectShapeSchemaType>(shapeSchema: T): WithObject<T> {
-    return new ObjectSchema(this[ctxSymbol], shapeSchema) as WithObject<T>;
-  }
-}
-
-export function V() {
-  return new ValidatorSchema({ type: [], requiredValidations: [] });
-}
+import type { ArraySchema, ExtractFromArray } from './schemas/ArraySchema';
+import type { BooleanSchema, ExtractFromBoolean, WithBoolean } from './schemas/BooleanSchema';
+import type { CommonSchema, ExtractFromMix, WithMix, WithNull, WithUndefined } from './schemas/CommonSchema';
+import type { ExtractFromNumber, NumberSchema, WithNumber } from './schemas/NumberSchema';
+import type { ObjectSchema, WithObject } from './schemas/ObjectSchema';
+import type { ExtractFromString, StringSchema, WithString } from './schemas/StringSchema';
 
 // prettier-ignore
-export type GetType<T> =
+export type InferType<T> =
   //  with string
   T extends WithUndefined<WithNull<WithString<StringSchema>>>
     ? ExtractFromString<T> | null | undefined
@@ -119,13 +69,13 @@ export type GetType<T> =
 
     : // array
     T extends WithUndefined<WithNull<ArraySchema>>
-    ? GetType<ExtractFromArray<T>>[] | null | undefined
+    ? InferType<ExtractFromArray<T>>[] | null | undefined
     : T extends WithUndefined<ArraySchema>
-    ? GetType<ExtractFromArray<T>>[] | undefined
+    ? InferType<ExtractFromArray<T>>[] | undefined
     : T extends WithNull<ArraySchema>
-    ? GetType<ExtractFromArray<T>>[] | null
+    ? InferType<ExtractFromArray<T>>[] | null
     : T extends ArraySchema
-    ? GetType<ExtractFromArray<T>>[]
+    ? InferType<ExtractFromArray<T>>[]
 
     : // object
     T extends WithUndefined<WithNull<ObjectSchema>>
@@ -154,8 +104,8 @@ type Merge<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
 type ExtractFromObject<T extends ObjectSchema> =
   T extends WithObject<infer X>
     ? Merge<
-        { [K in keyof X as X[K] extends WithUndefined<CommonSchema> ? never : K]: GetType<X[K]> } & {
-          [K in keyof X as X[K] extends WithUndefined<CommonSchema> ? K : never]?: GetType<X[K]>;
+        { [K in keyof X as X[K] extends WithUndefined<CommonSchema> ? never : K]: InferType<X[K]> } & {
+          [K in keyof X as X[K] extends WithUndefined<CommonSchema> ? K : never]?: InferType<X[K]>;
         }
       >
     : unknown;

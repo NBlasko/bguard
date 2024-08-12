@@ -1,71 +1,37 @@
-import { ctxSymbol } from './core';
-import { ValidationError, panic } from './exceptions';
-import type { CommonSchema } from './schemas/CommonSchema';
-import { GetType } from './validator';
+import { InferType } from './InferType';
+import { innerCheck } from './core';
+import { ValidationError } from './exceptions';
+import { CommonSchema } from './schemas/CommonSchema';
 
-function parseSchemaInner(schema: CommonSchema, receivedValue: unknown, pathToError: string) {
-  const ctx = schema[ctxSymbol];
-  if (receivedValue === undefined) {
-    if (!ctx.isOptional) panic('Required', receivedValue, pathToError, 'The required value is missing');
-    return receivedValue;
-  }
-
-  if (receivedValue === null) {
-    if (!ctx.isNullable) panic('Not null', receivedValue, pathToError, 'Value should not be null');
-    return receivedValue;
-  }
-
-  if (ctx.array) {
-    if (!Array.isArray(receivedValue))
-      panic('Array', receivedValue, pathToError, 'Expected an array but received a different type');
-    const schema = ctx.array;
-
-    receivedValue.forEach((elem, i) => {
-      parseSchemaInner(schema, elem, `${pathToError}[${i}]`);
-    });
-
-    return receivedValue;
-  }
-
-  const typeOfVal = typeof receivedValue;
-
-  if (ctx.object) {
-    if (typeOfVal !== 'object')
-      panic('Object', receivedValue, pathToError, 'Expected an object but received a different type');
-    if (Array.isArray(receivedValue))
-      panic('Object', receivedValue, pathToError, 'Expected an object but received an array. Invalid type of data');
-    const shapeSchema = ctx.object;
-    for (const keyPerReceivedValue of Object.keys(receivedValue)) {
-      if (shapeSchema[keyPerReceivedValue] === undefined)
-        panic('Not allowed', keyPerReceivedValue, pathToError, 'This key is not allowed in the object');
-    }
-
-    for (const [keyOfSchema, valueOfSchema] of Object.entries(shapeSchema)) {
-      const receivedObjectValuePropery = (receivedValue as Record<string, unknown>)[keyOfSchema];
-      if (receivedObjectValuePropery === undefined) {
-        if (!valueOfSchema[ctxSymbol].isOptional)
-          panic('Required', receivedObjectValuePropery, pathToError, 'Missing required property in the object');
-      }
-      parseSchemaInner(valueOfSchema, receivedObjectValuePropery, `${pathToError}.${keyOfSchema}`);
-    }
-
-    return receivedValue;
-  }
-
-  if (ctx.type.length) {
-    if (!ctx.type.includes(typeOfVal)) panic(ctx.type, typeOfVal, pathToError, 'Invalid type of data');
-  }
-
-  ctx.requiredValidations.forEach((requiredValidation) => {
-    requiredValidation(receivedValue, pathToError);
-  });
-
-  return receivedValue;
-}
-
-export function parseSchema<T extends CommonSchema>(schema: T, receivedValue: unknown): GetType<T> {
+/**
+ * Parses and validates a value against the provided schema, returning a type-safe result.
+ *
+ * This function will throw a `ValidationError` if the value does not conform to the schema.
+ * The inferred TypeScript type of the returned value will match the structure defined by the schema.
+ *
+ * @template T
+ * @param {T} schema - The schema to validate the received value against. This schema dictates the expected structure and type of the value.
+ * @param {unknown} receivedValue - The value to be validated and parsed according to the schema.
+ * @returns {InferType<T>} The validated value, with its TypeScript type inferred from the schema.
+ *
+ * @throws {ValidationError} If the received value does not match the schema, a `ValidationError` will be thrown.
+ * @throws {Error} If an unexpected error occurs during validation, an error will be thrown with a generic message.
+ *
+ * @example
+ * const schema = object({
+ *   name: string(),
+ *   age: number(),
+ * });
+ *
+ * const result = parseSchema(schema, { name: 'Alice', age: 30 });
+ * // result will be inferred as { name: string; age: number }
+ *
+ * parseSchema(schema, { name: 'Alice', age: '30' });
+ * // Throws ValidationError because 'age' should be a number, not a string.
+ */
+export function parseSchema<T extends CommonSchema>(schema: T, receivedValue: unknown): InferType<T> {
   try {
-    return parseSchemaInner(schema, receivedValue, '') as GetType<T>;
+    return innerCheck(schema, receivedValue, '') as InferType<T>;
   } catch (e) {
     if (e instanceof ValidationError) throw e;
     /* istanbul ignore next */

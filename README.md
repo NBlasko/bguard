@@ -4,10 +4,12 @@
 
 ### Features
 
-- **Type-Safe Validation**: Automatically infer TypeScript types from your validation schemas.
-- **Customizable**: Easily extend the library with custom validation rules.
+- **Type Inference**: Automatically infer TypeScript types from your validation schemas.
+- **Custom Assertions**: Add custom validation logic for your schemas.
+- **Chaining Methods**: Easily chain methods for complex validations.
 - **Nested Validation**: Supports complex data structures, including arrays and objects.
 - **Optional and Nullable Support**: Fine-grained control over optional and nullable fields.
+- **Small Bundle Size**: Each assertion is in its own file, minimizing your final bundle size.
 - **Lightweight**: No dependencies and optimized for performance.
 
 ### Installation
@@ -18,85 +20,57 @@ npm install bguard
 
 ### Usage
 
+Here’s a basic example of how to use `bguard` to define and validate a schema.
+
 #### Defining a Schema
-You can define a schema using the V function and chain methods to apply validation rules:
+
+Let's define a schema for a Student object:
 
 ```typeScript
-import { V, parseSchema } from 'bguard';
+
+import { parseSchema, InferType, string, number, array, object, boolean } from 'bguard';
 import { email } from 'bguard/asserts/string/email';
 import { min } from 'bguard/asserts/number/min';
+import { max } from 'bguard/asserts/number/max';
 
 // Example: Student Schema
-const studentSchema = V().object({
-  email: V().string().optional().custom(email()),
-  age: V().number().custom(min(18)),
-  address: V().string().nullable(),
-  classes: V().array(
-  V().object({
-      name: V().string(),
-      mandatory: V().boolean(),
-      rooms: V().array(V().number()),
+const studentSchema = object({
+  email: string().optional().custom(email()),
+  age: number().custom(min(18), max(120)),
+  address: string().nullable(),
+  classes: array(
+    object({
+      name: string(),
+      mandatory: boolean(),
+      rooms: array(number()),
     }).optional()
   ),
-  verified: V().boolean().optional(),
+  verified: boolean().optional(),
 });
 
-
-// Parsing and validating data
-const studentData = {
-  email: 'student@example.com',
-  age: 21,
-  address: null,
-  classes: [{ name: 'Math', mandatory: true, rooms: [101, 102] }],
-};
-
-try {
-  const parsedData = parseSchema(studentSchema, studentData);
-  console.log('Validation successful:', parsedData);
-} catch (e) {
-  console.error('Validation failed:', e);
-}
 ```
 
-#### Schema Inference
+#### Inferring TypeScript Types
 
-One of the key features of `bguard` is its ability to infer TypeScript types directly from your validation schemas. This ensures that your data is validated and correctly typed, minimizing runtime errors and improving code safety.
+Using the InferType utility, you can infer the TypeScript type of the schema:
 
-For example, consider the `studentSchema` defined earlier, we can infer the TypeScript type for this schema using the GetType utility:
-```typeScript
-import { V, parseSchema, GetType } from 'bguard';
-import { email } from 'bguard/asserts/string/email';
-import { min } from 'bguard/asserts/number/min';
+```typescript
 
-// Example: Student Schema
-const studentSchema = V().object({
-  email: V().string().optional().custom(email()),
-  age: V().number().custom(min(18)),
-  address: V().string().nullable(),
-  classes: V().array(
-  V().object({
-      name: V().string(),
-      mandatory: V().boolean(),
-      rooms: V().array(V().number()),
-    }).optional()
-  ),
-  verified: V().boolean().optional(),
-});
-
-type StudentSchema = GetType<typeof studentSchema>;
+type StudentSchema = InferType<typeof studentSchema>;
 
 ```
 
 This will generate the following type:
+
 ```typeScript
 
 type StudentSchema = {
   age: number;
   address: string | null;
   classes: ({
-  name: string;
-  mandatory: boolean;
-  rooms: number[];
+    name: string;
+    mandatory: boolean;
+    rooms: number[];
   } | undefined)[];
   email?: string | undefined;
   verified?: boolean | undefined;
@@ -104,18 +78,68 @@ type StudentSchema = {
 
 ```
 
+#### Validating Data
+
+To validate data against the defined schema, use the parseSchema function:
+
+```typeScript
+
+const studentData = {
+  age: 21,
+  address: '123 Main St',
+  classes: [
+    {
+      name: 'Math 101',
+      mandatory: true,
+      rooms: [101, 102],
+    },
+  ],
+  email: 'student@example.com',
+};
+
+const validatedData = parseSchema(studentSchema, studentData);
 
 
-### Extending bguard
-`bguard` is designed to be extensible. You can create custom validation rules and add them to your schema definitions.
+```
 
-### API Reference
+If the data does not conform to the schema, an error will be thrown.
 
-`V`
-The main function to create validation schemas. Supports methods for primitive types (`string`, `number`, `boolean`), `arrays`, and `objects`.
 
-`parseSchema(schema, value)`
-Validates the value against the provided schema and returns the parsed, type-safe data if validation succeeds. Throws a ValidationError if validation fails.
+
+### Chaining Methods
+
+ - `nullable()`: Allows the value to be null.
+ - `optional()`: Allows the value to be undefined.
+
+ Example:
+
+ ```typeScript
+
+const schema = string().nullable().optional();
+```
+
+ - String Literals: 
+   `string().equalTo('myStringValue')` will infer 'myStringValue' as the type.
+ 
+ - Number Literals: 
+   `number().equalTo(42)` will infer 42 as the type.
+ 
+ - Boolean Literals:
+   `boolean().onlyTrue()` will infer true as the type.
+   `boolean().onlyFalse()` will infer false as the type.
+
+
+
+### Custom Assertions
+You can extend the validation with custom assertions:
+
+ ```typeScript
+import { min } from 'bguard/asserts/number/min';
+import { max } from 'bguard/asserts/number/max';
+
+const ageSchema = number().custom(min(18), max(120));
+```
+Assertions are imported from specific paths for better tree-shaking and smaller bundle sizes.
 
 ### Contributing
 Contributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.

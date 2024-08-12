@@ -14,6 +14,6 @@ export class ValidationError extends Error {
 
 export class BuildSchemaError extends Error {}
 
-export function panic(expected: unknown, received: unknown, pathToError: string, message: string): never {
+export function throwException(expected: unknown, received: unknown, pathToError: string, message: string): never {
   throw new ValidationError(expected, received, pathToError, message);
 }

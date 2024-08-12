@@ -1,7 +1,6 @@
 import { expectEqualTypes } from '../../jest/setup';
 import { BuildSchemaError } from '../exceptions';
-import { parseSchema } from '../parseSchema';
-import { GetType, V } from '../';
+import { InferType, object, boolean, string, number, array, parseSchema } from '../';
 import { minLength } from '../asserts/string/minLength';
 import { email } from '../asserts/string/email';
 
@@ -10,11 +9,11 @@ describe('ObjectSchema', () => {
     [x: string]: unknown;
   };
   it('should be an object', () => {
-    const objectWithNumbersSchema = V().object({ foo: V().number() });
+    const objectWithNumbersSchema = object({ foo: number() });
     type MyObjectWithNumbers = {
       foo: number;
     };
-    expectEqualTypes<MyObjectWithNumbers, GetType<typeof objectWithNumbersSchema>>(true);
+    expectEqualTypes<MyObjectWithNumbers, InferType<typeof objectWithNumbersSchema>>(true);
     const myObject = { foo: 5 };
     expect(parseSchema(objectWithNumbersSchema, myObject)).toBe(myObject);
     expect(() => parseSchema(objectWithNumbersSchema, 'not an object')).toThrow(
@@ -24,36 +23,36 @@ describe('ObjectSchema', () => {
 
   it('should not build with missing parameters', () => {
     //@ts-expect-error testing invalid schema in runtime
-    const invalidObjectSchemaFunction = () => V().object();
+    const invalidObjectSchemaFunction = () => object();
 
-    expectEqualTypes<UnkownObject, GetType<ReturnType<typeof invalidObjectSchemaFunction>>>(true);
+    expectEqualTypes<UnkownObject, InferType<ReturnType<typeof invalidObjectSchemaFunction>>>(true);
     expect(invalidObjectSchemaFunction).toThrow('Missing schema in object method');
     expect(invalidObjectSchemaFunction).toThrow(BuildSchemaError);
   });
 
   it('should not build with invalid primitive parameters', () => {
     //@ts-expect-error testing invalid schema in runtime
-    const invalidObjectSchemaFunction = () => V().object('not an object with bguard schema');
-    expectEqualTypes<UnkownObject, GetType<ReturnType<typeof invalidObjectSchemaFunction>>>(true);
+    const invalidObjectSchemaFunction = () => object('not an object with bguard schema');
+    expectEqualTypes<UnkownObject, InferType<ReturnType<typeof invalidObjectSchemaFunction>>>(true);
     expect(invalidObjectSchemaFunction).toThrow('Invalid schema in object method');
     expect(invalidObjectSchemaFunction).toThrow(BuildSchemaError);
   });
 
   it('should not build with an array parameter', () => {
     //@ts-expect-error testing invalid schema in runtime
-    const invalidObjectSchemaFunction = () => V().object(V().array(V().string()));
-    expectEqualTypes<UnkownObject, GetType<ReturnType<typeof invalidObjectSchemaFunction>>>(true);
+    const invalidObjectSchemaFunction = () => object(array(string()));
+    expectEqualTypes<UnkownObject, InferType<ReturnType<typeof invalidObjectSchemaFunction>>>(true);
     expect(invalidObjectSchemaFunction).toThrow('Invalid schema in object');
     expect(invalidObjectSchemaFunction).toThrow(BuildSchemaError);
   });
 
   it('should not run with an array parameter', () => {
-    const objectSchema = V().object({ foo: V().string() });
+    const objectSchema = object({ foo: string() });
     expectEqualTypes<
       {
         foo: string;
       },
-      GetType<typeof objectSchema>
+      InferType<typeof objectSchema>
     >(true);
     expect(() => parseSchema(objectSchema, ['foo', 'bar'])).toThrow(
       'Expected an object but received an array. Invalid type of data',
@@ -61,13 +60,13 @@ describe('ObjectSchema', () => {
   });
 
   it('should not run with an invalid keys', () => {
-    const objectSchema = V().object({ foo: V().string() });
+    const objectSchema = object({ foo: string() });
 
     expectEqualTypes<
       {
         foo: string;
       },
-      GetType<typeof objectSchema>
+      InferType<typeof objectSchema>
     >(true);
     expect(() => parseSchema(objectSchema, { foo: 'valid key foo', bar: 'invalid key bar' })).toThrow(
       'This key is not allowed in the object',
@@ -75,14 +74,14 @@ describe('ObjectSchema', () => {
   });
 
   it('should not run with missing required property', () => {
-    const objectSchema = V().object({ foo: V().string(), bar: V().string() });
+    const objectSchema = object({ foo: string(), bar: string() });
 
     expectEqualTypes<
       {
         foo: string;
         bar: string;
       },
-      GetType<typeof objectSchema>
+      InferType<typeof objectSchema>
     >(true);
     expect(() => parseSchema(objectSchema, { foo: 'valid key foo' })).toThrow(
       'Missing required property in the object',
@@ -90,12 +89,12 @@ describe('ObjectSchema', () => {
   });
 
   it('should validate complex object schema', () => {
-    const userSchema = V().object({
-      email: V().string().custom(email()),
-      userName: V().string().optional(),
-      verified: V().boolean().onlyTrue().optional(),
-      phone: V().number().nullable().optional(),
-      address: V().array(V().string().custom(minLength(3))),
+    const userSchema = object({
+      email: string().custom(email()),
+      userName: string().optional(),
+      verified: boolean().onlyTrue().optional(),
+      phone: number().nullable().optional(),
+      address: array(string().custom(minLength(3))),
     });
 
     interface User {
@@ -114,7 +113,7 @@ describe('ObjectSchema', () => {
         verified?: true | undefined;
         phone?: number | null | undefined;
       },
-      GetType<typeof userSchema>
+      InferType<typeof userSchema>
     >(true);
 
     const validUser: User = {
@@ -134,7 +133,7 @@ describe('ObjectSchema', () => {
     };
 
     expect(() => parseSchema(userSchema, userWithInvalidAddress)).toThrow(
-      'The received value is not equal to expected',
+      'The received value length is less than expected',
     );
 
     const userWithInvalidEmail: User = {

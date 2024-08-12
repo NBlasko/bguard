@@ -4,8 +4,9 @@ import { ctxSymbol } from '../core';
 export type RequiredValidation = (received: any, pathToError: string) => void;
 export type ObjectShapeSchemaType = Record<string, CommonSchema>;
 
+export type PrimitiveType = 'number' | 'string' | 'boolean' | 'undefined' | 'object' | 'function' | 'symbol' | 'bigint';
 export interface ValidatorContext {
-  type: string[];
+  type: PrimitiveType[];
   isNullable?: boolean;
   isOptional?: boolean;
   requiredValidations: RequiredValidation[];
@@ -19,16 +20,30 @@ export class CommonSchema {
     this[ctxSymbol] = ctx;
   }
 
-  custom(...requiredValidations: RequiredValidation[]) {
-    this[ctxSymbol].requiredValidations.push(...requiredValidations);
+  /**
+   * @param validators - One or more custom validation functions.
+   * @returns {this} The schema instance with the added custom validation.
+   */
+  custom(...validators: RequiredValidation[]): this {
+    this[ctxSymbol].requiredValidations.push(...validators);
     return this;
   }
 
+  /**
+   * Marks the schema as nullable, allowing the value to be `null`.
+   *
+   * @returns {WithNull<this>} The schema instance marked as nullable.
+   */
   nullable(): WithNull<this> {
     this[ctxSymbol].isNullable = true;
     return this as WithNull<this>;
   }
 
+  /**
+   * Marks the schema as optional, allowing the value to be `undefined`.
+   *
+   * @returns {WithUndefined<this>}} The schema instance marked as optional.
+   */
   optional(): WithUndefined<this> {
     this[ctxSymbol].isOptional = true;
     return this as WithUndefined<this>;
@@ -37,8 +52,6 @@ export class CommonSchema {
 
 export type WithNull<T extends CommonSchema> = T & { validation_null: true };
 export type WithUndefined<T extends CommonSchema> = T & { validation_undefined: true };
-
-export type PrimitiveType = 'number' | 'string' | 'boolean' | 'undefined' | 'object' | 'function' | 'symbol' | 'bigint';
 
 type TypeMapping = {
   number: number;
