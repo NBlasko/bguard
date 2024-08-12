@@ -5,3 +5,9 @@
 ### Initial
 
 - Set initial library.
+
+## 0.0.2
+
+### Bundle fix
+
+- Adding custom assertions to the bundle and enhancing the README file.

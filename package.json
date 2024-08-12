@@ -2,7 +2,7 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
@@ -35,7 +35,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "build:package": "tsup src/index.ts --format cjs,esm --dts --out-dir ./lib",
+    "build:package": "tsup",
     "watch": "tsc -w",
     "start": "node build/src/index.js",
     "test": "jest --config=./jest/config.ts",
@@ -69,5 +69,25 @@
     "ts-node": "^10.9.2",
     "tsup": "^8.2.4",
     "typescript": "^5.5.4"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts",
+      "src/asserts/common/*",
+      "src/asserts/array/*",
+      "src/asserts/object/*",
+      "src/asserts/boolean/*",
+      "src/asserts/string/*",
+      "src/asserts/number/*"
+    ],
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "out-dir": "./lib",
+    "dts": true,
+    "format": [
+      "cjs",
+      "esm"
+    ]
   }
 }
