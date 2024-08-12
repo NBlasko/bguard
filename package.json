@@ -2,7 +2,7 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
@@ -83,7 +83,7 @@
     "splitting": false,
     "sourcemap": true,
     "clean": true,
-    "out-dir": "./lib",
+    "outDir": "./lib",
     "dts": true,
     "format": [
       "cjs",
