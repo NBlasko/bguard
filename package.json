@@ -2,18 +2,12 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
   "files": [
-    "/lib",
-    "/lib/asserts/common",
-    "/lib/asserts/array",
-    "/lib/asserts/object",
-    "/lib/asserts/boolean",
-    "/lib/asserts/string",
-    "/lib/asserts/number"
+    "/lib"
   ],
   "repository": {
     "type": "git",
@@ -55,7 +49,8 @@
     "release:package": "npm run build:package && changeset publish",
     "change:start": "changeset",
     "change:version": "changeset version",
-    "change:publish": "changeset publish"
+    "change:publish": "changeset publish",
+    "arethetypeswrong": "npx @arethetypeswrong/cli"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.7",
@@ -102,15 +97,15 @@
       "require": "./lib/asserts/string/*.js",
       "types": "./lib/asserts/string/*.d.ts"
     },
-    "./boolean/*": {
-      "import": "./lib/asserts/boolean/*.mjs",
-      "require": "./lib/asserts/boolean/*.js",
-      "types": "./lib/asserts/boolean/*.d.ts"
-    },
     "./number/*": {
       "import": "./lib/asserts/number/*.mjs",
       "require": "./lib/asserts/number/*.js",
       "types": "./lib/asserts/number/*.d.ts"
+    },
+    "./boolean/*": {
+      "import": "./lib/asserts/boolean/*.mjs",
+      "require": "./lib/asserts/boolean/*.js",
+      "types": "./lib/asserts/boolean/*.d.ts"
     },
     "./array/*": {
       "import": "./lib/asserts/array/*.mjs",
@@ -126,6 +121,11 @@
       "import": "./lib/asserts/common/*.mjs",
       "require": "./lib/asserts/common/*.js",
       "types": "./lib/asserts/common/*.d.ts"
+    },
+    "./*": {
+      "import": "./*.mjs",
+      "require": "./*.js",
+      "types": "./*.d.ts"
     }
   }
 }
