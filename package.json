@@ -2,7 +2,7 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
@@ -78,9 +78,10 @@
   },
   "tsup": {
     "entry": [
-      "src/**"
+      "src/**",
+      "!src/__tests__/**"
     ],
-    "splitting": false,
+    "splitting": true,
     "sourcemap": true,
     "clean": true,
     "outDir": "./lib",
