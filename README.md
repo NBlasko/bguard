@@ -32,9 +32,9 @@ Let's define a schema for a Student object:
 ```typeScript
 
 import { parseSchema, InferType, string, number, array, object, boolean } from 'bguard';
-import { email } from 'bguard/asserts/string/email';
-import { min } from 'bguard/asserts/number/min';
-import { max } from 'bguard/asserts/number/max';
+import { email } from 'bguard/string/email';
+import { min } from 'bguard/number/min';
+import { max } from 'bguard/number/max';
 
 // Example: Student Schema
 const studentSchema = object({
@@ -137,8 +137,8 @@ const schema = string().nullable().optional();
 You can extend the validation with custom assertions:
 
  ```typeScript
-import { min } from 'bguard/asserts/number/min';
-import { max } from 'bguard/asserts/number/max';
+import { min } from 'bguard/number/min';
+import { max } from 'bguard/number/max';
 
 const ageSchema = number().custom(min(18), max(120));
 ```

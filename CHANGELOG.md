@@ -6,7 +6,7 @@
 
 - Set initial library.
 
-## 0.0.7
+## 0.0.8
 
 ### Bundle fix
 
