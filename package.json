@@ -2,7 +2,7 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
@@ -78,13 +78,7 @@
   },
   "tsup": {
     "entry": [
-      "src/index.ts",
-      "src/asserts/common/*",
-      "src/asserts/array/*",
-      "src/asserts/object/*",
-      "src/asserts/boolean/*",
-      "src/asserts/string/*",
-      "src/asserts/number/*"
+      "src/**"
     ],
     "splitting": false,
     "sourcemap": true,
@@ -99,31 +93,38 @@
   "exports": {
     ".": {
       "import": "./lib/index.mjs",
-      "require": "./lib/index.js"
+      "require": "./lib/index.js",
+      "types": "./lib/index.d.ts"
     },
-    "./asserts/string/*": {
-      "import": "./lib/asserts/string/*",
-      "require": "./lib/asserts/string/*"
+    "./string/*": {
+      "import": "./lib/asserts/string/*.js",
+      "require": "./lib/asserts/string/*.js",
+      "types": "./lib/asserts/common/*.d.ts"
     },
-    "./asserts/boolean/*": {
-      "import": "./lib/asserts/boolean/*",
-      "require": "./lib/asserts/boolean/*"
+    "./boolean/*": {
+      "import": "./lib/asserts/boolean/*.js",
+      "require": "./lib/asserts/boolean/*.js",
+      "types": "./lib/index.d.ts"
     },
-    "./asserts/number/*": {
-      "import": "./lib/asserts/number/*",
-      "require": "./lib/asserts/number/*"
+    "./number/*": {
+      "import": "./lib/asserts/number/*.js",
+      "require": "./lib/asserts/number/*.js",
+      "types": "./lib/asserts/common/*.d.ts"
     },
-    "./asserts/array/*": {
-      "import": "./lib/asserts/array/*",
-      "require": "./lib/asserts/array/*"
+    "./array/*": {
+      "import": "./lib/asserts/array/*.js",
+      "require": "./lib/asserts/array/*.js",
+      "types": "./lib/asserts/common/*.d.ts"
     },
-    "./asserts/object/*": {
-      "import": "./lib/asserts/object/*",
-      "require": "./lib/asserts/object/*"
+    "./object/*": {
+      "import": "./lib/asserts/object/*.js",
+      "require": "./lib/asserts/object/*.js",
+      "types": "./lib/asserts/common/*.d.ts"
     },
-    "./asserts/common/*": {
-      "import": "./lib/asserts/common/*",
-      "require": "./lib/asserts/common/*"
+    "./common/*": {
+      "import": "./lib/asserts/common/*.js",
+      "require": "./lib/asserts/common/*.js",
+      "types": "./lib/asserts/common/*.d.ts"
     }
   }
 }

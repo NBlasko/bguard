@@ -1,9 +1,6 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { ValidationError } from '../exceptions';
-import { parseSchema } from '../parseSchema';
-import { InferType } from '../';
-import { string } from '../asserts/string';
-import { boolean } from '../asserts/boolean';
+import { InferType, number, throwException, string, boolean, parseSchema, ValidationError } from '../';
+import { RequiredValidation } from '../schemas/CommonSchema';
 
 describe('CommonSchema', () => {
   it('should be a nullable string', () => {
@@ -40,5 +37,18 @@ describe('CommonSchema', () => {
     expect(() => parseSchema(booleanSchema, undefined)).toThrow('The required value is missing');
     expect(() => parseSchema(booleanSchema, null)).toThrow(ValidationError);
     expect(() => parseSchema(booleanSchema, undefined)).toThrow(ValidationError);
+  });
+
+  it('should work with custom assert', () => {
+    const even = (): RequiredValidation => (received: number, pathToError: string) => {
+      if (received % 2 !== 0) throwException('even', received, pathToError, 'The received value is not an even number');
+    };
+
+    const numberSchema = number().custom(even());
+
+    expectEqualTypes<number, InferType<typeof numberSchema>>(true);
+    expect(parseSchema(numberSchema, 4)).toBe(4);
+    expect(() => parseSchema(numberSchema, 3)).toThrow('The received value is not an even number');
+    expect(() => parseSchema(numberSchema, 3)).toThrow(ValidationError);
   });
 });

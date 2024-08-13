@@ -1,6 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { BuildSchemaError } from '../exceptions';
-import { InferType, object, boolean, string, number, array, parseSchema } from '../';
+import { InferType, object, boolean, string, number, array, parseSchema, BuildSchemaError, ValidationError } from '../';
 import { minLength } from '../asserts/string/minLength';
 import { email } from '../asserts/string/email';
 
@@ -19,6 +18,7 @@ describe('ObjectSchema', () => {
     expect(() => parseSchema(objectWithNumbersSchema, 'not an object')).toThrow(
       'Expected an object but received a different type',
     );
+    expect(() => parseSchema(objectWithNumbersSchema, 'not an object')).toThrow(ValidationError);
   });
 
   it('should not build with missing parameters', () => {
