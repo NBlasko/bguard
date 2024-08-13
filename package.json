@@ -98,32 +98,32 @@
       "types": "./lib/index.d.ts"
     },
     "./string/*": {
-      "import": "./lib/asserts/string/*.js",
+      "import": "./lib/asserts/string/*.mjs",
       "require": "./lib/asserts/string/*.js",
       "types": "./lib/asserts/string/*.d.ts"
     },
     "./boolean/*": {
-      "import": "./lib/asserts/boolean/*.js",
+      "import": "./lib/asserts/boolean/*.mjs",
       "require": "./lib/asserts/boolean/*.js",
       "types": "./lib/asserts/boolean/*.d.ts"
     },
     "./number/*": {
-      "import": "./lib/asserts/number/*.js",
+      "import": "./lib/asserts/number/*.mjs",
       "require": "./lib/asserts/number/*.js",
       "types": "./lib/asserts/number/*.d.ts"
     },
     "./array/*": {
-      "import": "./lib/asserts/array/*.js",
+      "import": "./lib/asserts/array/*.mjs",
       "require": "./lib/asserts/array/*.js",
       "types": "./lib/asserts/array/*.d.ts"
     },
     "./object/*": {
-      "import": "./lib/asserts/object/*.js",
+      "import": "./lib/asserts/object/*.mjs",
       "require": "./lib/asserts/object/*.js",
       "types": "./lib/asserts/object/*.d.ts"
     },
     "./common/*": {
-      "import": "./lib/asserts/common/*.js",
+      "import": "./lib/asserts/common/*.mjs",
       "require": "./lib/asserts/common/*.js",
       "types": "./lib/asserts/common/*.d.ts"
     }
