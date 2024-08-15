@@ -1,13 +1,13 @@
 import { clearLocales } from '../errorMap';
 import { string } from '../asserts/string';
 import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
-import { throwException, setLocale, setToDefaultLocale, parse } from '..';
+import { guardException, setLocale, setToDefaultLocale, parse } from '..';
 
 describe('parse', () => {
   const customEqual =
     (expected: string): RequiredValidation =>
     (received: string, ctx: ExceptionContext) => {
-      if (expected !== received) throwException(expected, received, ctx, 'somethingEqual');
+      if (expected !== received) guardException(expected, received, ctx, 'somethingEqual');
     };
 
   beforeEach(() => {

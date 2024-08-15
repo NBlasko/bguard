@@ -1,5 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { InferType, number, throwException, string, boolean, parseOrFail, ValidationError } from '../';
+import { InferType, number, guardException, string, boolean, parseOrFail, ValidationError } from '../';
 import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
 
 describe('CommonSchema', () => {
@@ -41,7 +41,7 @@ describe('CommonSchema', () => {
 
   it('should work with custom assert', () => {
     const even = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
-      if (received % 2 !== 0) throwException('even', received, ctx, 'The received value is not an even number');
+      if (received % 2 !== 0) guardException('even', received, ctx, 'The received value is not an even number');
     };
 
     const numberSchema = number().custom(even());

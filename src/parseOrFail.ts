@@ -4,6 +4,15 @@ import { getTranslationByLocale } from './errorMap';
 import { ValidationError } from './exceptions';
 import { CommonSchema } from './schemas/CommonSchema';
 
+interface ParseOptions {
+  /**
+   * Set language keyword to map error messages.
+   * @default 'default'
+   * @example 'sr' or 'Serbia' or any string to identify language
+   */
+  lng?: string;
+}
+
 /**
  * Parses and validates a value against the provided schema, returning a type-safe result.
  *
@@ -13,6 +22,8 @@ import { CommonSchema } from './schemas/CommonSchema';
  * @template T
  * @param {T} schema - The schema to validate the received value against. This schema dictates the expected structure and type of the value.
  * @param {unknown} receivedValue - The value to be validated and parsed according to the schema.
+ * @param {ParseOptions} options - Options
+ * @param {ParseOptions.lng} options.lng -  Set language keyword to map Error message
  * @returns {InferType<T>} The validated value, with its TypeScript type inferred from the schema.
  *
  * @throws {ValidationError} If the received value does not match the schema, a `ValidationError` will be thrown.
@@ -30,9 +41,16 @@ import { CommonSchema } from './schemas/CommonSchema';
  * parseOrFail(schema, { name: 'Alice', age: '30' });
  * // Throws ValidationError because 'age' should be a number, not a string.
  */
-export function parseOrFail<T extends CommonSchema>(schema: T, receivedValue: unknown, lng?: string): InferType<T> {
+export function parseOrFail<T extends CommonSchema>(
+  schema: T,
+  receivedValue: unknown,
+  options?: ParseOptions,
+): InferType<T> {
   try {
-    return innerCheck(schema, receivedValue, { t: getTranslationByLocale(lng), pathToError: '' }) as InferType<T>;
+    return innerCheck(schema, receivedValue, {
+      t: getTranslationByLocale(options?.lng),
+      pathToError: '',
+    }) as InferType<T>;
   } catch (e) {
     if (e instanceof ValidationError) throw e;
     /* istanbul ignore next */

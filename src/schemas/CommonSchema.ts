@@ -33,7 +33,7 @@ export interface ValidatorContext {
   requiredValidations: RequiredValidation[];
   array?: CommonSchema;
   object?: ObjectShapeSchemaType;
-  allowUnrecognizedObjectProps?: boolean
+  allowUnrecognizedObjectProps?: boolean;
 }
 
 export class CommonSchema {

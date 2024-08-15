@@ -1,4 +1,4 @@
-import { parseOrFail, throwException, BuildSchemaError, object } from '../';
+import { parseOrFail, guardException, BuildSchemaError, object } from '../';
 import { string } from '../asserts/string';
 import { clearLocales, setLocale, setToDefaultLocale } from '../errorMap';
 import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
@@ -7,7 +7,7 @@ describe('Translation', () => {
   const customEqual =
     (expected: string): RequiredValidation =>
     (received: string, ctx: ExceptionContext) => {
-      if (expected !== received) throwException(expected, received, ctx, 'somethingEqual');
+      if (expected !== received) guardException(expected, received, ctx, 'somethingEqual');
     };
 
   beforeEach(() => {
