@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../errorMap';
-import { throwException } from '../../exceptions';
+import { guardException } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 const negativeErrorMessage = 'The received value is not a negative number';
@@ -19,7 +19,7 @@ const negativeErrorKey = 'n:negative';
  * @see - Error Translation Key = 'n:negative'
  */
 export const negative = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
-  if (received >= 0) throwException('negative', received, ctx, negativeErrorKey);
+  if (received >= 0) guardException('negative', received, ctx, negativeErrorKey);
 };
 
 setToDefaultLocale(negativeErrorKey, negativeErrorMessage);

@@ -1,9 +1,9 @@
 import { CommonSchema, ExceptionContext } from './CommonSchema';
-import { throwException } from '../exceptions';
+import { guardException } from '../exceptions';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
-  // TODO ovde ce biti problem oko prevoda, da vidim kako da uvedem dinamicke vrednosti u message
-  if (received !== expected) throwException(expected, received, ctx, 'The received value is not {{e}}');
+  // TODO dokumentuj {{}} u README
+  if (received !== expected) guardException(expected, received, ctx, 'The received value is not {{e}}');
 };
 
 export class BooleanSchema extends CommonSchema {

@@ -59,7 +59,21 @@ describe('ObjectSchema', () => {
     );
   });
 
-  it('should not run with an invalid keys', () => {
+  it('should not run with an unrecognized keys', () => {
+    const objectSchema = object({ foo: string() }).allowUnrecognized();
+
+    expectEqualTypes<
+      {
+        foo: string;
+      },
+      InferType<typeof objectSchema>
+    >(true);
+    const receivedObject = { foo: 'recognized key', bar: 'unrecognized key' };
+    const result = parseOrFail(objectSchema, receivedObject);
+    expect(result).toBe(receivedObject);
+  });
+
+  it('should run with an unrecognized keys', () => {
     const objectSchema = object({ foo: string() });
 
     expectEqualTypes<
@@ -68,7 +82,7 @@ describe('ObjectSchema', () => {
       },
       InferType<typeof objectSchema>
     >(true);
-    expect(() => parseOrFail(objectSchema, { foo: 'valid key foo', bar: 'invalid key bar' })).toThrow(
+    expect(() => parseOrFail(objectSchema, { foo: 'recognized key', bar: 'unrecognized key' })).toThrow(
       'This property is not allowed in the object',
     );
   });

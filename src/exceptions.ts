@@ -24,7 +24,8 @@ function replacePlaceholders(template: string, replacements: Record<string, unkn
   });
 }
 
-export function throwException(
+
+export function guardException(
   expected: unknown,
   received: unknown,
   ctx: ExceptionContext,

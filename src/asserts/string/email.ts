@@ -1,4 +1,4 @@
-import { throwException } from '../../exceptions';
+import { guardException } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 const emailRegExp = /^[^@]+@[^@]+\.[^@]+$/;
@@ -16,5 +16,5 @@ const emailRegExp = /^[^@]+@[^@]+\.[^@]+$/;
  */
 export const email = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
   if (!emailRegExp.test(received))
-    throwException(emailRegExp, received, ctx, 'The received value does not match the required email pattern');
+    guardException(emailRegExp, received, ctx, 'The received value does not match the required email pattern');
 };

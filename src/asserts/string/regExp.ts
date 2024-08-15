@@ -1,4 +1,4 @@
-import { throwException } from '../../exceptions';
+import { guardException } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 /**
@@ -16,5 +16,5 @@ export const regExp =
   (expected: RegExp): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
     if (!expected.test(received))
-      throwException(expected, received, ctx, 'The received value does not match the required text pattern');
+      guardException(expected, received, ctx, 'The received value does not match the required text pattern');
   };

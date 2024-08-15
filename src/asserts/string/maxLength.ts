@@ -1,4 +1,4 @@
-import { throwException } from '../../exceptions';
+import { guardException } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 /**
@@ -16,5 +16,5 @@ export const maxLength =
   (expected: number): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
     if (received.length > expected)
-      throwException(expected, received, ctx, 'The received value length is greater than expected');
+      guardException(expected, received, ctx, 'The received value length is greater than expected');
   };

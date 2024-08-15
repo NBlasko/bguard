@@ -38,7 +38,9 @@ describe('Translation', () => {
   });
 
   it('should use test translation with template reolvers', () => {
-    setLocale('testLanguage', { somethingEqual: 'Expected ({{e}}). Received ({{r}}). PathToError ({{p}}). Unknown ({{v}})' });
+    setLocale('testLanguage', {
+      somethingEqual: 'Expected ({{e}}). Received ({{r}}). PathToError ({{p}}). Unknown ({{v}})',
+    });
     const testSchema = object({ bar: string().custom(customEqual('hello')) });
     expect(() => parseOrFail(testSchema, { bar: 'not hello' }, 'testLanguage')).toThrow(
       'Expected (hello). Received (not hello). PathToError (.bar). Unknown ({{v}})',

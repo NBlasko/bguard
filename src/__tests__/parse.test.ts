@@ -1,7 +1,7 @@
 import { clearLocales } from '../errorMap';
 import { string } from '../asserts/string';
 import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
-import { throwException, setLocale, setToDefaultLocale,parse } from '..';
+import { throwException, setLocale, setToDefaultLocale, parse } from '..';
 
 describe('parse', () => {
   const customEqual =

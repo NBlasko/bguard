@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../errorMap';
-import { throwException } from '../../exceptions';
+import { guardException } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 const minErrorMessage = 'The received value is less than expected';
@@ -22,7 +22,7 @@ const minErrorKey = 'n:min';
 export const min =
   (expected: number): RequiredValidation =>
   (received: number, ctx: ExceptionContext) => {
-    if (expected > received) throwException(expected, received, ctx, minErrorKey);
+    if (expected > received) guardException(expected, received, ctx, minErrorKey);
   };
 
 setToDefaultLocale(minErrorKey, minErrorMessage);

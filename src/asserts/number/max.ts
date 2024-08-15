@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../errorMap';
-import { throwException } from '../../exceptions';
+import { guardException } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 const maxErrorMessage = 'The received value is greater than expected';
@@ -22,7 +22,7 @@ const maxErrorKey = 'n:max';
 export const max =
   (expected: number): RequiredValidation =>
   (received: number, ctx: ExceptionContext) => {
-    if (expected < received) throwException(expected, received, ctx, maxErrorKey);
+    if (expected < received) guardException(expected, received, ctx, maxErrorKey);
   };
 
 setToDefaultLocale(maxErrorKey, maxErrorMessage);

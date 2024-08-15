@@ -1,4 +1,4 @@
-import { throwException } from '../../exceptions';
+import { guardException } from '../../exceptions';
 import { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 /**
@@ -28,5 +28,5 @@ import { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema
 export const equalTo =
   (expected: unknown): RequiredValidation =>
   (received: number, ctx: ExceptionContext) => {
-    if (expected !== received) throwException(expected, received, ctx, 'The received value is not equal to expected');
+    if (expected !== received) guardException(expected, received, ctx, 'The received value is not equal to expected');
   };

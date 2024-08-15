@@ -7,5 +7,5 @@ export { boolean } from './asserts/boolean';
 export { array } from './asserts/array';
 export { object } from './asserts/object';
 export { oneOfTypes } from './asserts/common';
-export { ValidationError, BuildSchemaError, throwException } from './exceptions';
+export { ValidationError, BuildSchemaError, guardException as throwException } from './exceptions';
 export { setToDefaultLocale, setLocale } from './errorMap';
