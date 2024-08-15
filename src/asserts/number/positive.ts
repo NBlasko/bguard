@@ -1,5 +1,9 @@
+import { setToDefaultLocale } from '../../errorMap';
 import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
+
+const positiveErrorMessage = 'The received value is not a positive number';
+const positiveErrorKey = 'n:positive';
 
 /**
  * Asserts that a number value is positive (greater than zero).
@@ -8,10 +12,14 @@ import type { RequiredValidation } from '../../schemas/CommonSchema';
  *
  * @example
  * const schema = number().custom(positive());
- * parseSchema(schema, 10);  // Valid
- * parseSchema(schema, 0);  // Throws an error: 'The received value is not a positive number'
- * parseSchema(schema, -5); // Throws an error: 'The received value is not a positive number'
+ * parseOrFail(schema, 10);  // Valid
+ * parseOrFail(schema, 0);  // Throws an error: 'The received value is not a positive number'
+ * parseOrFail(schema, -5); // Throws an error: 'The received value is not a positive number'
+ *
+ * @see - Error Translation Key = 'n:positive'
  */
-export const positive = (): RequiredValidation => (received: number, pathToError: string) => {
-  if (received <= 0) throwException('positive', received, pathToError, 'The received value is not a positive number');
+export const positive = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
+  if (received <= 0) throwException('positive', received, ctx, positiveErrorMessage);
 };
+
+setToDefaultLocale(positiveErrorKey, positiveErrorMessage);

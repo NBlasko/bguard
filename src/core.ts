@@ -1,27 +1,27 @@
 export const ctxSymbol = Symbol('contextSymbol');
 
 import { throwException } from './exceptions';
-import type { CommonSchema } from './schemas/CommonSchema';
+import type { CommonSchema, ExceptionContext } from './schemas/CommonSchema';
 
-export function innerCheck(schema: CommonSchema, receivedValue: unknown, pathToError: string) {
-  const ctx = schema[ctxSymbol];
+export function innerCheck(schema: CommonSchema, receivedValue: unknown, ctx: ExceptionContext) {
+  const commonTmap = ctx.t;
+  const data = schema[ctxSymbol];
   if (receivedValue === undefined) {
-    if (!ctx.isOptional) throwException('Required', receivedValue, pathToError, 'The required value is missing');
+    if (!data.isOptional) throwException('Required', receivedValue, ctx, commonTmap['c:optional']);
     return receivedValue;
   }
 
   if (receivedValue === null) {
-    if (!ctx.isNullable) throwException('Not null', receivedValue, pathToError, 'Value should not be null');
+    if (!data.isNullable) throwException('Not null', receivedValue, ctx, commonTmap['c:nullable']);
     return receivedValue;
   }
 
-  if (ctx.array) {
-    if (!Array.isArray(receivedValue))
-      throwException('Array', receivedValue, pathToError, 'Expected an array but received a different type');
-    const schema = ctx.array;
-
+  if (data.array) {
+    if (!Array.isArray(receivedValue)) return throwException('Array', receivedValue, ctx, commonTmap['c:array']);
+    const schema = data.array;
+    const pathToError = ctx.pathToError;
     receivedValue.forEach((elem, i) => {
-      innerCheck(schema, elem, `${pathToError}[${i}]`);
+      innerCheck(schema, elem, { ...ctx, pathToError: `${pathToError}[${i}]` });
     });
 
     return receivedValue;
@@ -29,45 +29,35 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, pathToE
 
   const typeOfVal = typeof receivedValue;
 
-  if (ctx.object) {
-    if (typeOfVal !== 'object')
-      throwException('Object', receivedValue, pathToError, 'Expected an object but received a different type');
-    if (Array.isArray(receivedValue))
-      throwException(
-        'Object',
-        receivedValue,
-        pathToError,
-        'Expected an object but received an array. Invalid type of data',
-      );
-    const shapeSchema = ctx.object;
+  if (data.object) {
+    if (typeOfVal !== 'object') throwException('Object', receivedValue, ctx, commonTmap['c:objectType']);
+    if (Array.isArray(receivedValue)) throwException('Object', receivedValue, ctx, commonTmap['c:objectTypeAsArray']);
+    const shapeSchema = data.object;
+    // TODO ovo mozemo da preskocimo ako je data opcija za tim
     for (const keyPerReceivedValue of Object.keys(receivedValue)) {
       if (shapeSchema[keyPerReceivedValue] === undefined)
-        throwException('Not allowed', keyPerReceivedValue, pathToError, 'This key is not allowed in the object');
+        throwException('Unrecognized property', keyPerReceivedValue, ctx, commonTmap['c:unrecognizedProperty']);
     }
-
+    const pathToError = ctx.pathToError;
     for (const [keyOfSchema, valueOfSchema] of Object.entries(shapeSchema)) {
       const receivedObjectValuePropery = (receivedValue as Record<string, unknown>)[keyOfSchema];
       if (receivedObjectValuePropery === undefined) {
         if (!valueOfSchema[ctxSymbol].isOptional)
-          throwException(
-            'Required',
-            receivedObjectValuePropery,
-            pathToError,
-            'Missing required property in the object',
-          );
+          throwException('Required', receivedObjectValuePropery, ctx, commonTmap['c:requiredProperty']);
       }
-      innerCheck(valueOfSchema, receivedObjectValuePropery, `${pathToError}.${keyOfSchema}`);
+
+      innerCheck(valueOfSchema, receivedObjectValuePropery, { ...ctx, pathToError: `${pathToError}.${keyOfSchema}` });
     }
 
     return receivedValue;
   }
 
-  if (ctx.type.length) {
-    if (!ctx.type.includes(typeOfVal)) throwException(ctx.type, typeOfVal, pathToError, 'Invalid type of data');
+  if (data.type.length) {
+    if (!data.type.includes(typeOfVal)) throwException(data.type, typeOfVal, ctx, commonTmap['c:invalidType']);
   }
 
-  ctx.requiredValidations.forEach((requiredValidation) => {
-    requiredValidation(receivedValue, pathToError);
+  data.requiredValidations.forEach((requiredValidation) => {
+    requiredValidation(receivedValue, ctx);
   });
 
   return receivedValue;

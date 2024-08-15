@@ -1,5 +1,5 @@
 import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 /**
  * Asserts that the length of a string value is not greater than a specified maximum length.
@@ -9,12 +9,12 @@ import type { RequiredValidation } from '../../schemas/CommonSchema';
  *
  * @example
  * const schema = string().custom(maxLength(10));
- * parseSchema(schema, 'short');   // Valid
- * parseSchema(schema, 'this is a very long string'); // Throws an error: 'The received value length is greater than expected'
+ * parseOrFail(schema, 'short');   // Valid
+ * parseOrFail(schema, 'this is a very long string'); // Throws an error: 'The received value length is greater than expected'
  */
 export const maxLength =
   (expected: number): RequiredValidation =>
-  (received: string, pathToError: string) => {
+  (received: string, ctx: ExceptionContext) => {
     if (received.length > expected)
-      throwException(expected, received, pathToError, 'The received value length is greater than expected');
+      throwException(expected, received, ctx, 'The received value length is greater than expected');
   };

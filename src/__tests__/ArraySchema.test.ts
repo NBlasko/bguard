@@ -1,14 +1,14 @@
 import { expectEqualTypes } from '../../jest/setup';
 import { BuildSchemaError } from '../exceptions';
-import { parseSchema, InferType, array, number } from '../';
+import { parseOrFail, InferType, array, number } from '../';
 
 describe('ArraySchema', () => {
   it('should be an array', () => {
     const arrayOfNumbersSchema = array(number());
     expectEqualTypes<number[], InferType<typeof arrayOfNumbersSchema>>(true);
     const myArray = [1, 2, 3];
-    expect(parseSchema(arrayOfNumbersSchema, myArray)).toBe(myArray);
-    expect(() => parseSchema(arrayOfNumbersSchema, 1)).toThrow('Expected an array but received a different type');
+    expect(parseOrFail(arrayOfNumbersSchema, myArray)).toBe(myArray);
+    expect(() => parseOrFail(arrayOfNumbersSchema, 1)).toThrow('Expected an array but received a different type');
   });
 
   it('should not build with missing parameters', () => {

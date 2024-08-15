@@ -1,5 +1,5 @@
 import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 const emailRegExp = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -11,10 +11,10 @@ const emailRegExp = /^[^@]+@[^@]+\.[^@]+$/;
  *
  * @example
  * const schema = string().custom(email());
- * parseSchema(schema, 'example@example.com'); // Valid
- * parseSchema(schema, 'invalid-email');      // Throws an error: 'The received value does not match the required email pattern'
+ * parseOrFail(schema, 'example@example.com'); // Valid
+ * parseOrFail(schema, 'invalid-email');      // Throws an error: 'The received value does not match the required email pattern'
  */
-export const email = (): RequiredValidation => (received: string, pathToError: string) => {
+export const email = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
   if (!emailRegExp.test(received))
-    throwException(emailRegExp, received, pathToError, 'The received value does not match the required email pattern');
+    throwException(emailRegExp, received, ctx, 'The received value does not match the required email pattern');
 };

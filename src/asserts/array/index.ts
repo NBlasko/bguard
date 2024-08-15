@@ -10,8 +10,8 @@ import { CommonSchema } from '../../schemas/CommonSchema';
  *
  * @example
  * const schema = array(string());
- * parseSchema(schema, ['hello', 'world']); // Validates successfully
- * parseSchema(schema, ['hello', 123]); // Throws a validation error
+ * parseOrFail(schema, ['hello', 'world']); // Validates successfully
+ * parseOrFail(schema, ['hello', 123]); // Throws a validation error
  */
 export function array<T extends CommonSchema>(arraySchema: T): WithArray<T> {
   return new ArraySchema({ type: [], requiredValidations: [] }, arraySchema) as WithArray<T>;

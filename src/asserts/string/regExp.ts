@@ -1,5 +1,5 @@
 import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 /**
  * Asserts that a string value matches a specified regular expression pattern.
@@ -9,12 +9,12 @@ import type { RequiredValidation } from '../../schemas/CommonSchema';
  *
  * @example
  * const schema = string().custom(regExp(/^[A-Za-z0-9]+$/)); // Validates against alphanumeric pattern
- * parseSchema(schema, 'valid123'); // Valid
- * parseSchema(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
+ * parseOrFail(schema, 'valid123'); // Valid
+ * parseOrFail(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
  */
 export const regExp =
   (expected: RegExp): RequiredValidation =>
-  (received: string, pathToError: string) => {
+  (received: string, ctx: ExceptionContext) => {
     if (!expected.test(received))
-      throwException(expected, received, pathToError, 'The received value does not match the required text pattern');
+      throwException(expected, received, ctx, 'The received value does not match the required text pattern');
   };

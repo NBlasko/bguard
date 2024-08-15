@@ -7,8 +7,8 @@ import { StringSchema } from '../../schemas/StringSchema';
  *
  * @example
  * const schema = string();
- * parseSchema(schema, 'hello'); // Validates successfully
- * parseSchema(schema, 123); // Throws a validation error
+ * parseOrFail(schema, 'hello'); // Validates successfully
+ * parseOrFail(schema, 123); // Throws a validation error
  */
 export function string(): StringSchema {
   return new StringSchema({ type: ['string'], requiredValidations: [] });

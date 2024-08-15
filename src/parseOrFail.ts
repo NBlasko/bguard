@@ -1,5 +1,6 @@
 import { InferType } from './InferType';
 import { innerCheck } from './core';
+import { getTranslationByLocale } from './errorMap';
 import { ValidationError } from './exceptions';
 import { CommonSchema } from './schemas/CommonSchema';
 
@@ -23,15 +24,15 @@ import { CommonSchema } from './schemas/CommonSchema';
  *   age: number(),
  * });
  *
- * const result = parseSchema(schema, { name: 'Alice', age: 30 });
+ * const result = parseOrFail(schema, { name: 'Alice', age: 30 });
  * // result will be inferred as { name: string; age: number }
  *
- * parseSchema(schema, { name: 'Alice', age: '30' });
+ * parseOrFail(schema, { name: 'Alice', age: '30' });
  * // Throws ValidationError because 'age' should be a number, not a string.
  */
-export function parseSchema<T extends CommonSchema>(schema: T, receivedValue: unknown): InferType<T> {
+export function parseOrFail<T extends CommonSchema>(schema: T, receivedValue: unknown, lng?: string): InferType<T> {
   try {
-    return innerCheck(schema, receivedValue, '') as InferType<T>;
+    return innerCheck(schema, receivedValue,  {t: getTranslationByLocale(lng), pathToError: ''} ) as InferType<T>;
   } catch (e) {
     if (e instanceof ValidationError) throw e;
     /* istanbul ignore next */

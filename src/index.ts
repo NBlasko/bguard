@@ -1,5 +1,5 @@
 export type { InferType } from './InferType';
-export { parseSchema } from './parseSchema';
+export { parseOrFail as parseOrFail } from './parseOrFail';
 export { number } from './asserts/number';
 export { string } from './asserts/string';
 export { boolean } from './asserts/boolean';

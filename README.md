@@ -31,7 +31,7 @@ Let's define a schema for a Student object:
 
 ```typeScript
 
-import { parseSchema, InferType, string, number, array, object, boolean } from 'bguard';
+import { parseOrFail, InferType, string, number, array, object, boolean } from 'bguard';
 import { email } from 'bguard/string/email';
 import { min } from 'bguard/number/min';
 import { max } from 'bguard/number/max';
@@ -83,7 +83,7 @@ type StudentSchema = {
 
 #### Validating Data
 
-To validate data against the defined schema, use the parseSchema function:
+To validate data against the defined schema, use the parseOrFail function:
 
 ```typeScript
 
@@ -100,7 +100,7 @@ const studentData = {
   email: 'student@example.com',
 };
 
-const validatedData = parseSchema(studentSchema, studentData);
+const validatedData = parseOrFail(studentSchema, studentData);
 
 
 ```

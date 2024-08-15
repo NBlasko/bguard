@@ -1,5 +1,5 @@
 import { throwException } from '../../exceptions';
-import { RequiredValidation } from '../../schemas/CommonSchema';
+import { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
 /**
  * Creates a custom assertion that checks if a value is equal to the expected value.
@@ -20,14 +20,13 @@ import { RequiredValidation } from '../../schemas/CommonSchema';
  * const schema = number().custom(equalTo(5));
  *
  * // This will pass
- * parseSchema(schema, 5);
+ * parseOrFail(schema, 5);
  *
  * // This will throw a ValidationError
- * parseSchema(schema, 3);
+ * parseOrFail(schema, 3);
  */
 export const equalTo =
   (expected: unknown): RequiredValidation =>
-  (received: number, pathToError: string) => {
-    if (expected !== received)
-      throwException(expected, received, pathToError, 'The received value is not equal to expected');
+  (received: number, ctx: ExceptionContext) => {
+    if (expected !== received) throwException(expected, received, ctx, 'The received value is not equal to expected');
   };

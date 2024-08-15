@@ -9,9 +9,9 @@ import { CommonSchema, MapMixTypes, PrimitiveType, WithMix } from '../../schemas
  *
  * @example
  * const schema = oneOfTypes(['string', 'number']);
- * parseSchema(schema, 'hello'); // Validates successfully
- * parseSchema(schema, 42); // Validates successfully
- * parseSchema(schema, true); // Throws a validation error
+ * parseOrFail(schema, 'hello'); // Validates successfully
+ * parseOrFail(schema, 42); // Validates successfully
+ * parseOrFail(schema, true); // Throws a validation error
  */
 export function oneOfTypes<T extends PrimitiveType[]>(valueTypes: T): WithMix<MapMixTypes<T>> {
   return new CommonSchema({ type: valueTypes, requiredValidations: [] }) as WithMix<MapMixTypes<T>>;

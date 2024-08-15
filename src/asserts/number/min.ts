@@ -1,5 +1,9 @@
+import { setToDefaultLocale } from '../../errorMap';
 import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
+
+const minErrorMessage = 'The received value is less than expected';
+const minErrorKey = 'n:min';
 
 /**
  * Asserts that a number value is not less than a specified minimum value.
@@ -9,13 +13,16 @@ import type { RequiredValidation } from '../../schemas/CommonSchema';
  *
  * @example
  * const schema = number().custom(min(10));
- * parseSchema(schema, 11);  // Valid
- * parseSchema(schema, 10);  // Valid
- * parseSchema(schema, 9);   // Throws an error: 'The received value is less than expected'
+ * parseOrFail(schema, 11);  // Valid
+ * parseOrFail(schema, 10);  // Valid
+ * parseOrFail(schema, 9);   // Throws an error: 'The received value is less than expected'
+ * 
+ * @see - Error Translation Key = 'n:min'
  */
 export const min =
   (expected: number): RequiredValidation =>
-  (received: number, pathToError: string) => {
-    if (expected > received)
-      throwException(expected, received, pathToError, 'The received value is less than expected');
+  (received: number, ctx: ExceptionContext) => {
+    if (expected > received) throwException(expected, received, ctx, minErrorKey);
   };
+
+setToDefaultLocale(minErrorKey, minErrorMessage);
