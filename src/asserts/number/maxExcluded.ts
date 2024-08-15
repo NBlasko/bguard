@@ -16,7 +16,7 @@ const maxExcludedErrorKey = 'n:maxExcluded';
  * parseOrFail(schema, 99);  // Valid
  * parseOrFail(schema, 100); // Throws an error: 'The received value is greater than or equal to expected'
  * parseOrFail(schema, 101); // Throws an error: 'The received value is greater than or equal to expected'
- * 
+ *
  * @see - Error Translation Key = 'n:maxExcluded'
  */
 export const maxExcluded =

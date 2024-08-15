@@ -27,8 +27,8 @@ interface ParseOptions {
  * @template T
  * @param {T} schema - The schema to validate the received value against. This schema dictates the expected structure and type of the value.
  * @param {unknown} receivedValue - The value to be validated and parsed according to the schema.
- * @param {ParseOptions} options - Options 
- * @param {ParseOptions.lng} options.lng -  Set language keyword to map Error messages 
+ * @param {ParseOptions} options - Options
+ * @param {ParseOptions.lng} options.lng -  Set language keyword to map Error messages
  * @param {ParseOptions.lng} options.getAllErrors - If `false` or `undefined` - returns the first validation error it can find and stops looking, which provides a small runtime optimization.
  * @returns {[undefined, InferType<T>]} The validated value, with its TypeScript type inferred from the schema.
  *

@@ -16,13 +16,23 @@ export class ValidationError extends Error {
 
 export class BuildSchemaError extends Error {}
 
+function replacePlaceholders(template: string, replacements: Record<string, unknown>): string {
+  const regex = /{{(.*?)}}/g;
+  return template.replace(regex, (_, key) => {
+    const vvv = key in replacements ? `${replacements[key] as string}` : `{{${key}}}`;
+    return vvv;
+  });
+}
+
 export function throwException(
   expected: unknown,
   received: unknown,
   ctx: ExceptionContext,
   messageKey: string,
 ): never | void {
-  const message = ctx.t[messageKey] ?? messageKey;
+  const rawMessage = ctx.t[messageKey] ?? messageKey;
+  const message = replacePlaceholders(rawMessage, { e: expected, r: received, p: ctx.pathToError });
+
   if (ctx.getAllErrors) {
     ctx.errors.push({
       expected,

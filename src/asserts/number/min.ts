@@ -16,7 +16,7 @@ const minErrorKey = 'n:min';
  * parseOrFail(schema, 11);  // Valid
  * parseOrFail(schema, 10);  // Valid
  * parseOrFail(schema, 9);   // Throws an error: 'The received value is less than expected'
- * 
+ *
  * @see - Error Translation Key = 'n:min'
  */
 export const min =

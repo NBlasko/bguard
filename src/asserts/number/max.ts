@@ -16,7 +16,7 @@ const maxErrorKey = 'n:max';
  * parseOrFail(schema, 99);  // Valid
  * parseOrFail(schema, 100); // Valid
  * parseOrFail(schema, 101); // Throws an error: 'The received value is greater than expected'
- * 
+ *
  * @see - Error Translation Key = 'n:max'
  */
 export const max =

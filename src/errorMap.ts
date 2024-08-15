@@ -1,5 +1,4 @@
-import { BuildSchemaError } from "./";
-
+import { BuildSchemaError } from './';
 
 // c: stands for common
 export interface TranslationErrorMap {

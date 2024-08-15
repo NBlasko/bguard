@@ -32,7 +32,7 @@ import { CommonSchema } from './schemas/CommonSchema';
  */
 export function parseOrFail<T extends CommonSchema>(schema: T, receivedValue: unknown, lng?: string): InferType<T> {
   try {
-    return innerCheck(schema, receivedValue,  {t: getTranslationByLocale(lng), pathToError: ''} ) as InferType<T>;
+    return innerCheck(schema, receivedValue, { t: getTranslationByLocale(lng), pathToError: '' }) as InferType<T>;
   } catch (e) {
     if (e instanceof ValidationError) throw e;
     /* istanbul ignore next */

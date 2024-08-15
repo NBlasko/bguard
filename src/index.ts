@@ -1,5 +1,6 @@
 export type { InferType } from './InferType';
-export { parseOrFail as parseOrFail } from './parseOrFail';
+export { parse } from './parse';
+export { parseOrFail } from './parseOrFail';
 export { number } from './asserts/number';
 export { string } from './asserts/string';
 export { boolean } from './asserts/boolean';
@@ -7,3 +8,4 @@ export { array } from './asserts/array';
 export { object } from './asserts/object';
 export { oneOfTypes } from './asserts/common';
 export { ValidationError, BuildSchemaError, throwException } from './exceptions';
+export { setToDefaultLocale, setLocale } from './errorMap';

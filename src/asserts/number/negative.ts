@@ -15,7 +15,7 @@ const negativeErrorKey = 'n:negative';
  * parseOrFail(schema, -10); // Valid
  * parseOrFail(schema, 0);  // Throws an error: 'The received value is not a negative number'
  * parseOrFail(schema, 5);  // Throws an error: 'The received value is not a negative number'
- * 
+ *
  * @see - Error Translation Key = 'n:negative'
  */
 export const negative = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {

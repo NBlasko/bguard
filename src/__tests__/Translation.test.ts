@@ -1,4 +1,4 @@
-import { parseOrFail, throwException, BuildSchemaError } from '../';
+import { parseOrFail, throwException, BuildSchemaError, object } from '../';
 import { string } from '../asserts/string';
 import { clearLocales, setLocale, setToDefaultLocale } from '../errorMap';
 import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
@@ -35,5 +35,13 @@ describe('Translation', () => {
     setToDefaultLocale('test:key', 'My Translation');
     expect(() => setToDefaultLocale('test:key', 'My Translation')).toThrow('Duplicate default message key');
     expect(() => setToDefaultLocale('test:key', 'My  Other Translation')).toThrow(BuildSchemaError);
+  });
+
+  it('should use test translation with template reolvers', () => {
+    setLocale('testLanguage', { somethingEqual: 'Expected ({{e}}). Received ({{r}}). PathToError ({{p}}). Unknown ({{v}})' });
+    const testSchema = object({ bar: string().custom(customEqual('hello')) });
+    expect(() => parseOrFail(testSchema, { bar: 'not hello' }, 'testLanguage')).toThrow(
+      'Expected (hello). Received (not hello). PathToError (.bar). Unknown ({{v}})',
+    );
   });
 });

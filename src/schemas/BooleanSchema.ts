@@ -3,7 +3,7 @@ import { throwException } from '../exceptions';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
   // TODO ovde ce biti problem oko prevoda, da vidim kako da uvedem dinamicke vrednosti u message
-  if (received !== expected) throwException(expected, received, ctx, `The received value is not ${expected}`);
+  if (received !== expected) throwException(expected, received, ctx, 'The received value is not {{e}}');
 };
 
 export class BooleanSchema extends CommonSchema {

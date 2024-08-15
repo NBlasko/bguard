@@ -1,8 +1,7 @@
-import { parse } from '../parse';
-import { clearLocales, setLocale, setToDefaultLocale } from '../errorMap';
+import { clearLocales } from '../errorMap';
 import { string } from '../asserts/string';
 import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
-import { throwException } from '..';
+import { throwException, setLocale, setToDefaultLocale,parse } from '..';
 
 describe('parse', () => {
   const customEqual =
@@ -47,10 +46,9 @@ describe('parse', () => {
     expect(value).toBe(undefined);
   });
 
-
   it('should return a valid result', () => {
     setLocale('testLanguage', { somethingEqual: 'Foo is equal' });
-    const testSchema = string().custom(customEqual('helloo'),);
+    const testSchema = string().custom(customEqual('helloo'));
     const [errors, value] = parse(testSchema, 'helloo', { lng: 'testLanguage', getAllErrors: true });
     expect(errors).toBe(undefined);
     expect(value).toBe('helloo');
