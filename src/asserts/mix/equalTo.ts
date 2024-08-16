@@ -1,5 +1,9 @@
 import { guardException } from '../../exceptions';
 import { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
+import { setToDefaultLocale } from '../../translationMap';
+
+const equalToErrorMessage = 'The received value is not equal to expected';
+const equalToErrorKey = 'm:equalTo';
 
 /**
  * Creates a custom assertion that checks if a value is equal to the expected value.
@@ -19,14 +23,17 @@ import { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema
  * // Define a schema with a custom assertion
  * const schema = number().custom(equalTo(5));
  *
- * // This will pass
- * parseOrFail(schema, 5);
+ * parseOrFail(schema, 5); // Valid
+ * parseOrFail(schema, 3); // Throws an error: 'The received value is not equal to expected'
  *
- * // This will throw a ValidationError
- * parseOrFail(schema, 3);
+ * @translation - Error Translation Key = 'm:equalTo'
  */
 export const equalTo =
   (expected: unknown): RequiredValidation =>
   (received: number, ctx: ExceptionContext) => {
-    if (expected !== received) guardException(expected, received, ctx, 'The received value is not equal to expected');
+    if (expected !== received) guardException(expected, received, ctx, equalToErrorKey);
   };
+
+equalTo.key = equalToErrorKey;
+equalTo.message = equalToErrorMessage;
+setToDefaultLocale(equalToErrorKey, equalToErrorMessage);

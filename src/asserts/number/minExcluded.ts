@@ -6,7 +6,7 @@ const minExcludedErrorMessage = 'The received value is less than or equal to exp
 const minExcludedErrorKey = 'n:minExcluded';
 
 /**
- * Asserts that a number value is strictly greater than a specified minimum value (i.e., the minimum value is excluded).
+ * @description - Asserts that a number value is strictly greater than a specified minimum value (i.e., the minimum value is excluded).
  *
  * @param {number} expected - The minimum allowable value, which is excluded.
  * @returns {RequiredValidation} - A validation function that takes a received number and a path to the error message. Throws an error if the received value is less than or equal to the expected minimum value.
@@ -17,7 +17,7 @@ const minExcludedErrorKey = 'n:minExcluded';
  * parseOrFail(schema, 10); // Throws an error: 'The received value is less than or equal to expected'
  * parseOrFail(schema, 9);  // Throws an error: 'The received value is less than or equal to expected'
  *
- * @see - Error Translation Key = 'n:minExcluded'
+ * @translation - Error Translation Key = 'n:minExcluded'
  */
 export const minExcluded =
   (expected: number): RequiredValidation =>
@@ -25,4 +25,6 @@ export const minExcluded =
     if (expected >= received) guardException(expected, received, ctx, minExcludedErrorKey);
   };
 
+minExcluded.key = minExcludedErrorKey;
+minExcluded.message = minExcludedErrorMessage;
 setToDefaultLocale(minExcludedErrorKey, minExcludedErrorMessage);

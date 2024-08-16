@@ -50,7 +50,8 @@
     "change:start": "changeset",
     "change:version": "changeset version",
     "change:publish": "changeset publish",
-    "arethetypeswrong": "npx @arethetypeswrong/cli"
+    "arethetypeswrong": "npx @arethetypeswrong/cli",
+    "docs:join-assert": "node scripts/join-assert-docs.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.7",

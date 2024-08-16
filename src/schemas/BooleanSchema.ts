@@ -2,7 +2,6 @@ import { CommonSchema, ExceptionContext } from './CommonSchema';
 import { guardException } from '../exceptions';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
-  // TODO dokumentuj {{}} u README
   if (received !== expected) guardException(expected, received, ctx, 'The received value is not {{e}}');
 };
 

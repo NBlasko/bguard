@@ -6,7 +6,7 @@ const maxExcludedErrorMessage = 'The received value is greater than or equal to 
 const maxExcludedErrorKey = 'n:maxExcluded';
 
 /**
- * Asserts that a number value is strictly less than a specified maximum value (i.e., the maximum value is excluded).
+ * @description - Asserts that a number value is strictly less than a specified maximum value (i.e., the maximum value is excluded).
  *
  * @param {number} expected - The maximum allowable value, which is excluded.
  * @returns {RequiredValidation} - A validation function that takes a received number and a path to the error message. Throws an error if the received value is greater than or equal to the expected maximum value.
@@ -17,7 +17,7 @@ const maxExcludedErrorKey = 'n:maxExcluded';
  * parseOrFail(schema, 100); // Throws an error: 'The received value is greater than or equal to expected'
  * parseOrFail(schema, 101); // Throws an error: 'The received value is greater than or equal to expected'
  *
- * @see - Error Translation Key = 'n:maxExcluded'
+ * @translation - Error Translation Key = 'n:maxExcluded'
  */
 export const maxExcluded =
   (expected: number): RequiredValidation =>
@@ -25,4 +25,6 @@ export const maxExcluded =
     if (expected <= received) guardException(expected, received, ctx, maxExcludedErrorKey);
   };
 
+maxExcluded.key = maxExcludedErrorKey;
+maxExcluded.message = maxExcludedErrorMessage;
 setToDefaultLocale(maxExcludedErrorKey, maxExcludedErrorMessage);

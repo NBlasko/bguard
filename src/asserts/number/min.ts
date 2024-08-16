@@ -6,7 +6,7 @@ const minErrorMessage = 'The received value is less than expected';
 const minErrorKey = 'n:min';
 
 /**
- * Asserts that a number value is not less than a specified minimum value.
+ * @description - Asserts that a number value is not less than a specified minimum value.
  *
  * @param {number} expected - The minimum allowable value.
  * @returns {RequiredValidation} - A validation function that takes a received number and a path to the error message. Throws an error if the received value is less than the expected minimum value.
@@ -17,7 +17,7 @@ const minErrorKey = 'n:min';
  * parseOrFail(schema, 10);  // Valid
  * parseOrFail(schema, 9);   // Throws an error: 'The received value is less than expected'
  *
- * @see - Error Translation Key = 'n:min'
+ * @translation - Error Translation Key = 'n:min'
  */
 export const min =
   (expected: number): RequiredValidation =>
@@ -25,4 +25,6 @@ export const min =
     if (expected > received) guardException(expected, received, ctx, minErrorKey);
   };
 
+min.key = minErrorKey;
+min.message = minErrorMessage;
 setToDefaultLocale(minErrorKey, minErrorMessage);
