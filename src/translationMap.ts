@@ -1,4 +1,4 @@
-import { BuildSchemaError } from './';
+import { BuildSchemaError } from '.';
 
 // c: stands for common
 export interface TranslationErrorMap {
@@ -35,6 +35,7 @@ export function setToDefaultLocale(messageKey: string, messageValue: string) {
 }
 
 export function setLocale(lng: string, custom: Partial<TranslationErrorMap>) {
+  // TODO, baci gresku ako koriste lng === 'default'
   if (!data[lng]) data[lng] = { ...defaultErrorMap };
   const locale = data[lng]!;
   Object.entries(custom).forEach(([messageKey, messageValue]) => {

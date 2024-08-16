@@ -1,4 +1,4 @@
-import { equalTo } from '../asserts/common/equalTo';
+import { equalTo } from '../asserts/mix/equalTo';
 
 import { CommonSchema } from './CommonSchema';
 

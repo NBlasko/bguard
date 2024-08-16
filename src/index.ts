@@ -6,6 +6,6 @@ export { string } from './asserts/string';
 export { boolean } from './asserts/boolean';
 export { array } from './asserts/array';
 export { object } from './asserts/object';
-export { oneOfTypes } from './asserts/common';
+export { oneOfTypes } from './asserts/mix';
 export { ValidationError, BuildSchemaError, guardException} from './exceptions';
-export { setToDefaultLocale, setLocale } from './errorMap';
+export { setToDefaultLocale, setLocale } from './translationMap';

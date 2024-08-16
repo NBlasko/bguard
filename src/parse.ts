@@ -1,6 +1,6 @@
 import { InferType } from './InferType';
 import { innerCheck } from './core';
-import { getTranslationByLocale } from './errorMap';
+import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
 import { CommonSchema, ExceptionContext, ValidationErrorData } from './schemas/CommonSchema';
 

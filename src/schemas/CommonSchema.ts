@@ -1,5 +1,5 @@
 import { ctxSymbol } from '../core';
-import { TranslationErrorMap } from '../errorMap';
+import { TranslationErrorMap } from '../translationMap';
 
 export interface ValidationErrorData {
   message: string;

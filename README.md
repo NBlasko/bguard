@@ -211,6 +211,119 @@ const ageSchema = number().custom(min(18), max(120));
 
 Assertions are imported from specific paths for better tree-shaking and smaller bundle sizes.
 
+
+### Translation
+
+Bguard provides default translations for error messages, but you can customize them as needed. Each potential error has an `errorKey` and `errorMessage`.
+
+Example:
+
+Consider the schema:
+
+```typeScript
+const testSchema = object({ foo: number().custom(min(5)) });
+```
+
+The `min` function has:
+
+```typeScript
+const minErrorMessage = 'The received value is less than expected'; // Default error message
+const minErrorKey = 'n:min'; // Error key
+```
+
+If you want to change the error message for `min`, you can do so by importing the `setLocale` function and setting your custom message:
+
+```typeScript
+import { setLocale } from 'bguard/translationMap';
+
+setLocale('SR', {
+  'n:min': 'The received value {{r}} found on path {{p}} is less than expected value {{e}}',
+  // ... continue adding other translations
+});
+```
+With this setup, in the translation namespace 'SR', if the received value is 4, you'll get an error message like:
+
+`'The received value 4 found on path .foo is less than expected value 5'`
+
+ - `{{r}}` - Replaced with the received value.
+ - `{{p}}` - Replaced with the path to the error.
+ - `{{e}}` - Replaced with the expected value.
+
+
+> **Notice:** Do not overwrite the 'default' namespace. If a translation is missing, it will fall back to the 'default' translation.
+
+
+
+#### Using Translations
+
+To apply the new translation, both `parse` and `parseOrFail` functions accept a lng property in the options object provided as the third parameter:
+
+```typeScript
+parseOrFail(testSchema, { foo: 4 }, { lng: 'SR' });
+// or
+parse(testSchema, { foo: 4 }, { lng: 'SR' });
+```
+
+
+#### Common and Custom Translations
+
+We have two sets of translations: common errors and specific assertions.
+
+<b>Common Error Translations</b>:
+
+```
+'c:optional': 'The required value is missing'
+'c:nullable': 'Value should not be null'
+'c:array': 'Expected an array but received a different type'
+'c:objectType': 'Expected an object but received a different type'
+'c:objectTypeAsArray': 'Expected an object but received an array. Invalid type of data'
+'c:unrecognizedProperty': 'This property is not allowed in the object'
+'c:requiredProperty': 'Missing required property in the object'
+'c:invalidType': 'Invalid type of data'
+```
+
+<b>Custom Assertion Translations</b>:
+
+For custom assertions, each key and message are located in separate files for better code splitting. There are multiple ways to identify a key:
+
+1. Key Construction:
+Keys are constructed as `'{typeId}:{functionName}'`, where `typeId` represents:
+
+- c - common
+- n - numbers
+- s - strings
+- b - boolean
+- a - array
+- o - object
+- sy - symbol
+- f - function
+- bi - bigint
+- m - mixed
+
+Each `typeId` maps to the folder from which custom assertions are retrieved (except 'common', as explained above).
+
+Example:
+
+```typeScript
+import { maxLength } from 'bguard/string/maxLength';
+```
+The function located in `'bguard/string/maxLength'` will have the key `'s:maxLength'`.
+
+2. Assertion Function Properties:
+
+Each assert function has two additional properties: `key` and `message`.
+
+```typeScript
+import { maxLength } from 'bguard/string/maxLength';
+
+console.log(maxLength.key); // Output: 's:maxLength'
+console.log(maxLength.message); // Output: 'The received value length is greater than expected'
+```
+> **Notice:** Do not directly change these values.
+
+3. IDE Support:
+Each key and message will be visible in text editors that support JSDoc IntelliSense.
+
 ### Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.

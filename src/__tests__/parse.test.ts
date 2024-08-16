@@ -1,4 +1,4 @@
-import { clearLocales } from '../errorMap';
+import { clearLocales } from '../translationMap';
 import { string } from '../asserts/string';
 import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
 import { guardException, setLocale, setToDefaultLocale, parse } from '..';

@@ -1,4 +1,4 @@
-import { setToDefaultLocale } from '../../errorMap';
+import { setToDefaultLocale } from '../../translationMap';
 import { guardException } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
 
@@ -25,4 +25,6 @@ export const max =
     if (expected < received) guardException(expected, received, ctx, maxErrorKey);
   };
 
+max.key = maxErrorKey;
+max.message = maxErrorMessage;
 setToDefaultLocale(maxErrorKey, maxErrorMessage);
