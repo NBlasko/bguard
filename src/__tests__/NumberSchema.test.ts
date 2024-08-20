@@ -87,7 +87,7 @@ describe('NumberSchema', () => {
 
   it('should be equal to one of provided values', () => {
     const textSchema = number().oneOfValues([5, 7]);
-    expectEqualTypes< 5 | 7, InferType<typeof textSchema>>(true);
+    expectEqualTypes<5 | 7, InferType<typeof textSchema>>(true);
     expect(parseOrFail(textSchema, 5)).toBe(5);
     expect(parseOrFail(textSchema, 7)).toBe(7);
     expect(() => parseOrFail(textSchema, 8)).toThrow('The received value is not equal to expected');
