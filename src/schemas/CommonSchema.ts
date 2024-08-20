@@ -1,5 +1,5 @@
 import { PrimitiveType, RequiredValidation } from '../commonTypes';
-import { ctxSymbol } from '../core';
+import { ctxSymbol } from '../helpers/core';
 
 export type ObjectShapeSchemaType = Record<string, CommonSchema>;
 
@@ -11,6 +11,8 @@ export interface ValidatorContext {
   array?: CommonSchema;
   object?: ObjectShapeSchemaType;
   allowUnrecognizedObjectProps?: boolean;
+  strictType?: boolean;
+  strictTypeValue?: unknown;
 }
 
 export class CommonSchema {

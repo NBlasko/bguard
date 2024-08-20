@@ -1,5 +1,5 @@
 import { InferType } from './InferType';
-import { innerCheck } from './core';
+import { innerCheck } from './helpers/core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
 import { CommonSchema } from './schemas/CommonSchema';

@@ -189,14 +189,16 @@ const schema = string().nullable().optional();
 ```
 
 - String Literals:
-  `string().equalTo('myStringValue')` will infer 'myStringValue' as the type.
+  `string().equalTo('myStringValue')` will infer <b>'myStringValue'</b> as the type.
+  `string().oneOfValues(['foo', 'bar'])` will infer <b>'foo' | 'bar'</b> as the type.
 
 - Number Literals:
-  `number().equalTo(42)` will infer 42 as the type.
+  `number().equalTo(42)` will infer <b>42</b> as the type.
+  `number().oneOfValues([3, 5])` will infer <b>3 | 5</b> as the type.
 
 - Boolean Literals:
-  `boolean().onlyTrue()` will infer true as the type.
-  `boolean().onlyFalse()` will infer false as the type.
+  `boolean().onlyTrue()` will infer <b>true</b> as the type.
+  `boolean().onlyFalse()` will infer <b>false</b> as the type.
 
 ### Custom Assertions
 
@@ -334,6 +336,7 @@ import { equalTo } from 'bguard/mix/equalTo';
 ```
         
 * _Description_ Creates a custom assertion that checks if a value is equal to the expected value.
+* > **Notice:** It has already been implemented in the number and string schema. There is no need to use it as a custom assert.
 * _Param_ {unknown} expected The value that the received value is expected to match.
 * _Throws_ {ValidationError} If the received value does not match the expected value.
 * _Example_
@@ -343,6 +346,26 @@ import { equalTo } from 'bguard/mix/equalTo';
  parseOrFail(schema, 3); // Throws an error: 'The received value is not equal to expected'
 ```
 * _See_ Error Translation Key = 'm:equalTo'
+        
+        
+##### oneOfValues (mix)
+        
+```typescript
+import { oneOfValues } from 'bguard/mix/oneOfValues';
+```
+        
+* _Description_ Creates a custom assertion that checks if a value is equal to the one of expected values.
+* > **Notice:** It has already been implemented in the number and string schema. There is no need to use it as a custom assert.
+* _Param_ {unknown} expected The value that the received value is expected to match.
+* _Throws_ {ValidationError} If the received value does not match at least one of the expected values.
+* _Example_
+```typescript
+ const schema = number().custom(oneOfValues([5, 4])); // Define a schema with a custom assertion
+ parseOrFail(schema, 5); // Valid
+ parseOrFail(schema, 4); // Valid
+ parseOrFail(schema, 3); // Throws an error: 'The received value is not equal to expected'
+```
+* _See_ Error Translation Key = 'm:oneOfValues'
         
 #### number
         

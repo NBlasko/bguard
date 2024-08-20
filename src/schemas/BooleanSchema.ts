@@ -1,6 +1,7 @@
 import { CommonSchema } from './CommonSchema';
 import { guardException } from '../exceptions';
 import { ExceptionContext } from '../commonTypes';
+import { _setStrictType } from '../helpers/setStrictType';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
   if (received !== expected) guardException(expected, received, ctx, 'c:isBoolean');
@@ -17,6 +18,7 @@ export class BooleanSchema extends CommonSchema {
    * @example - boolean().onlyTrue(); // Infers the type true
    */
   onlyTrue(): WithBoolean<this, true> {
+    _setStrictType(this, true);
     return this.custom(isBoolean(true)) as WithBoolean<this, true>;
   }
 
@@ -28,6 +30,7 @@ export class BooleanSchema extends CommonSchema {
    * @example - boolean().onlyFalse(); // Infers the type false
    */
   onlyFalse(): WithBoolean<this, false> {
+    _setStrictType(this, false);
     return this.custom(isBoolean(false)) as WithBoolean<this, false>;
   }
 }

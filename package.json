@@ -51,7 +51,8 @@
     "change:version": "changeset version",
     "change:publish": "changeset publish",
     "arethetypeswrong": "npx @arethetypeswrong/cli",
-    "docs:join-assert": "node scripts/join-assert-docs.mjs"
+    "docs:join-assert": "node scripts/join-assert-docs.mjs",
+    "test:before": "ts-node jest/assets/generateStaticTypes"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.7",

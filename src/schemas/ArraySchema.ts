@@ -1,4 +1,4 @@
-import { ctxSymbol } from '../core';
+import { ctxSymbol } from '../helpers/core';
 import { BuildSchemaError } from '../exceptions';
 import { CommonSchema, ValidatorContext } from './CommonSchema';
 

@@ -37,6 +37,7 @@ function extractJsDocContent(fileContent) {
 
       cleanedJsDoc = cleanedJsDoc.replace(/(^|\n)\s*\*/g, '\n').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/@description\s*/, '* _Description_ ').trim();
+      cleanedJsDoc = cleanedJsDoc.replace(/ @notice\s*/, '* > **Notice:** ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @example\s*/, '* _Example_\n').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @param\s*/, '* _Param_ ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @returns.+\n/, '').trim();

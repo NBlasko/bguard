@@ -189,14 +189,16 @@ const schema = string().nullable().optional();
 ```
 
 - String Literals:
-  `string().equalTo('myStringValue')` will infer 'myStringValue' as the type.
+  `string().equalTo('myStringValue')` will infer <b>'myStringValue'</b> as the type.
+  `string().oneOfValues(['foo', 'bar'])` will infer <b>'foo' | 'bar'</b> as the type.
 
 - Number Literals:
-  `number().equalTo(42)` will infer 42 as the type.
+  `number().equalTo(42)` will infer <b>42</b> as the type.
+  `number().oneOfValues([3, 5])` will infer <b>3 | 5</b> as the type.
 
 - Boolean Literals:
-  `boolean().onlyTrue()` will infer true as the type.
-  `boolean().onlyFalse()` will infer false as the type.
+  `boolean().onlyTrue()` will infer <b>true</b> as the type.
+  `boolean().onlyFalse()` will infer <b>false</b> as the type.
 
 ### Custom Assertions
 

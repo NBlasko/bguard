@@ -1,6 +1,6 @@
 import type { InferType } from './InferType';
 import type { CommonSchema } from './schemas/CommonSchema';
-import { innerCheck } from './core';
+import { innerCheck } from './helpers/core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
 interface ParseOptions {

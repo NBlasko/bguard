@@ -72,4 +72,12 @@ describe('StringSchema', () => {
     expect(parseOrFail(textSchema, 'yes')).toBe('yes');
     expect(() => parseOrFail(textSchema, 'toolong')).toThrow('The received value length is greater than expected');
   });
+
+  it('should be equal to one of provided values', () => {
+    const textSchema = string().oneOfValues(['foo', 'bar']);
+    expectEqualTypes<'foo' | 'bar', InferType<typeof textSchema>>(true);
+    expect(parseOrFail(textSchema, 'foo')).toBe('foo');
+    expect(parseOrFail(textSchema, 'bar')).toBe('bar');
+    expect(() => parseOrFail(textSchema, 'baz')).toThrow('The received value is not equal to expected');
+  });
 });
