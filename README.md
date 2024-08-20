@@ -78,6 +78,82 @@ type StudentSchema = {
 
 ```
 
+
+#### Generating TypeScript Types with `codeGen`
+
+
+If you prefer to generate TypeScript types as a string, you can use the `codeGen` function:
+
+```typeScript
+import { codeGen } from 'bguard/codeGen';
+```
+
+The `codeGen` function takes a schema and returns a string representing the inferred TypeScript type. This string can be written to a file or used in other ways where a static type definition is needed.
+
+Example
+
+```typeScript
+const typeString = codeGen(studentSchema);
+console.log(typeString);
+```
+
+This would output a string:
+
+```typeScript
+{
+  email?: string | undefined;
+  age: number;
+  address: string | null;
+  classes: ({
+      name: string;
+      mandatory: boolean;
+      rooms: number[];
+    } | undefined)[];
+  verified?: boolean | undefined;
+}
+```
+Note: The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
+
+#### Generating Named TypeScript Types with `codeGenWithName`
+
+For convenience, if you want to generate a complete type definition including a name, use the `codeGenWithName` function:
+
+```typeScript
+import { codeGenWithName } from 'bguard/codeGen';
+```
+
+This function takes two parameters: the name of the type and the schema.
+
+Example:
+
+```typeScript
+const namedTypeString = codeGenWithName('StudentSchema', studentSchema);
+console.log(namedTypeString);
+```
+
+This would output a string:
+
+
+```typeScript
+type StudentSchema = {
+  email?: string | undefined;
+  age: number;
+  address: string | null;
+  classes: ({
+      name: string;
+      mandatory: boolean;
+      rooms: number[];
+    } | undefined)[];
+  verified?: boolean | undefined;
+}
+```
+#### Summary:
+
+`codeGen(schema: CommonSchema): string` - Generates a string of the TypeScript type based on the schema. You need to manually add a type name and assignment if needed.
+
+`codeGenWithName(typeName: string, schema: CommonSchema): string` - Generates a complete TypeScript type definition string, including the type keyword and type name.
+
+
 ### Validating Data
 
 This library provides two methods to parse data against schemas: `parse` and `parseOrFail`. These methods help in validating the data and obtaining structured errors if any issues are found during validation.

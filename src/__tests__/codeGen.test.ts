@@ -133,9 +133,13 @@ import {
   TestSchema42String,
 } from '../../jest/assets/staticTypesAsString';
 
-import { codeGen } from '../codeGen';
+import { codeGen, codeGenWithName } from '../codeGen';
 
 describe('CodeGen', () => {
+  it('shoud create type with name', () => {
+    expect(`type TestSchema1 = ${TestSchema1String}\n`).toBe(codeGenWithName('TestSchema1', testSchema1));
+  });
+
   it('should have same static and dynamic type', () => {
     expectEqualTypes<TestSchema1, InferType<typeof testSchema1>>(true);
     expect(TestSchema1String).toBe(codeGen(testSchema1));

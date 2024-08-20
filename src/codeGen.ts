@@ -41,7 +41,12 @@ function innerGenerator(schema: CommonSchema, isProperty: boolean, indent = INDE
   return code;
 }
 
-export function codeGen(schema: CommonSchema) {
+export function codeGen(schema: CommonSchema): string {
   const result = innerGenerator(schema, false) + ';';
+  return result;
+}
+
+export function codeGenWithName(typeName: string, schema: CommonSchema): string {
+  const result = 'type ' + typeName + ' = ' + codeGen(schema) + '\n';
   return result;
 }
