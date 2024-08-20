@@ -2,7 +2,7 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
@@ -50,7 +50,9 @@
     "change:start": "changeset",
     "change:version": "changeset version",
     "change:publish": "changeset publish",
-    "arethetypeswrong": "npx @arethetypeswrong/cli"
+    "arethetypeswrong": "npx @arethetypeswrong/cli",
+    "docs:join-assert": "node scripts/join-assert-docs.mjs",
+    "test:before": "ts-node jest/assets/generateStaticTypes"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.7",
@@ -117,10 +119,25 @@
       "require": "./lib/asserts/object/*.js",
       "types": "./lib/asserts/object/*.d.ts"
     },
-    "./common/*": {
-      "import": "./lib/asserts/common/*.mjs",
-      "require": "./lib/asserts/common/*.js",
-      "types": "./lib/asserts/common/*.d.ts"
+    "./mix/*": {
+      "import": "./lib/asserts/mix/*.mjs",
+      "require": "./lib/asserts/mix/*.js",
+      "types": "./lib/asserts/mix/*.d.ts"
+    },
+    "./function/*": {
+      "import": "./lib/asserts/function/*.mjs",
+      "require": "./lib/asserts/function/*.js",
+      "types": "./lib/asserts/function/*.d.ts"
+    },
+    "./symbol/*": {
+      "import": "./lib/asserts/symbol/*.mjs",
+      "require": "./lib/asserts/symbol/*.js",
+      "types": "./lib/asserts/symbol/*.d.ts"
+    },
+    "./bigint/*": {
+      "import": "./lib/asserts/bigint/*.mjs",
+      "require": "./lib/asserts/bigint/*.js",
+      "types": "./lib/asserts/bigint/*.d.ts"
     },
     "./*": {
       "import": "./*.mjs",

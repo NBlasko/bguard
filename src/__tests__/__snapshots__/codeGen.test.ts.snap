@@ -1,0 +1,95 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CodeGen should have same static and dynamic type: TestSchema1String 1`] = `
+"{
+  email?: string | undefined;
+  age: number;
+  address: string | null;
+  classes: ({
+      name: string;
+      mandatory: boolean;
+      rooms: number[];
+    } | undefined)[];
+  verified?: boolean | undefined;
+};"
+`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema2String 1`] = `"string;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema3String 1`] = `"number;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema4String 1`] = `"boolean;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema5String 1`] = `"bigint | number;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema6String 1`] = `"string | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema7String 1`] = `"number | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema8String 1`] = `"boolean | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema9String 1`] = `"bigint | symbol | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema10String 1`] = `"string | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema11String 1`] = `"number | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema12String 1`] = `"boolean | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema13String 1`] = `"string | symbol | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema14String 1`] = `"string | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema15String 1`] = `"number | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema16String 1`] = `"boolean | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema18String 1`] = `"'5' | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema19String 1`] = `"'5' | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema20String 1`] = `"'5' | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema21String 1`] = `"'5';"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema22String 1`] = `"8 | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema23String 1`] = `"8 | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema24String 1`] = `"8 | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema25String 1`] = `"8;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema26String 1`] = `"false | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema27String 1`] = `"true | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema28String 1`] = `"false;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema29String 1`] = `"true;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema30String 1`] = `"true[];"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema31String 1`] = `"(boolean | null)[] | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema32String 1`] = `"(boolean | undefined)[] | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema33String 1`] = `"5 | 7;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema34String 1`] = `"5 | 7 | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema35String 1`] = `"5 | 7 | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema36String 1`] = `"5 | 7 | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema37String 1`] = `"'foo' | 'bar';"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema38String 1`] = `"'foo' | 'bar' | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema39String 1`] = `"'foo' | 'bar' | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema40String 1`] = `"'foo' | 'bar' | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema41String 1`] = `"'foo';"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema42String 1`] = `"'foo' | null;"`;

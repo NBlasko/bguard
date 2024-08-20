@@ -7,8 +7,8 @@ import { BooleanSchema } from '../../schemas/BooleanSchema';
  *
  * @example
  * const schema = boolean();
- * parseSchema(schema, true); // Validates successfully
- * parseSchema(schema, 'true'); // Throws a validation error
+ * parseOrFail(schema, true); // Validates successfully
+ * parseOrFail(schema, 'true'); // Throws a validation error
  */
 export function boolean(): BooleanSchema {
   return new BooleanSchema({ type: ['boolean'], requiredValidations: [] });

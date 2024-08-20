@@ -1,20 +1,26 @@
-import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { guardException } from '../../exceptions';
+import { setToDefaultLocale } from '../../translationMap';
 
 const emailRegExp = /^[^@]+@[^@]+\.[^@]+$/;
+const emailErrorMessage = 'The received value does not match the required email pattern';
+const emailErrorKey = 's:email';
 
 /**
- * Asserts that a string value matches the email pattern.
- * The pattern is defined as /^[^@]+@[^@]+\.[^@]+$/, which checks for a basic email format.
- *
- * @returns {RequiredValidation} - A validation function that takes a received string and a path to the error message. Throws an error if the received value does not match the email pattern.
- *
+ * @description Asserts that a string value matches the email pattern. The pattern checks for a basic email format.
+ * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
+ * @throws {ValidationError} if the received value does not match the email pattern.
  * @example
  * const schema = string().custom(email());
- * parseSchema(schema, 'example@example.com'); // Valid
- * parseSchema(schema, 'invalid-email');      // Throws an error: 'The received value does not match the required email pattern'
+ * parseOrFail(schema, 'example@example.com'); // Valid
+ * parseOrFail(schema, 'invalid-email');      // Throws an error: 'The received value does not match the required email pattern'
+ *
+ * @translation - Error Translation Key = 's:email'
  */
-export const email = (): RequiredValidation => (received: string, pathToError: string) => {
-  if (!emailRegExp.test(received))
-    throwException(emailRegExp, received, pathToError, 'The received value does not match the required email pattern');
+export const email = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
+  if (!emailRegExp.test(received)) guardException(emailRegExp, received, ctx, emailErrorMessage);
 };
+
+email.key = emailErrorKey;
+email.message = emailErrorMessage;
+setToDefaultLocale(email);

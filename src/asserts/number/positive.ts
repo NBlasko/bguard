@@ -1,17 +1,26 @@
-import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import { setToDefaultLocale } from '../../translationMap';
+import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+
+const positiveErrorMessage = 'The received value is not a positive number';
+const positiveErrorKey = 'n:positive';
 
 /**
- * Asserts that a number value is positive (greater than zero).
- *
- * @returns {RequiredValidation} - A validation function that takes a received number and a path to the error message. Throws an error if the received value is not positive.
- *
+ * @description Asserts that a number value is positive (greater than zero).
+ * @returns {RequiredValidation} A validation function that takes a received number and an exception context.
+ * @throws {ValidationError} if the received value is not positive.
  * @example
  * const schema = number().custom(positive());
- * parseSchema(schema, 10);  // Valid
- * parseSchema(schema, 0);  // Throws an error: 'The received value is not a positive number'
- * parseSchema(schema, -5); // Throws an error: 'The received value is not a positive number'
+ * parseOrFail(schema, 10);  // Valid
+ * parseOrFail(schema, 0);  // Throws an error: 'The received value is not a positive number'
+ * parseOrFail(schema, -5); // Throws an error: 'The received value is not a positive number'
+ *
+ * @translation Error Translation Key = 'n:positive'
  */
-export const positive = (): RequiredValidation => (received: number, pathToError: string) => {
-  if (received <= 0) throwException('positive', received, pathToError, 'The received value is not a positive number');
+export const positive = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
+  if (received <= 0) guardException('positive', received, ctx, positiveErrorMessage);
 };
+
+positive.key = positiveErrorKey;
+positive.message = positiveErrorMessage;
+setToDefaultLocale(positive);

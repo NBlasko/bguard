@@ -1,5 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { parseSchema } from '../parseSchema';
+import { parseOrFail } from '../parseOrFail';
 import { regExp } from '../asserts/string/regExp';
 import { InferType } from '../';
 import { string } from '../asserts/string';
@@ -13,7 +13,7 @@ describe('StringSchema', () => {
     // eslint-disable-next-line @typescript-eslint/no-inferrable-types
     const actualString: string = 'this is a string';
     expectEqualTypes<typeof actualString, InferType<typeof stringSchema>>(true);
-    const parsedValue = parseSchema(stringSchema, actualString);
+    const parsedValue = parseOrFail(stringSchema, actualString);
     expect(parsedValue).toBe(actualString);
   });
 
@@ -22,7 +22,7 @@ describe('StringSchema', () => {
     // eslint-disable-next-line @typescript-eslint/no-inferrable-types
     const actualNumber: number = 9;
     expectEqualTypes<typeof actualNumber, InferType<typeof stringSchema>>(false);
-    expect(() => parseSchema(stringSchema, actualNumber)).toThrow('Invalid type of data');
+    expect(() => parseOrFail(stringSchema, actualNumber)).toThrow('Invalid type of data');
   });
 
   it('should be an email', () => {
@@ -30,7 +30,7 @@ describe('StringSchema', () => {
     // eslint-disable-next-line @typescript-eslint/no-inferrable-types
     const email: string = 'mygoodemail@email.com';
     expectEqualTypes<typeof email, InferType<typeof emailSchema>>(true);
-    const parsedValue = parseSchema(emailSchema, email);
+    const parsedValue = parseOrFail(emailSchema, email);
     expect(parsedValue).toBe(email);
   });
 
@@ -39,7 +39,7 @@ describe('StringSchema', () => {
     // eslint-disable-next-line @typescript-eslint/no-inferrable-types
     const email: string = 'mybademailemail.com';
     expectEqualTypes<typeof email, InferType<typeof emailSchema>>(true);
-    expect(() => parseSchema(emailSchema, email)).toThrow(
+    expect(() => parseOrFail(emailSchema, email)).toThrow(
       'The received value does not match the required text pattern',
     );
   });
@@ -51,7 +51,7 @@ describe('StringSchema', () => {
     expectEqualTypes<typeof rightStringLiteral, InferType<typeof stringLiteralSchema>>(true);
     expectEqualTypes<typeof wrongStringLiteral, InferType<typeof stringLiteralSchema>>(false);
     expect(rightStringLiteral).toBe(rightStringLiteral);
-    expect(() => parseSchema(stringLiteralSchema, wrongStringLiteral)).toThrow(
+    expect(() => parseOrFail(stringLiteralSchema, wrongStringLiteral)).toThrow(
       'The received value is not equal to expected',
     );
   });
@@ -59,8 +59,8 @@ describe('StringSchema', () => {
   it('should be an alphanumeric pattern', () => {
     const alphanumericSchema = string().custom(regExp(/^[A-Za-z0-9]+$/));
     expectEqualTypes<string, InferType<typeof alphanumericSchema>>(true);
-    expect(parseSchema(alphanumericSchema, 'valid123')).toBe('valid123');
-    expect(() => parseSchema(alphanumericSchema, 'invalid!@#')).toThrow(
+    expect(parseOrFail(alphanumericSchema, 'valid123')).toBe('valid123');
+    expect(() => parseOrFail(alphanumericSchema, 'invalid!@#')).toThrow(
       'The received value does not match the required text pattern',
     );
   });
@@ -68,8 +68,16 @@ describe('StringSchema', () => {
   it('should be an alphanumeric pattern', () => {
     const textSchema = string().custom(maxLength(5));
     expectEqualTypes<string, InferType<typeof textSchema>>(true);
-    expect(parseSchema(textSchema, 'short')).toBe('short');
-    expect(parseSchema(textSchema, 'yes')).toBe('yes');
-    expect(() => parseSchema(textSchema, 'toolong')).toThrow('The received value length is greater than expected');
+    expect(parseOrFail(textSchema, 'short')).toBe('short');
+    expect(parseOrFail(textSchema, 'yes')).toBe('yes');
+    expect(() => parseOrFail(textSchema, 'toolong')).toThrow('The received value length is greater than expected');
+  });
+
+  it('should be equal to one of provided values', () => {
+    const textSchema = string().oneOfValues(['foo', 'bar']);
+    expectEqualTypes<'foo' | 'bar', InferType<typeof textSchema>>(true);
+    expect(parseOrFail(textSchema, 'foo')).toBe('foo');
+    expect(parseOrFail(textSchema, 'bar')).toBe('bar');
+    expect(() => parseOrFail(textSchema, 'baz')).toThrow('The received value is not equal to expected');
   });
 });

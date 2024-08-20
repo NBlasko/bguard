@@ -13,8 +13,8 @@ import { ObjectSchema, WithObject } from '../../schemas/ObjectSchema';
  *   name: string(),
  *   age: number()
  * });
- * parseSchema(schema, { name: 'John', age: 30 }); // Validates successfully
- * parseSchema(schema, { name: 'John', age: '30' }); // Throws a validation error
+ * parseOrFail(schema, { name: 'John', age: 30 }); // Validates successfully
+ * parseOrFail(schema, { name: 'John', age: '30' }); // Throws a validation error
  */
 export function object<T extends ObjectShapeSchemaType>(shapeSchema: T): WithObject<T> {
   return new ObjectSchema({ type: [], requiredValidations: [] }, shapeSchema) as WithObject<T>;

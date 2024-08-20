@@ -1,20 +1,28 @@
-import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { guardException } from '../../exceptions';
+import { setToDefaultLocale } from '../../translationMap';
+
+const regExpErrorMessage = 'The received value does not match the required text pattern';
+const regExpErrorKey = 's:regExp';
 
 /**
- * Asserts that a string value matches a specified regular expression pattern.
- *
- * @param {RegExp} expected - The regular expression pattern that the string value should match.
- * @returns {RequiredValidation} - A validation function that takes a received string and a path to the error message. Throws an error if the received value does not match the expected pattern.
- *
+ * @description Asserts that a string value matches a specified regular expression pattern.
+ * @param {RegExp} expected The regular expression pattern that the string value should match.
+ * @returns {RequiredValidation} A validation function that takes a received string and a path to the error message.
+ * @throws {ValidationError} if the received value does not match the expected pattern.
  * @example
  * const schema = string().custom(regExp(/^[A-Za-z0-9]+$/)); // Validates against alphanumeric pattern
- * parseSchema(schema, 'valid123'); // Valid
- * parseSchema(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
+ * parseOrFail(schema, 'valid123');   // Valid
+ * parseOrFail(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
+ *
+ * @translation Error Translation Key = 's:regExp'
  */
 export const regExp =
   (expected: RegExp): RequiredValidation =>
-  (received: string, pathToError: string) => {
-    if (!expected.test(received))
-      throwException(expected, received, pathToError, 'The received value does not match the required text pattern');
+  (received: string, ctx: ExceptionContext) => {
+    if (!expected.test(received)) guardException(expected, received, ctx, regExpErrorMessage);
   };
+
+regExp.key = regExpErrorKey;
+regExp.message = regExpErrorMessage;
+setToDefaultLocale(regExp);

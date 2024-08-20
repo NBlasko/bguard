@@ -1,10 +1,8 @@
-import { ctxSymbol } from '../core';
+import { PrimitiveType, RequiredValidation } from '../commonTypes';
+import { ctxSymbol } from '../helpers/core';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RequiredValidation = (received: any, pathToError: string) => void;
 export type ObjectShapeSchemaType = Record<string, CommonSchema>;
 
-export type PrimitiveType = 'number' | 'string' | 'boolean' | 'undefined' | 'object' | 'function' | 'symbol' | 'bigint';
 export interface ValidatorContext {
   type: PrimitiveType[];
   isNullable?: boolean;
@@ -12,6 +10,9 @@ export interface ValidatorContext {
   requiredValidations: RequiredValidation[];
   array?: CommonSchema;
   object?: ObjectShapeSchemaType;
+  allowUnrecognizedObjectProps?: boolean;
+  strictType?: boolean;
+  strictTypeValue?: unknown;
 }
 
 export class CommonSchema {

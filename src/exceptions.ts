@@ -1,3 +1,5 @@
+import type { ExceptionContext } from './commonTypes';
+
 export class ValidationError extends Error {
   expected: unknown;
   received: unknown;
@@ -14,6 +16,32 @@ export class ValidationError extends Error {
 
 export class BuildSchemaError extends Error {}
 
-export function throwException(expected: unknown, received: unknown, pathToError: string, message: string): never {
-  throw new ValidationError(expected, received, pathToError, message);
+function replacePlaceholders(template: string, replacements: Record<string, unknown>): string {
+  const regex = /{{(.*?)}}/g;
+  return template.replace(regex, (_, key) => {
+    const vvv = key in replacements ? `${replacements[key] as string}` : `{{${key}}}`;
+    return vvv;
+  });
+}
+
+export function guardException(
+  expected: unknown,
+  received: unknown,
+  ctx: ExceptionContext,
+  messageKey: string,
+): never | void {
+  const rawMessage = ctx.t[messageKey] ?? messageKey;
+  const message = replacePlaceholders(rawMessage, { e: expected, r: received, p: ctx.pathToError });
+
+  if (ctx.getAllErrors) {
+    ctx.errors.push({
+      expected,
+      received,
+      pathToError: ctx.pathToError,
+      message,
+    });
+
+    return;
+  }
+  throw new ValidationError(expected, received, ctx.pathToError, message);
 }

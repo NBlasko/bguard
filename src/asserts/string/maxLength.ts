@@ -1,20 +1,28 @@
-import { throwException } from '../../exceptions';
-import type { RequiredValidation } from '../../schemas/CommonSchema';
+import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { setToDefaultLocale } from '../../translationMap';
+
+const maxLengthErrorMessage = 'The received value length is greater than expected';
+const maxLengthErrorKey = 's:maxLength';
 
 /**
- * Asserts that the length of a string value is not greater than a specified maximum length.
- *
- * @param {number} expected - The maximum allowed length for the string.
- * @returns {RequiredValidation} - A validation function that takes a received string and a path to the error message. Throws an error if the length of the received value is greater than the expected length.
- *
+ * @description Asserts that the length of a string value is not greater than a specified maximum length.
+ * @param {number} expected The maximum allowed length for the string.
+ * @returns {RequiredValidation} A validation function that takes a received string and a path to the error message.
+ * @throws {ValidationError} if the length of the received value is greater than the expected length.
  * @example
  * const schema = string().custom(maxLength(10));
- * parseSchema(schema, 'short');   // Valid
- * parseSchema(schema, 'this is a very long string'); // Throws an error: 'The received value length is greater than expected'
+ * parseOrFail(schema, 'short');   // Valid
+ * parseOrFail(schema, 'this is a very long string'); // Throws an error: 'The received value length is greater than expected'
+ *
+ * @translation Error Translation Key = 's:maxLength'
  */
 export const maxLength =
   (expected: number): RequiredValidation =>
-  (received: string, pathToError: string) => {
-    if (received.length > expected)
-      throwException(expected, received, pathToError, 'The received value length is greater than expected');
+  (received: string, ctx: ExceptionContext) => {
+    if (received.length > expected) guardException(expected, received, ctx, maxLengthErrorMessage);
   };
+
+maxLength.key = maxLengthErrorKey;
+maxLength.message = maxLengthErrorMessage;
+setToDefaultLocale(maxLength);

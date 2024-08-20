@@ -1,5 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { InferType, object, boolean, string, number, array, parseSchema, BuildSchemaError, ValidationError } from '../';
+import { InferType, object, boolean, string, number, array, parseOrFail, BuildSchemaError, ValidationError } from '../';
 import { minLength } from '../asserts/string/minLength';
 import { email } from '../asserts/string/email';
 
@@ -14,11 +14,11 @@ describe('ObjectSchema', () => {
     };
     expectEqualTypes<MyObjectWithNumbers, InferType<typeof objectWithNumbersSchema>>(true);
     const myObject = { foo: 5 };
-    expect(parseSchema(objectWithNumbersSchema, myObject)).toBe(myObject);
-    expect(() => parseSchema(objectWithNumbersSchema, 'not an object')).toThrow(
+    expect(parseOrFail(objectWithNumbersSchema, myObject)).toBe(myObject);
+    expect(() => parseOrFail(objectWithNumbersSchema, 'not an object')).toThrow(
       'Expected an object but received a different type',
     );
-    expect(() => parseSchema(objectWithNumbersSchema, 'not an object')).toThrow(ValidationError);
+    expect(() => parseOrFail(objectWithNumbersSchema, 'not an object')).toThrow(ValidationError);
   });
 
   it('should not build with missing parameters', () => {
@@ -54,12 +54,26 @@ describe('ObjectSchema', () => {
       },
       InferType<typeof objectSchema>
     >(true);
-    expect(() => parseSchema(objectSchema, ['foo', 'bar'])).toThrow(
+    expect(() => parseOrFail(objectSchema, ['foo', 'bar'])).toThrow(
       'Expected an object but received an array. Invalid type of data',
     );
   });
 
-  it('should not run with an invalid keys', () => {
+  it('should not run with an unrecognized keys', () => {
+    const objectSchema = object({ foo: string() }).allowUnrecognized();
+
+    expectEqualTypes<
+      {
+        foo: string;
+      },
+      InferType<typeof objectSchema>
+    >(true);
+    const receivedObject = { foo: 'recognized key', bar: 'unrecognized key' };
+    const result = parseOrFail(objectSchema, receivedObject);
+    expect(result).toBe(receivedObject);
+  });
+
+  it('should run with an unrecognized keys', () => {
     const objectSchema = object({ foo: string() });
 
     expectEqualTypes<
@@ -68,8 +82,8 @@ describe('ObjectSchema', () => {
       },
       InferType<typeof objectSchema>
     >(true);
-    expect(() => parseSchema(objectSchema, { foo: 'valid key foo', bar: 'invalid key bar' })).toThrow(
-      'This key is not allowed in the object',
+    expect(() => parseOrFail(objectSchema, { foo: 'recognized key', bar: 'unrecognized key' })).toThrow(
+      'This property is not allowed in the object',
     );
   });
 
@@ -83,7 +97,7 @@ describe('ObjectSchema', () => {
       },
       InferType<typeof objectSchema>
     >(true);
-    expect(() => parseSchema(objectSchema, { foo: 'valid key foo' })).toThrow(
+    expect(() => parseOrFail(objectSchema, { foo: 'valid key foo' })).toThrow(
       'Missing required property in the object',
     );
   });
@@ -123,7 +137,7 @@ describe('ObjectSchema', () => {
       verified: true,
     };
 
-    expect(parseSchema(userSchema, validUser)).toBe(validUser);
+    expect(parseOrFail(userSchema, validUser)).toBe(validUser);
 
     const userWithInvalidAddress: User = {
       email: 'foo@foo.com',
@@ -132,9 +146,15 @@ describe('ObjectSchema', () => {
       verified: true,
     };
 
-    expect(() => parseSchema(userSchema, userWithInvalidAddress)).toThrow(
-      'The received value length is less than expected',
-    );
+    try {
+      parseOrFail(userSchema, userWithInvalidAddress);
+      expect(true).toBe(false);
+    } catch (e) {
+      const err = e as ValidationError;
+      expect(err.pathToError).toBe('.address[0]');
+      expect(err.message).toBe('The received value length is less than expected');
+      expect(e instanceof ValidationError).toBeTruthy();
+    }
 
     const userWithInvalidEmail: User = {
       email: 'foofoo.com',
@@ -143,7 +163,7 @@ describe('ObjectSchema', () => {
       verified: true,
     };
 
-    expect(() => parseSchema(userSchema, userWithInvalidEmail)).toThrow(
+    expect(() => parseOrFail(userSchema, userWithInvalidEmail)).toThrow(
       'The received value does not match the required email pattern',
     );
   });

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { expectEqualTypes } from '../../jest/setup';
-import { parseSchema } from '../parseSchema';
+import { parseOrFail } from '../parseOrFail';
 import { InferType } from '../InferType';
 import { boolean } from '../asserts/boolean';
 
@@ -8,8 +8,8 @@ describe('BooleanSchema', () => {
   it('should be a boolean', () => {
     const booleanSchema = boolean();
     expectEqualTypes<boolean, InferType<typeof booleanSchema>>(true);
-    expect(parseSchema(booleanSchema, true)).toBe(true);
-    expect(parseSchema(booleanSchema, false)).toBe(false);
+    expect(parseOrFail(booleanSchema, true)).toBe(true);
+    expect(parseOrFail(booleanSchema, false)).toBe(false);
   });
 
   it('should not be a boolean', () => {
@@ -18,7 +18,7 @@ describe('BooleanSchema', () => {
     const actualNotBoolean: number = 9;
 
     expectEqualTypes<typeof actualNotBoolean, InferType<typeof booleanSchema>>(false);
-    expect(() => parseSchema(booleanSchema, actualNotBoolean)).toThrow('Invalid type of data');
+    expect(() => parseOrFail(booleanSchema, actualNotBoolean)).toThrow('Invalid type of data');
   });
 
   it('should be true', () => {
@@ -26,8 +26,8 @@ describe('BooleanSchema', () => {
 
     expectEqualTypes<true, InferType<typeof booleanSchema>>(true);
     expectEqualTypes<boolean, InferType<typeof booleanSchema>>(false);
-    expect(parseSchema(booleanSchema, true)).toBe(true);
-    expect(() => parseSchema(booleanSchema, false)).toThrow('The received value is not true');
+    expect(parseOrFail(booleanSchema, true)).toBe(true);
+    expect(() => parseOrFail(booleanSchema, false)).toThrow('The received value is not true');
   });
 
   it('should be false', () => {
@@ -35,8 +35,8 @@ describe('BooleanSchema', () => {
 
     expectEqualTypes<false, InferType<typeof booleanSchema>>(true);
     expectEqualTypes<boolean, InferType<typeof booleanSchema>>(false);
-    expect(parseSchema(booleanSchema, false)).toBe(false);
-    expect(() => parseSchema(booleanSchema, true)).toThrow('The received value is not false');
+    expect(parseOrFail(booleanSchema, false)).toBe(false);
+    expect(() => parseOrFail(booleanSchema, true)).toThrow('The received value is not false');
   });
 
   it('should have proper types', () => {
