@@ -1,8 +1,9 @@
-import { CommonSchema, ExceptionContext } from './CommonSchema';
+import { CommonSchema } from './CommonSchema';
 import { guardException } from '../exceptions';
+import { ExceptionContext } from '../commonTypes';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
-  if (received !== expected) guardException(expected, received, ctx, 'The received value is not {{e}}');
+  if (received !== expected) guardException(expected, received, ctx, 'c:isBoolean');
 };
 
 export class BooleanSchema extends CommonSchema {

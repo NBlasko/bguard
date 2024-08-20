@@ -1,6 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { parseOrFail } from '../parseOrFail';
-import { InferType, oneOfTypes } from '../';
+import { InferType, oneOfTypes, parseOrFail } from '../';
 
 describe('MixTypes', () => {
   it('should be a string or number', () => {

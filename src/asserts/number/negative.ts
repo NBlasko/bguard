@@ -1,15 +1,14 @@
 import { setToDefaultLocale } from '../../translationMap';
 import { guardException } from '../../exceptions';
-import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
+import { ExceptionContext, RequiredValidation } from '../../commonTypes';
 
 const negativeErrorMessage = 'The received value is not a negative number';
 const negativeErrorKey = 'n:negative';
 
 /**
- * @description - Asserts that a number value is negative (less than zero).
- *
- * @returns {RequiredValidation} - A validation function that takes a received number and a path to the error message. Throws an error if the received value is not negative.
- *
+ * @description Asserts that a number value is negative (less than zero).
+ * @returns {RequiredValidation} A validation function that takes a received number and an exception context.
+ * @throws {ValidationError} if the received value is not negative.
  * @example
  * const schema = number().custom(negative());
  * parseOrFail(schema, -10); // Valid
@@ -24,4 +23,4 @@ export const negative = (): RequiredValidation => (received: number, ctx: Except
 
 negative.key = negativeErrorKey;
 negative.message = negativeErrorMessage;
-setToDefaultLocale(negativeErrorKey, negativeErrorMessage);
+setToDefaultLocale(negative);

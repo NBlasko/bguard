@@ -1,31 +1,8 @@
+import { PrimitiveType, RequiredValidation } from '../commonTypes';
 import { ctxSymbol } from '../core';
-import { TranslationErrorMap } from '../translationMap';
 
-export interface ValidationErrorData {
-  message: string;
-  expected: unknown;
-  received: unknown;
-  pathToError: string;
-}
-
-export type ExceptionContext = {
-  pathToError: string;
-  t: TranslationErrorMap;
-} & (
-  | {
-      getAllErrors?: false;
-    }
-  | {
-      getAllErrors: true;
-      errors: ValidationErrorData[];
-    }
-);
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RequiredValidation = (received: any, ctx: ExceptionContext) => void;
 export type ObjectShapeSchemaType = Record<string, CommonSchema>;
 
-export type PrimitiveType = 'number' | 'string' | 'boolean' | 'undefined' | 'object' | 'function' | 'symbol' | 'bigint';
 export interface ValidatorContext {
   type: PrimitiveType[];
   isNullable?: boolean;

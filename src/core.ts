@@ -1,7 +1,8 @@
 export const ctxSymbol = Symbol('contextSymbol');
 
+import { ExceptionContext } from './commonTypes';
 import { guardException } from './exceptions';
-import type { CommonSchema, ExceptionContext } from './schemas/CommonSchema';
+import type { CommonSchema } from './schemas/CommonSchema';
 
 export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext) {
   const commonTmap = exCtx.t;

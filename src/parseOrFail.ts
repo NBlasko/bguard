@@ -1,9 +1,8 @@
-import { InferType } from './InferType';
+import type { InferType } from './InferType';
+import type { CommonSchema } from './schemas/CommonSchema';
 import { innerCheck } from './core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
-import { CommonSchema } from './schemas/CommonSchema';
-
 interface ParseOptions {
   /**
    * Set language keyword to map error messages.

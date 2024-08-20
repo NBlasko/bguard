@@ -1,7 +1,7 @@
-import { clearLocales } from '../translationMap';
 import { string } from '../asserts/string';
-import { ExceptionContext, RequiredValidation } from '../schemas/CommonSchema';
-import { guardException, setLocale, setToDefaultLocale, parse } from '..';
+import { guardException, parse } from '..';
+import { ExceptionContext, RequiredValidation } from '../commonTypes';
+import { clearLocales, setLocale, setToDefaultLocale } from '../translationMap';
 
 describe('parse', () => {
   const customEqual =
@@ -10,9 +10,12 @@ describe('parse', () => {
       if (expected !== received) guardException(expected, received, ctx, 'somethingEqual');
     };
 
+  customEqual.key = 'somethingEqual';
+  customEqual.message = 'Something Equal';
+
   beforeEach(() => {
     clearLocales();
-    setToDefaultLocale('somethingEqual', 'Something Equal');
+    setToDefaultLocale(customEqual);
   });
 
   it('should return an array of errors with length 1', () => {

@@ -2,7 +2,8 @@ import { InferType } from './InferType';
 import { innerCheck } from './core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
-import { CommonSchema, ExceptionContext, ValidationErrorData } from './schemas/CommonSchema';
+import { CommonSchema } from './schemas/CommonSchema';
+import { ExceptionContext, ValidationErrorData } from './commonTypes';
 
 interface ParseOptions {
   /**
@@ -12,7 +13,7 @@ interface ParseOptions {
    */
   lng?: string;
 
-   /**
+  /**
    * If true, collects all validation errors and returns them.
    * If false or undefined, returns the first validation error it can find and stops looking,
    * which provides a small runtime optimization.

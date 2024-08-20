@@ -1,16 +1,15 @@
 import { setToDefaultLocale } from '../../translationMap';
 import { guardException } from '../../exceptions';
-import type { ExceptionContext, RequiredValidation } from '../../schemas/CommonSchema';
+import { ExceptionContext, RequiredValidation } from '../../commonTypes';
 
 const maxErrorMessage = 'The received value is greater than expected';
 const maxErrorKey = 'n:max';
 
 /**
  * @description Asserts that a number value does not exceed a specified maximum value.
- *
  * @param {number} expected The maximum allowable value.
- * @returns {RequiredValidation} A validation function that takes a received number and a path to the error message. Throws an error if the received value exceeds the expected maximum value.
- *
+ * @returns {RequiredValidation} A validation function that takes a received number and an exception context.
+ * @throws {ValidationError} if the received value exceeds the expected maximum value.
  * @example
  * const schema = number().custom(max(100));
  * parseOrFail(schema, 99);  // Valid
@@ -27,4 +26,4 @@ export const max =
 
 max.key = maxErrorKey;
 max.message = maxErrorMessage;
-setToDefaultLocale(maxErrorKey, maxErrorMessage);
+setToDefaultLocale(max);

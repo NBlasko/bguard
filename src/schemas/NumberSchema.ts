@@ -1,5 +1,4 @@
 import { equalTo } from '../asserts/mix/equalTo';
-
 import { CommonSchema } from './CommonSchema';
 
 export class NumberSchema extends CommonSchema {

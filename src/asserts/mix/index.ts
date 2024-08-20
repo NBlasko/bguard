@@ -1,4 +1,5 @@
-import { CommonSchema, MapMixTypes, PrimitiveType, WithMix } from '../../schemas/CommonSchema';
+import { PrimitiveType } from '../../commonTypes';
+import { CommonSchema, MapMixTypes, WithMix } from '../../schemas/CommonSchema';
 
 /**
  * Creates a new schema for validating values that can match any one of the specified primitive types.

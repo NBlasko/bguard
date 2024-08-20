@@ -1,19 +1,9 @@
-import { BuildSchemaError } from '.';
+import { BuildSchemaError } from './exceptions';
+import { RequiredValidation, TranslationErrorMap } from './commonTypes';
 
 // c: stands for common
-export interface TranslationErrorMap {
-  'c:optional': string;
-  'c:nullable': string;
-  'c:array': string;
-  'c:objectType': string;
-  'c:objectTypeAsArray': string;
-  'c:unrecognizedProperty': string;
-  'c:requiredProperty': string;
-  'c:invalidType': string;
-  [val: string]: string;
-}
-
 const defaultErrorMap: TranslationErrorMap = {
+  //@@start
   'c:optional': 'The required value is missing',
   'c:nullable': 'Value should not be null',
   'c:array': 'Expected an array but received a different type',
@@ -22,20 +12,30 @@ const defaultErrorMap: TranslationErrorMap = {
   'c:unrecognizedProperty': 'This property is not allowed in the object',
   'c:requiredProperty': 'Missing required property in the object',
   'c:invalidType': 'Invalid type of data',
+  'c:isBoolean': 'The received value is not {{e}}',
+  //@@end
 };
 
 let data: Record<string, Record<string, string>> = {
   default: { ...defaultErrorMap },
 };
 
-export function setToDefaultLocale(messageKey: string, messageValue: string) {
+export function setToDefaultLocale({
+  key,
+  message,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (expected: any): RequiredValidation;
+  key: string;
+  message: string;
+}) {
   const defaultLocale = data.default!;
-  if (defaultLocale[messageKey]) throw new BuildSchemaError('Duplicate default message key');
-  defaultLocale[messageKey] = messageValue;
+  if (defaultLocale[key]) throw new BuildSchemaError('Duplicate default message key');
+  defaultLocale[key] = message;
 }
 
 export function setLocale(lng: string, custom: Partial<TranslationErrorMap>) {
-  // TODO, baci gresku ako koriste lng === 'default'
+  if (lng === 'default') throw new BuildSchemaError('Invalid language');
   if (!data[lng]) data[lng] = { ...defaultErrorMap };
   const locale = data[lng]!;
   Object.entries(custom).forEach(([messageKey, messageValue]) => {

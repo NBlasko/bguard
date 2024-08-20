@@ -1,4 +1,4 @@
-import { ExceptionContext } from './schemas/CommonSchema';
+import type { ExceptionContext } from './commonTypes';
 
 export class ValidationError extends Error {
   expected: unknown;
