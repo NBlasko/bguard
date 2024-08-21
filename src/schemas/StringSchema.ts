@@ -1,10 +1,13 @@
 import { equalTo } from '../asserts/mix/equalTo';
 import { oneOfValues } from '../asserts/mix/oneOfValues';
+import { BuildSchemaError } from '../exceptions';
+import { ONLY_ONCE } from '../helpers/constants';
 import { _setStrictType } from '../helpers/setStrictType';
 import { CommonSchema } from './CommonSchema';
 
 export class StringSchema extends CommonSchema {
   _string = 1;
+  private limit: boolean | undefined;
 
   /**
    * Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
@@ -15,7 +18,10 @@ export class StringSchema extends CommonSchema {
    * @example - string().equalTo('hello'); // Infers the type 'hello'
    */
   equalTo<Y extends string>(expectedValue: Y): WithString<this, Y> {
+    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
+    this.limit = true;
     _setStrictType(this, `'${expectedValue}'`);
+
     return this.custom(equalTo(expectedValue)) as WithString<this, Y>;
   }
 
@@ -29,6 +35,8 @@ export class StringSchema extends CommonSchema {
    * string().oneOfValues(['foo', 'bar']); // Infers the type 'foo' | 'bar'
    */
   oneOfValues<Y extends string>(expectedValue: Y[]): WithString<this, Y> {
+    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
+    this.limit = true;
     _setStrictType(
       this,
       expectedValue.map((el) => `'${el}'`),

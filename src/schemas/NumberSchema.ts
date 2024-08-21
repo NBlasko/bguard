@@ -1,10 +1,13 @@
 import { equalTo } from '../asserts/mix/equalTo';
 import { oneOfValues } from '../asserts/mix/oneOfValues';
+import { BuildSchemaError } from '../exceptions';
+import { ONLY_ONCE } from '../helpers/constants';
 import { _setStrictType } from '../helpers/setStrictType';
 import { CommonSchema } from './CommonSchema';
 
 export class NumberSchema extends CommonSchema {
   _number = 1;
+  private limit: boolean | undefined;
 
   /**
    * Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
@@ -15,6 +18,8 @@ export class NumberSchema extends CommonSchema {
    * @example - number().equalTo(42); // Infers the type 42
    */
   equalTo<Y extends number>(expectedValue: Y): WithNumber<this, Y> {
+    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
+    this.limit = true;
     _setStrictType(this, expectedValue);
     return this.custom(equalTo(expectedValue)) as WithNumber<this, Y>;
   }
@@ -29,6 +34,8 @@ export class NumberSchema extends CommonSchema {
    * number().oneOfValues([5, 7]); // Infers the type 5 | 7
    */
   oneOfValues<Y extends number>(expectedValue: Y[]): WithNumber<this, Y> {
+    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
+    this.limit = true;
     _setStrictType(this, expectedValue);
     return this.custom(oneOfValues(expectedValue)) as WithNumber<this, Y>;
   }

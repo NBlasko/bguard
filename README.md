@@ -558,6 +558,97 @@ import { positive } from 'bguard/number/positive';
         
 #### string
         
+##### atLeastOneDigit (string)
+        
+```typescript
+import { atLeastOneDigit } from 'bguard/string/atLeastOneDigit';
+```
+        
+* _Description_ Asserts that a string value contains at least one digit.
+* _Throws_ {ValidationError} if the received value does not contain at least one digit.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneDigit());
+ parseOrFail(schema, 'abc123'); // Valid
+ parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one digit'
+```
+* _See_ Error Translation Key = 's:atLeastOneDigit'
+        
+        
+##### atLeastOneLowerChar (string)
+        
+```typescript
+import { atLeastOneLowerChar } from 'bguard/string/atLeastOneLowerChar';
+```
+        
+* _Description_ Asserts that a string value contains at least one lowercase character.
+* _Throws_ {ValidationError} if the received value does not contain at least one lowercase character.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneLowerChar());
+ parseOrFail(schema, 'abcDEF'); // Valid
+ parseOrFail(schema, 'ABCDEF'); // Throws an error: 'The received value does not contain at least one lowercase character'
+```
+* _See_ Error Translation Key = 's:atLeastOneLowerChar'
+        
+        
+##### atLeastOneSpecialChar (string)
+        
+```typescript
+import { atLeastOneSpecialChar } from 'bguard/string/atLeastOneSpecialChar';
+```
+        
+* _Description_ Asserts that a string value contains at least one special character.
+* _Param_ {string} [allowedSpecialChars=* '@!#%&()^~{}'] The string containing allowed special characters. Defaults to '*@!#%&()^~{}'.
+* _Throws_ {ValidationError} if the received value does not contain at least one of the allowed special characters.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneSpecialChar()); // Default special characters
+ parseOrFail(schema, 'abc!def'); // Valid
+ parseOrFail(schema, 'abcdef');  // Throws an error: 'The received value does not contain at least one special character'
+
+ const customSchema = string().custom(atLeastOneSpecialChar('@$')); // Custom special characters
+ parseOrFail(customSchema, 'abc@def'); // Valid
+ parseOrFail(customSchema, 'abcdef');  // Throws an error: 'The received value does not contain at least one special character'
+```
+* _See_ Error Translation Key = 's:atLeastOneSpecialChar'
+        
+        
+##### atLeastOneUpperChar (string)
+        
+```typescript
+import { atLeastOneUpperChar } from 'bguard/string/atLeastOneUpperChar';
+```
+        
+* _Description_ Asserts that a string value contains at least one uppercase character.
+* _Throws_ {ValidationError} if the received value does not contain at least one uppercase character.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneUpperChar());
+ parseOrFail(schema, 'abcDEF'); // Valid
+ parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one uppercase character'
+```
+* _See_ Error Translation Key = 's:atLeastOneUpperChar'
+        
+        
+##### contains (string)
+        
+```typescript
+import { contains } from 'bguard/string/contains';
+```
+        
+* _Description_ Asserts that a string value contains a specified substring.
+* _Param_ {string} substring The substring that must be present in the string value.
+* _Throws_ {ValidationError} if the received value does not contain the required substring.
+* _Example_
+```typescript
+ const schema = string().custom(contains('foo'));
+ parseOrFail(schema, 'foobar'); // Valid
+ parseOrFail(schema, 'bar'); // Throws an error: 'The received value does not contain the required substring'
+```
+* _See_ Error Translation Key = 's:contains'
+        
+        
 ##### email (string)
         
 ```typescript
@@ -573,6 +664,41 @@ import { email } from 'bguard/string/email';
  parseOrFail(schema, 'invalid-email');      // Throws an error: 'The received value does not match the required email pattern'
 ```
 * _See_ - Error Translation Key = 's:email'
+        
+        
+##### endsWith (string)
+        
+```typescript
+import { endsWith } from 'bguard/string/endsWith';
+```
+        
+* _Description_ Asserts that a string value ends with a specified substring.
+* _Param_ {string} substring The substring that the string value must end with.
+* _Throws_ {ValidationError} if the received value does not end with the required substring.
+* _Example_
+```typescript
+ const schema = string().custom(endsWith('bar'));
+ parseOrFail(schema, 'foobar'); // Valid
+ parseOrFail(schema, 'foofoo'); // Throws an error: 'The received value does not end with the required substring'
+```
+* _See_ Error Translation Key = 's:endsWith'
+        
+        
+##### lowerCase (string)
+        
+```typescript
+import { lowerCase } from 'bguard/string/lowerCase';
+```
+        
+* _Description_ Asserts that a string value is in lowercase.
+* _Throws_ {ValidationError} if the received value is not in lowercase.
+* _Example_
+```typescript
+ const schema = string().custom(lowerCase());
+ parseOrFail(schema, 'valid');   // Valid
+ parseOrFail(schema, 'Invalid'); // Throws an error: 'The received value is not in lowercase'
+```
+* _See_ Error Translation Key = 's:lowerCase'
         
         
 ##### maxLength (string)
@@ -627,6 +753,171 @@ import { regExp } from 'bguard/string/regExp';
  parseOrFail(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
 ```
 * _See_ Error Translation Key = 's:regExp'
+        
+        
+##### startsWith (string)
+        
+```typescript
+import { startsWith } from 'bguard/string/startsWith';
+```
+        
+* _Description_ Asserts that a string value starts with a specified substring.
+* _Param_ {string} substring The substring that the string value must start with.
+* _Throws_ {ValidationError} if the received value does not start with the required substring.
+* _Example_
+```typescript
+ const schema = string().custom(startsWith('foo'));
+ parseOrFail(schema, 'foobar'); // Valid
+ parseOrFail(schema, 'barfoo'); // Throws an error: 'The received value does not start with the required substring'
+```
+* _See_ Error Translation Key = 's:startsWith'
+        
+        
+##### upperCase (string)
+        
+```typescript
+import { upperCase } from 'bguard/string/upperCase';
+```
+        
+* _Description_ Asserts that a string value is entirely in uppercase.
+* _Throws_ {ValidationError} if the received value is not in uppercase.
+* _Example_
+```typescript
+ const schema = string().custom(upperCase());
+ parseOrFail(schema, 'VALID');    // Valid
+ parseOrFail(schema, 'INVALID');  // Throws an error: 'The received value is not in uppercase'
+ parseOrFail(schema, 'Valid');    // Throws an error: 'The received value is not in uppercase'
+```
+* _See_ Error Translation Key = 's:upperCase'
+        
+        
+##### uuid (string)
+        
+```typescript
+import { uuid } from 'bguard/string/uuid';
+```
+        
+* _Description_ Asserts that a string value matches the UUID format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID.
+* _Example_
+```typescript
+ const schema = string().custom(uuid());
+ parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Valid
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID'
+```
+* _See_ Error Translation Key = 's:uuid'
+        
+        
+##### uuidV1 (string)
+        
+```typescript
+import { uuidV1 } from 'bguard/string/uuidV1';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v1 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v1.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV1());
+ parseOrFail(schema, '550e8400-e29b-11d4-a716-446655440000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v1'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v1'
+```
+* _See_ Error Translation Key = 's:uuidV1'
+        
+        
+##### uuidV2 (string)
+        
+```typescript
+import { uuidV2 } from 'bguard/string/uuidV2';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v2 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v2.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV2());
+ parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-31d4-d716-446655440000'); // Throws an error: 'The received value is not a valid UUID v2'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v2'
+```
+* _See_ Error Translation Key = 's:uuidV2'
+        
+        
+##### uuidV3 (string)
+        
+```typescript
+import { uuidV3 } from 'bguard/string/uuidV3';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v3 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v3.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV3());
+ parseOrFail(schema, '550e8400-e29b-38d1-a456-426614174000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-28d1-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v3'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v3'
+```
+* _See_ Error Translation Key = 's:uuidV3'
+        
+        
+##### uuidV4 (string)
+        
+```typescript
+import { uuidV4 } from 'bguard/string/uuidV4';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v4 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v4.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV4());
+ parseOrFail(schema, '123e4567-e89b-42d3-a456-426614174000'); // Valid
+ parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+ parseOrFail(schema, '123e4567-e89b-a2d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+ parseOrFail(schema, '123e4567-e89b-42d3-c456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v4'
+```
+* _See_ Error Translation Key = 's:uuidV4'
+        
+        
+##### uuidV5 (string)
+        
+```typescript
+import { uuidV5 } from 'bguard/string/uuidV5';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v5 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v5.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV5());
+ parseOrFail(schema, '550e8400-e29b-51d4-a716-446655440000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-41d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v5'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v5'
+```
+* _See_ Error Translation Key = 's:uuidV5'
+        
+        
+##### validUrl (string)
+        
+```typescript
+import { validUrl } from 'bguard/string/validUrl';
+```
+        
+* _Description_ Asserts that the string value is a valid URL with optional protocol validation.
+* _Param_ {string} [protocol] The protocol that the URL must start with (e.g., 'http'). If not provided, any URL starting with 'http://' or 'https://' is considered valid.
+* _Throws_ {ValidationError} if the received value does not match the expected URL pattern.
+* _Example_
+```typescript
+ const schema = string().custom(validUrl()); // Validates any URL starting with 'http://' or 'https://'
+ parseOrFail(schema, 'http://example.com'); // Valid
+ parseOrFail(schema, 'https://example.com'); // Valid
+ parseOrFail(schema, 'ftp://example.com');   // Throws an error
+ parseOrFail(schema, 'http:example.com');    // Throws an error
+```
+* _See_ Error Translation Key = 's:url'
         
 ### Contributing
 Contributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.

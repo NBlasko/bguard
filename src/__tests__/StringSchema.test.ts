@@ -1,7 +1,7 @@
 import { expectEqualTypes } from '../../jest/setup';
 import { parseOrFail } from '../parseOrFail';
 import { regExp } from '../asserts/string/regExp';
-import { InferType } from '../';
+import { BuildSchemaError, InferType } from '../';
 import { string } from '../asserts/string';
 import { maxLength } from '../asserts/string/maxLength';
 
@@ -79,5 +79,18 @@ describe('StringSchema', () => {
     expect(parseOrFail(textSchema, 'foo')).toBe('foo');
     expect(parseOrFail(textSchema, 'bar')).toBe('bar');
     expect(() => parseOrFail(textSchema, 'baz')).toThrow('The received value is not equal to expected');
+  });
+
+  it('should fail to use equalTo or oneOfValues multiple times or in combination', () => {
+    const defaultErrorMessage =
+      "It is allowed to call either 'equalTo' or 'oneOfValues,' but only one of them, and only once.";
+    expect(() => string().equalTo('foo').oneOfValues(['foo', 'bar'])).toThrow(defaultErrorMessage);
+    expect(() => string().equalTo('foo').oneOfValues(['foo', 'bar'])).toThrow(BuildSchemaError);
+    expect(() => string().equalTo('foo').equalTo('foo')).toThrow(defaultErrorMessage);
+    expect(() => string().equalTo('foo').equalTo('foo')).toThrow(BuildSchemaError);
+    expect(() => string().oneOfValues(['foo', 'bar']).oneOfValues(['foo', 'bar'])).toThrow(defaultErrorMessage);
+    expect(() => string().oneOfValues(['foo', 'bar']).oneOfValues(['foo', 'bar'])).toThrow(BuildSchemaError);
+    expect(() => string().oneOfValues(['foo', 'bar']).equalTo('foo')).toThrow(defaultErrorMessage);
+    expect(() => string().oneOfValues(['foo', 'bar']).equalTo('foo')).toThrow(BuildSchemaError);
   });
 });
