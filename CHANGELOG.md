@@ -19,3 +19,9 @@
 - Rename parseSchema into parseOrFail
 - Added parse feature
 - Added error message translation feature
+
+## 0.1.1
+
+### Update docs and add more assertions
+
+- Update docs and add more assertions
