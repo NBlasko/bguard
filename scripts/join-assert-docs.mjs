@@ -56,7 +56,7 @@ const run = async () => {
   const translationCommonMap = await extractCommonTranslation();
   readmeStart = readmeStart.replace(/@@TRANSLATION_COMMON_MAP@@/, translationCommonMap).trim();
 
-  let textData = '### Custom Assert Documentation \n';
+  let textData = '\n### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} \n';
   const dirs = await fs.readdir(path.join('src/asserts'));
   for (const dir of dirs) {
     const files = await fs.readdir(path.join('src/asserts', dir));
