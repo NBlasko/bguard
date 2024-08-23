@@ -78,9 +78,7 @@ type StudentSchema = {
 
 ```
 
-
 #### Generating TypeScript Types with `codeGen`
-
 
 If you prefer to generate TypeScript types as a string, you can use the `codeGen` function:
 
@@ -112,6 +110,7 @@ This would output a string:
   verified?: boolean | undefined;
 }
 ```
+
 Note: The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
 
 #### Generating Named TypeScript Types with `codeGenWithName`
@@ -133,7 +132,6 @@ console.log(namedTypeString);
 
 This would output a string:
 
-
 ```typeScript
 type StudentSchema = {
   email?: string | undefined;
@@ -147,12 +145,12 @@ type StudentSchema = {
   verified?: boolean | undefined;
 }
 ```
+
 #### Summary:
 
 `codeGen(schema: CommonSchema): string` - Generates a string of the TypeScript type based on the schema. You need to manually add a type name and assignment if needed.
 
 `codeGenWithName(typeName: string, schema: CommonSchema): string` - Generates a complete TypeScript type definition string, including the type keyword and type name.
-
 
 ### Validating Data
 
@@ -188,14 +186,11 @@ const invalidStudentData = {
   ],
   email: 'invalid-example',
 };
-
 ```
-
 
 #### `parse` Method
 
 The `parse` method validates the data and returns a tuple containing errors and the parsed value. This method allows you to choose whether to collect all errors or stop at the first error using an options flag.
-
 
 **Syntax:**
 
@@ -235,16 +230,18 @@ try {
   console.error(error.message); // Logs the first validation error message, if any
 }
 ```
+
 Throws:
+
 - `ValidationError`: If any validation rule fails, this error is thrown with details of the first encountered error.
 
 Options:
-- `lng`: Specifies the language for error messages. Default is `'default'`.
 
+- `lng`: Specifies the language for error messages. Default is `'default'`.
 
 ####
 
-### Explanation
+Explanation
 
 - **`parse` Method**: This method returns a tuple where the first element is an array of validation errors (if any), and the second element is the successfully parsed value (or `undefined` if errors exist). It allows collecting all errors by setting the `getAllErrors` flag.
 
@@ -276,9 +273,12 @@ const schema = string().nullable().optional();
   `boolean().onlyTrue()` will infer <b>true</b> as the type.
   `boolean().onlyFalse()` will infer <b>false</b> as the type.
 
-### Custom Assertions
+### Custom (Library Built-in) Assertions
 
-You can extend the validation with custom assertions:
+The `custom` method allows you to extend the validation schema with additional asserts. These asserts can either be user-defined or selected from the comprehensive set provided by the library. This flexibility ensures that you can tailor validations to meet specific requirements beyond the standard methods available.
+All built-in asserts are documented in the [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) section.
+
+Example
 
 ```typeScript
 import { min } from 'bguard/number/min';
@@ -287,10 +287,53 @@ import { max } from 'bguard/number/max';
 const ageSchema = number().custom(min(18), max(120));
 ```
 
-Assertions are imported from specific paths for better tree-shaking and smaller bundle sizes.
+Library built-in assertions are imported from specific paths for better tree-shaking and smaller bundle sizes.
 
+### Create Custom Assertions
 
-### Translation
+Bguard allows developers to create custom validation functions that can be integrated seamlessly with the library's existing functionality. Below is a detailed example demonstrating how to create a custom validation function, `minLength`, and how to properly document and map error messages for translations.
+
+Example: Creating a `minLength` Custom Validation
+
+```typescript
+import { guardException } from 'bguard/exceptions';
+import { ExceptionContext, RequiredValidation } from 'bguard/commonTypes';
+import { setToDefaultLocale } from 'bguard/translationMap';
+
+const minLengthErrorMessage = 'The received value {{r}} is shorter than the expected length {{e}}';
+const minLengthErrorKey = 'customPrefix:minLength';
+
+export const minLength =
+  (expected: number): RequiredValidation =>
+  (received: string, ctx: ExceptionContext) => {
+    if (received.length < expected) {
+      guardException(expected, received, ctx, minLengthErrorKey);
+    }
+  };
+
+minLength.key = minLengthErrorKey;
+minLength.message = minLengthErrorMessage;
+setToDefaultLocale(minLength);
+```
+
+Explanation
+
+- Error Key (`minLength.key`): This key (`'customPrefix:minLength'`) uniquely identifies the validation and is used for mapping error messages, especially when supporting multiple languages. It's essential to avoid collisions with built-in assertions, which use prefixes like `s:`, `n:`, and `b:` etc. More on that in [Common and Custom Translations](#common_and_custom_translations).
+
+- Error Message (`minLength.message`): The message supports [interpolation](#translation), where `{{e}}` will be replaced by the expected value, and `{{r}}` will be replaced by the received value during validation .
+
+- Exception Handling (`guardException`): This function is responsible for throwing the error when the validation fails. The `ctx` parameter must be passed to ensure the internal logic of the application works correctly.
+
+- Localization Support (`setToDefaultLocale`): This function registers the default error message with its associated key. If you later decide to support multiple languages, you can easily map this key to different messages.
+
+- Key Points for Developers:
+
+  1. Always create unique error keys for custom validations to avoid potential conflicts with Bguard's built-in validations.
+  2. Custom validations should use prefixes other than `s:`, `n:`, `b:`, and similar ones reserved for Bguard's internal validations.
+  3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
+     For single-language applications, you can override the default message by directly passing your custom message to `guardException`.
+
+### Translation {#translation}
 
 Bguard provides default translations for error messages, but you can customize them as needed. Each potential error has an `errorKey` and `errorMessage`.
 
@@ -319,18 +362,16 @@ setLocale('SR', {
   // ... continue adding other translations
 });
 ```
+
 With this setup, in the translation namespace 'SR', if the received value is 4, you'll get an error message like:
 
 `'The received value 4 found on path .foo is less than expected value 5'`
 
- - `{{r}}` - Replaced with the received value.
- - `{{p}}` - Replaced with the path to the error.
- - `{{e}}` - Replaced with the expected value.
-
+- `{{r}}` - Replaced with the received value.
+- `{{p}}` - Replaced with the path to the error.
+- `{{e}}` - Replaced with the expected value.
 
 > **Notice:** Do not overwrite the 'default' namespace. If a translation is missing, it will fall back to the 'default' translation.
-
-
 
 #### Using Translations
 
@@ -342,8 +383,7 @@ parseOrFail(testSchema, { foo: 4 }, { lng: 'SR' });
 parse(testSchema, { foo: 4 }, { lng: 'SR' });
 ```
 
-
-#### Common and Custom Translations
+#### Common and Custom Translations {#common_and_custom_translations}
 
 We have two sets of translations: common errors and specific assertions.
 
@@ -365,7 +405,7 @@ We have two sets of translations: common errors and specific assertions.
 
 For custom assertions, each key and message are located in separate files for better code splitting. There are multiple ways to identify a key:
 
-1. Key Construction:
+<b>1.</b> Key Construction:
 Keys are constructed as `'{typeId}:{functionName}'`, where `typeId` represents:
 
 - c - common
@@ -386,9 +426,10 @@ Example:
 ```typeScript
 import { maxLength } from 'bguard/string/maxLength';
 ```
+
 The function located in `'bguard/string/maxLength'` will have the key `'s:maxLength'`.
 
-2. Assertion Function Properties:
+<b>2.</b> Assertion Function Properties:
 
 Each assert function has two additional properties: `key` and `message`.
 
@@ -398,10 +439,12 @@ import { maxLength } from 'bguard/string/maxLength';
 console.log(maxLength.key); // Output: 's:maxLength'
 console.log(maxLength.message); // Output: 'The received value length is greater than expected'
 ```
+
 > **Notice:** Do not directly change these values.
 
-3. IDE Support:
-Each key and message will be visible in text editors that support JSDoc IntelliSense.### Custom Assert Documentation 
+<b>3.</b> IDE Support:
+Each key and message will be visible in text editors that support JSDoc IntelliSense.
+### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} 
 
 #### mix
         
@@ -558,6 +601,97 @@ import { positive } from 'bguard/number/positive';
         
 #### string
         
+##### atLeastOneDigit (string)
+        
+```typescript
+import { atLeastOneDigit } from 'bguard/string/atLeastOneDigit';
+```
+        
+* _Description_ Asserts that a string value contains at least one digit.
+* _Throws_ {ValidationError} if the received value does not contain at least one digit.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneDigit());
+ parseOrFail(schema, 'abc123'); // Valid
+ parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one digit'
+```
+* _See_ Error Translation Key = 's:atLeastOneDigit'
+        
+        
+##### atLeastOneLowerChar (string)
+        
+```typescript
+import { atLeastOneLowerChar } from 'bguard/string/atLeastOneLowerChar';
+```
+        
+* _Description_ Asserts that a string value contains at least one lowercase character.
+* _Throws_ {ValidationError} if the received value does not contain at least one lowercase character.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneLowerChar());
+ parseOrFail(schema, 'abcDEF'); // Valid
+ parseOrFail(schema, 'ABCDEF'); // Throws an error: 'The received value does not contain at least one lowercase character'
+```
+* _See_ Error Translation Key = 's:atLeastOneLowerChar'
+        
+        
+##### atLeastOneSpecialChar (string)
+        
+```typescript
+import { atLeastOneSpecialChar } from 'bguard/string/atLeastOneSpecialChar';
+```
+        
+* _Description_ Asserts that a string value contains at least one special character.
+* _Param_ {string} [allowedSpecialChars=* '@!#%&()^~{}'] The string containing allowed special characters. Defaults to '*@!#%&()^~{}'.
+* _Throws_ {ValidationError} if the received value does not contain at least one of the allowed special characters.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneSpecialChar()); // Default special characters
+ parseOrFail(schema, 'abc!def'); // Valid
+ parseOrFail(schema, 'abcdef');  // Throws an error: 'The received value does not contain at least one special character'
+
+ const customSchema = string().custom(atLeastOneSpecialChar('@$')); // Custom special characters
+ parseOrFail(customSchema, 'abc@def'); // Valid
+ parseOrFail(customSchema, 'abcdef');  // Throws an error: 'The received value does not contain at least one special character'
+```
+* _See_ Error Translation Key = 's:atLeastOneSpecialChar'
+        
+        
+##### atLeastOneUpperChar (string)
+        
+```typescript
+import { atLeastOneUpperChar } from 'bguard/string/atLeastOneUpperChar';
+```
+        
+* _Description_ Asserts that a string value contains at least one uppercase character.
+* _Throws_ {ValidationError} if the received value does not contain at least one uppercase character.
+* _Example_
+```typescript
+ const schema = string().custom(atLeastOneUpperChar());
+ parseOrFail(schema, 'abcDEF'); // Valid
+ parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one uppercase character'
+```
+* _See_ Error Translation Key = 's:atLeastOneUpperChar'
+        
+        
+##### contains (string)
+        
+```typescript
+import { contains } from 'bguard/string/contains';
+```
+        
+* _Description_ Asserts that a string value contains a specified substring.
+* _Param_ {string} substring The substring that must be present in the string value.
+* _Throws_ {ValidationError} if the received value does not contain the required substring.
+* _Example_
+```typescript
+ const schema = string().custom(contains('foo'));
+ parseOrFail(schema, 'foobar'); // Valid
+ parseOrFail(schema, 'bar'); // Throws an error: 'The received value does not contain the required substring'
+```
+* _See_ Error Translation Key = 's:contains'
+        
+        
 ##### email (string)
         
 ```typescript
@@ -573,6 +707,41 @@ import { email } from 'bguard/string/email';
  parseOrFail(schema, 'invalid-email');      // Throws an error: 'The received value does not match the required email pattern'
 ```
 * _See_ - Error Translation Key = 's:email'
+        
+        
+##### endsWith (string)
+        
+```typescript
+import { endsWith } from 'bguard/string/endsWith';
+```
+        
+* _Description_ Asserts that a string value ends with a specified substring.
+* _Param_ {string} substring The substring that the string value must end with.
+* _Throws_ {ValidationError} if the received value does not end with the required substring.
+* _Example_
+```typescript
+ const schema = string().custom(endsWith('bar'));
+ parseOrFail(schema, 'foobar'); // Valid
+ parseOrFail(schema, 'foofoo'); // Throws an error: 'The received value does not end with the required substring'
+```
+* _See_ Error Translation Key = 's:endsWith'
+        
+        
+##### lowerCase (string)
+        
+```typescript
+import { lowerCase } from 'bguard/string/lowerCase';
+```
+        
+* _Description_ Asserts that a string value is in lowercase.
+* _Throws_ {ValidationError} if the received value is not in lowercase.
+* _Example_
+```typescript
+ const schema = string().custom(lowerCase());
+ parseOrFail(schema, 'valid');   // Valid
+ parseOrFail(schema, 'Invalid'); // Throws an error: 'The received value is not in lowercase'
+```
+* _See_ Error Translation Key = 's:lowerCase'
         
         
 ##### maxLength (string)
@@ -627,6 +796,171 @@ import { regExp } from 'bguard/string/regExp';
  parseOrFail(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
 ```
 * _See_ Error Translation Key = 's:regExp'
+        
+        
+##### startsWith (string)
+        
+```typescript
+import { startsWith } from 'bguard/string/startsWith';
+```
+        
+* _Description_ Asserts that a string value starts with a specified substring.
+* _Param_ {string} substring The substring that the string value must start with.
+* _Throws_ {ValidationError} if the received value does not start with the required substring.
+* _Example_
+```typescript
+ const schema = string().custom(startsWith('foo'));
+ parseOrFail(schema, 'foobar'); // Valid
+ parseOrFail(schema, 'barfoo'); // Throws an error: 'The received value does not start with the required substring'
+```
+* _See_ Error Translation Key = 's:startsWith'
+        
+        
+##### upperCase (string)
+        
+```typescript
+import { upperCase } from 'bguard/string/upperCase';
+```
+        
+* _Description_ Asserts that a string value is entirely in uppercase.
+* _Throws_ {ValidationError} if the received value is not in uppercase.
+* _Example_
+```typescript
+ const schema = string().custom(upperCase());
+ parseOrFail(schema, 'VALID');    // Valid
+ parseOrFail(schema, 'INVALID');  // Throws an error: 'The received value is not in uppercase'
+ parseOrFail(schema, 'Valid');    // Throws an error: 'The received value is not in uppercase'
+```
+* _See_ Error Translation Key = 's:upperCase'
+        
+        
+##### uuid (string)
+        
+```typescript
+import { uuid } from 'bguard/string/uuid';
+```
+        
+* _Description_ Asserts that a string value matches the UUID format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID.
+* _Example_
+```typescript
+ const schema = string().custom(uuid());
+ parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Valid
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID'
+```
+* _See_ Error Translation Key = 's:uuid'
+        
+        
+##### uuidV1 (string)
+        
+```typescript
+import { uuidV1 } from 'bguard/string/uuidV1';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v1 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v1.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV1());
+ parseOrFail(schema, '550e8400-e29b-11d4-a716-446655440000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v1'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v1'
+```
+* _See_ Error Translation Key = 's:uuidV1'
+        
+        
+##### uuidV2 (string)
+        
+```typescript
+import { uuidV2 } from 'bguard/string/uuidV2';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v2 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v2.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV2());
+ parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-31d4-d716-446655440000'); // Throws an error: 'The received value is not a valid UUID v2'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v2'
+```
+* _See_ Error Translation Key = 's:uuidV2'
+        
+        
+##### uuidV3 (string)
+        
+```typescript
+import { uuidV3 } from 'bguard/string/uuidV3';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v3 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v3.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV3());
+ parseOrFail(schema, '550e8400-e29b-38d1-a456-426614174000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-28d1-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v3'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v3'
+```
+* _See_ Error Translation Key = 's:uuidV3'
+        
+        
+##### uuidV4 (string)
+        
+```typescript
+import { uuidV4 } from 'bguard/string/uuidV4';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v4 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v4.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV4());
+ parseOrFail(schema, '123e4567-e89b-42d3-a456-426614174000'); // Valid
+ parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+ parseOrFail(schema, '123e4567-e89b-a2d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+ parseOrFail(schema, '123e4567-e89b-42d3-c456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v4'
+```
+* _See_ Error Translation Key = 's:uuidV4'
+        
+        
+##### uuidV5 (string)
+        
+```typescript
+import { uuidV5 } from 'bguard/string/uuidV5';
+```
+        
+* _Description_ Asserts that a string value matches the UUID v5 format.
+* _Throws_ {ValidationError} if the received value is not a valid UUID v5.
+* _Example_
+```typescript
+ const schema = string().custom(uuidV5());
+ parseOrFail(schema, '550e8400-e29b-51d4-a716-446655440000'); // Valid
+ parseOrFail(schema, '550e8400-e29b-41d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v5'
+ parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v5'
+```
+* _See_ Error Translation Key = 's:uuidV5'
+        
+        
+##### validUrl (string)
+        
+```typescript
+import { validUrl } from 'bguard/string/validUrl';
+```
+        
+* _Description_ Asserts that the string value is a valid URL with optional protocol validation.
+* _Param_ {string} [protocol] The protocol that the URL must start with (e.g., 'http'). If not provided, any URL starting with 'http://' or 'https://' is considered valid.
+* _Throws_ {ValidationError} if the received value does not match the expected URL pattern.
+* _Example_
+```typescript
+ const schema = string().custom(validUrl()); // Validates any URL starting with 'http://' or 'https://'
+ parseOrFail(schema, 'http://example.com'); // Valid
+ parseOrFail(schema, 'https://example.com'); // Valid
+ parseOrFail(schema, 'ftp://example.com');   // Throws an error
+ parseOrFail(schema, 'http:example.com');    // Throws an error
+```
+* _See_ Error Translation Key = 's:url'
         
 ### Contributing
 Contributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.

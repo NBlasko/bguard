@@ -78,9 +78,7 @@ type StudentSchema = {
 
 ```
 
-
 #### Generating TypeScript Types with `codeGen`
-
 
 If you prefer to generate TypeScript types as a string, you can use the `codeGen` function:
 
@@ -112,6 +110,7 @@ This would output a string:
   verified?: boolean | undefined;
 }
 ```
+
 Note: The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
 
 #### Generating Named TypeScript Types with `codeGenWithName`
@@ -133,7 +132,6 @@ console.log(namedTypeString);
 
 This would output a string:
 
-
 ```typeScript
 type StudentSchema = {
   email?: string | undefined;
@@ -147,12 +145,12 @@ type StudentSchema = {
   verified?: boolean | undefined;
 }
 ```
+
 #### Summary:
 
 `codeGen(schema: CommonSchema): string` - Generates a string of the TypeScript type based on the schema. You need to manually add a type name and assignment if needed.
 
 `codeGenWithName(typeName: string, schema: CommonSchema): string` - Generates a complete TypeScript type definition string, including the type keyword and type name.
-
 
 ### Validating Data
 
@@ -188,14 +186,11 @@ const invalidStudentData = {
   ],
   email: 'invalid-example',
 };
-
 ```
-
 
 #### `parse` Method
 
 The `parse` method validates the data and returns a tuple containing errors and the parsed value. This method allows you to choose whether to collect all errors or stop at the first error using an options flag.
-
 
 **Syntax:**
 
@@ -235,16 +230,18 @@ try {
   console.error(error.message); // Logs the first validation error message, if any
 }
 ```
+
 Throws:
+
 - `ValidationError`: If any validation rule fails, this error is thrown with details of the first encountered error.
 
 Options:
-- `lng`: Specifies the language for error messages. Default is `'default'`.
 
+- `lng`: Specifies the language for error messages. Default is `'default'`.
 
 ####
 
-### Explanation
+Explanation
 
 - **`parse` Method**: This method returns a tuple where the first element is an array of validation errors (if any), and the second element is the successfully parsed value (or `undefined` if errors exist). It allows collecting all errors by setting the `getAllErrors` flag.
 
@@ -276,9 +273,12 @@ const schema = string().nullable().optional();
   `boolean().onlyTrue()` will infer <b>true</b> as the type.
   `boolean().onlyFalse()` will infer <b>false</b> as the type.
 
-### Custom Assertions
+### Custom (Library Built-in) Assertions
 
-You can extend the validation with custom assertions:
+The `custom` method allows you to extend the validation schema with additional asserts. These asserts can either be user-defined or selected from the comprehensive set provided by the library. This flexibility ensures that you can tailor validations to meet specific requirements beyond the standard methods available.
+All built-in asserts are documented in the [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) section.
+
+Example
 
 ```typeScript
 import { min } from 'bguard/number/min';
@@ -287,10 +287,53 @@ import { max } from 'bguard/number/max';
 const ageSchema = number().custom(min(18), max(120));
 ```
 
-Assertions are imported from specific paths for better tree-shaking and smaller bundle sizes.
+Library built-in assertions are imported from specific paths for better tree-shaking and smaller bundle sizes.
 
+### Create Custom Assertions
 
-### Translation
+Bguard allows developers to create custom validation functions that can be integrated seamlessly with the library's existing functionality. Below is a detailed example demonstrating how to create a custom validation function, `minLength`, and how to properly document and map error messages for translations.
+
+Example: Creating a `minLength` Custom Validation
+
+```typescript
+import { guardException } from 'bguard/exceptions';
+import { ExceptionContext, RequiredValidation } from 'bguard/commonTypes';
+import { setToDefaultLocale } from 'bguard/translationMap';
+
+const minLengthErrorMessage = 'The received value {{r}} is shorter than the expected length {{e}}';
+const minLengthErrorKey = 'customPrefix:minLength';
+
+export const minLength =
+  (expected: number): RequiredValidation =>
+  (received: string, ctx: ExceptionContext) => {
+    if (received.length < expected) {
+      guardException(expected, received, ctx, minLengthErrorKey);
+    }
+  };
+
+minLength.key = minLengthErrorKey;
+minLength.message = minLengthErrorMessage;
+setToDefaultLocale(minLength);
+```
+
+Explanation
+
+- Error Key (`minLength.key`): This key (`'customPrefix:minLength'`) uniquely identifies the validation and is used for mapping error messages, especially when supporting multiple languages. It's essential to avoid collisions with built-in assertions, which use prefixes like `s:`, `n:`, and `b:` etc. More on that in [Common and Custom Translations](#common_and_custom_translations).
+
+- Error Message (`minLength.message`): The message supports [interpolation](#translation), where `{{e}}` will be replaced by the expected value, and `{{r}}` will be replaced by the received value during validation .
+
+- Exception Handling (`guardException`): This function is responsible for throwing the error when the validation fails. The `ctx` parameter must be passed to ensure the internal logic of the application works correctly.
+
+- Localization Support (`setToDefaultLocale`): This function registers the default error message with its associated key. If you later decide to support multiple languages, you can easily map this key to different messages.
+
+- Key Points for Developers:
+
+  1. Always create unique error keys for custom validations to avoid potential conflicts with Bguard's built-in validations.
+  2. Custom validations should use prefixes other than `s:`, `n:`, `b:`, and similar ones reserved for Bguard's internal validations.
+  3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
+     For single-language applications, you can override the default message by directly passing your custom message to `guardException`.
+
+### Translation {#translation}
 
 Bguard provides default translations for error messages, but you can customize them as needed. Each potential error has an `errorKey` and `errorMessage`.
 
@@ -319,18 +362,16 @@ setLocale('SR', {
   // ... continue adding other translations
 });
 ```
+
 With this setup, in the translation namespace 'SR', if the received value is 4, you'll get an error message like:
 
 `'The received value 4 found on path .foo is less than expected value 5'`
 
- - `{{r}}` - Replaced with the received value.
- - `{{p}}` - Replaced with the path to the error.
- - `{{e}}` - Replaced with the expected value.
-
+- `{{r}}` - Replaced with the received value.
+- `{{p}}` - Replaced with the path to the error.
+- `{{e}}` - Replaced with the expected value.
 
 > **Notice:** Do not overwrite the 'default' namespace. If a translation is missing, it will fall back to the 'default' translation.
-
-
 
 #### Using Translations
 
@@ -342,8 +383,7 @@ parseOrFail(testSchema, { foo: 4 }, { lng: 'SR' });
 parse(testSchema, { foo: 4 }, { lng: 'SR' });
 ```
 
-
-#### Common and Custom Translations
+#### Common and Custom Translations {#common_and_custom_translations}
 
 We have two sets of translations: common errors and specific assertions.
 
@@ -357,7 +397,7 @@ We have two sets of translations: common errors and specific assertions.
 
 For custom assertions, each key and message are located in separate files for better code splitting. There are multiple ways to identify a key:
 
-1. Key Construction:
+<b>1.</b> Key Construction:
 Keys are constructed as `'{typeId}:{functionName}'`, where `typeId` represents:
 
 - c - common
@@ -378,9 +418,10 @@ Example:
 ```typeScript
 import { maxLength } from 'bguard/string/maxLength';
 ```
+
 The function located in `'bguard/string/maxLength'` will have the key `'s:maxLength'`.
 
-2. Assertion Function Properties:
+<b>2.</b> Assertion Function Properties:
 
 Each assert function has two additional properties: `key` and `message`.
 
@@ -390,7 +431,8 @@ import { maxLength } from 'bguard/string/maxLength';
 console.log(maxLength.key); // Output: 's:maxLength'
 console.log(maxLength.message); // Output: 'The received value length is greater than expected'
 ```
+
 > **Notice:** Do not directly change these values.
 
-3. IDE Support:
+<b>3.</b> IDE Support:
 Each key and message will be visible in text editors that support JSDoc IntelliSense.

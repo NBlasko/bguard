@@ -8,7 +8,7 @@ const maxLengthErrorKey = 's:maxLength';
 /**
  * @description Asserts that the length of a string value is not greater than a specified maximum length.
  * @param {number} expected The maximum allowed length for the string.
- * @returns {RequiredValidation} A validation function that takes a received string and a path to the error message.
+ * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
  * @throws {ValidationError} if the length of the received value is greater than the expected length.
  * @example
  * const schema = string().custom(maxLength(10));

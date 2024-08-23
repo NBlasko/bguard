@@ -8,7 +8,7 @@ const regExpErrorKey = 's:regExp';
 /**
  * @description Asserts that a string value matches a specified regular expression pattern.
  * @param {RegExp} expected The regular expression pattern that the string value should match.
- * @returns {RequiredValidation} A validation function that takes a received string and a path to the error message.
+ * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
  * @throws {ValidationError} if the received value does not match the expected pattern.
  * @example
  * const schema = string().custom(regExp(/^[A-Za-z0-9]+$/)); // Validates against alphanumeric pattern
