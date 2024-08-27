@@ -1,101 +1,70 @@
 import type { ArraySchema, ExtractFromArray } from './schemas/ArraySchema';
+import { BigIntSchema, ExtractFromBigInt, WithBigInt } from './schemas/BigIntSchema';
 import type { BooleanSchema, ExtractFromBoolean, WithBoolean } from './schemas/BooleanSchema';
 import type { CommonSchema, ExtractFromMix, WithMix, WithNull, WithUndefined } from './schemas/CommonSchema';
+import { DateSchema } from './schemas/DateSchema';
 import type { ExtractFromNumber, NumberSchema, WithNumber } from './schemas/NumberSchema';
 import type { ObjectSchema, WithObject } from './schemas/ObjectSchema';
 import type { ExtractFromString, StringSchema, WithString } from './schemas/StringSchema';
 
+type ResolveNullish<T, Y> =
+  T extends WithUndefined<WithNull<CommonSchema>>
+    ? Y | null | undefined
+    : T extends WithUndefined<CommonSchema>
+      ? Y | undefined
+      : T extends WithNull<CommonSchema>
+        ? Y | null
+        : Y;
+
 // prettier-ignore
 export type InferType<T> =
   //  with string
-  T extends WithUndefined<WithNull<WithString<StringSchema>>>
-    ? ExtractFromString<T> | null | undefined
-    : T extends WithUndefined<WithString<StringSchema>>
-    ? ExtractFromString<T>  | undefined
-    : T extends WithNull<WithString<StringSchema>>
-    ? ExtractFromString<T>  | null
-    : T extends WithString<StringSchema>
-    ? ExtractFromString<T> 
+    T extends WithString<StringSchema>
+    ? ResolveNullish<T, ExtractFromString<T>>
 
-    // string
-    :  T extends WithUndefined<WithNull<StringSchema>>
-    ? string | null | undefined
-    : T extends WithUndefined<StringSchema>
-    ? string | undefined
-    : T extends WithNull<StringSchema>
-    ? string | null
-    : T extends StringSchema
-    ? string
+    : // string
+    T extends StringSchema
+    ? ResolveNullish<T, string>
 
     : // with number
-    T extends WithUndefined<WithNull<WithNumber<NumberSchema>>>
-    ? ExtractFromNumber<T> | null | undefined
-    : T extends WithUndefined<WithNumber<NumberSchema>>
-    ? ExtractFromNumber<T>  | undefined
-    : T extends WithNull<WithNumber<NumberSchema>>
-    ? ExtractFromNumber<T>  | null
-    : T extends WithNumber<NumberSchema>
-    ? ExtractFromNumber<T>
+    T extends WithNumber<NumberSchema>
+    ? ResolveNullish<T, ExtractFromNumber<T>>
 
     : // number
-    T extends WithUndefined<WithNull<NumberSchema>>
-    ? number | null | undefined
-    : T extends WithUndefined<NumberSchema>
-    ? number | undefined
-    : T extends WithNull<NumberSchema>
-    ? number | null
-    : T extends NumberSchema
-    ? number
+    T extends NumberSchema
+    ? ResolveNullish<T, number>
 
     : // with boolean
-    T extends WithUndefined<WithNull<WithBoolean<BooleanSchema>>>
-    ? ExtractFromBoolean<T> | null | undefined
-    : T extends WithUndefined<WithBoolean<BooleanSchema>>
-    ? ExtractFromBoolean<T> | undefined
-    : T extends WithNull<WithBoolean<BooleanSchema>>
-    ? ExtractFromBoolean<T> | null
-    : T extends WithBoolean<BooleanSchema>
-    ? ExtractFromBoolean<T>
+    T extends WithBoolean<BooleanSchema>
+    ? ResolveNullish<T, ExtractFromBoolean<T>>
 
-    : //  boolean
-    T extends WithUndefined<WithNull<BooleanSchema>>
-    ? boolean | null | undefined
-    : T extends WithUndefined<BooleanSchema>
-    ? boolean | undefined
-    : T extends WithNull<BooleanSchema>
-    ? boolean | null
-    : T extends BooleanSchema
-    ? boolean
+    : // boolean
+    T extends BooleanSchema
+    ? ResolveNullish<T, boolean>
 
     : // array
-    T extends WithUndefined<WithNull<ArraySchema>>
-    ? InferType<ExtractFromArray<T>>[] | null | undefined
-    : T extends WithUndefined<ArraySchema>
-    ? InferType<ExtractFromArray<T>>[] | undefined
-    : T extends WithNull<ArraySchema>
-    ? InferType<ExtractFromArray<T>>[] | null
-    : T extends ArraySchema
-    ? InferType<ExtractFromArray<T>>[]
+    T extends ArraySchema
+    ? ResolveNullish<T, InferType<ExtractFromArray<T>>[]>
 
     : // object
-    T extends WithUndefined<WithNull<ObjectSchema>>
-    ? ExtractFromObject<T> | null | undefined
-    : T extends WithUndefined<ObjectSchema>
-    ? ExtractFromObject<T> | undefined
-    : T extends WithNull<ObjectSchema>
-    ? ExtractFromObject<T> | null
-    : T extends ObjectSchema
-    ? ExtractFromObject<T>
+    T extends ObjectSchema
+    ? ResolveNullish<T, ExtractFromObject<T>>
 
     : // with mix
-    T extends WithUndefined<WithNull<WithMix>>
-    ? ExtractFromMix<T> | null | undefined
-    : T extends WithUndefined<WithMix>
-    ? ExtractFromMix<T> | undefined
-    : T extends WithNull<WithMix>
-    ? ExtractFromMix<T> | null
-    : T extends WithMix
-    ? ExtractFromMix<T>
+    T extends WithMix
+    ? ResolveNullish<T, ExtractFromMix<T>>
+
+    : // with bigint
+    T extends WithBigInt<BigIntSchema>
+    ? ResolveNullish<T, ExtractFromBigInt<T>>
+
+    : // bigint
+    T extends BigIntSchema
+    ? ResolveNullish<T, bigint>
+
+    : // Date
+    T extends DateSchema
+    ? ResolveNullish<T, Date>
 
     : unknown;
 

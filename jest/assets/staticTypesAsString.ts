@@ -92,3 +92,39 @@ export const TestSchema41String = `'foo';`;
 
 export const TestSchema42String = `'foo' | null;`;
 
+export const TestSchema43String = `Date;`;
+
+export const TestSchema44String = `Date | null;`;
+
+export const TestSchema45String = `Date | undefined;`;
+
+export const TestSchema46String = `Date | null | undefined;`;
+
+export const TestSchema47String = `Date | null | undefined;`;
+
+export const TestSchema48String = `Date | null | undefined;`;
+
+export const TestSchema49String = `bigint;`;
+
+export const TestSchema50String = `bigint | null | undefined;`;
+
+export const TestSchema51String = `bigint | null;`;
+
+export const TestSchema52String = `bigint | undefined;`;
+
+export const TestSchema53String = `5n | 9007199254740991n;`;
+
+export const TestSchema54String = `5n | 9007199254740991n | null;`;
+
+export const TestSchema55String = `5n | 9007199254740991n | undefined;`;
+
+export const TestSchema56String = `5n | 9007199254740991n | null | undefined;`;
+
+export const TestSchema57String = `9007199254740991n;`;
+
+export const TestSchema58String = `9007199254740991n | null | undefined;`;
+
+export const TestSchema59String = `9007199254740991n | null;`;
+
+export const TestSchema60String = `9007199254740991n | undefined;`;
+

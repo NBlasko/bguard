@@ -45,6 +45,24 @@ import {
   testSchema40,
   testSchema41,
   testSchema42,
+  testSchema43,
+  testSchema44,
+  testSchema45,
+  testSchema46,
+  testSchema47,
+  testSchema48,
+  testSchema49,
+  testSchema50,
+  testSchema51,
+  testSchema52,
+  testSchema54,
+  testSchema53,
+  testSchema55,
+  testSchema56,
+  testSchema57,
+  testSchema58,
+  testSchema59,
+  testSchema60,
 } from './schemas';
 
 class GenerateType {
@@ -108,6 +126,24 @@ class GenerateType {
     data += await this.gentType('TestSchema40', testSchema40);
     data += await this.gentType('TestSchema41', testSchema41);
     data += await this.gentType('TestSchema42', testSchema42);
+    data += await this.gentType('TestSchema43', testSchema43);
+    data += await this.gentType('TestSchema44', testSchema44);
+    data += await this.gentType('TestSchema45', testSchema45);
+    data += await this.gentType('TestSchema46', testSchema46);
+    data += await this.gentType('TestSchema47', testSchema47);
+    data += await this.gentType('TestSchema48', testSchema48);
+    data += await this.gentType('TestSchema49', testSchema49);
+    data += await this.gentType('TestSchema50', testSchema50);
+    data += await this.gentType('TestSchema51', testSchema51);
+    data += await this.gentType('TestSchema52', testSchema52);
+    data += await this.gentType('TestSchema53', testSchema53);
+    data += await this.gentType('TestSchema54', testSchema54);
+    data += await this.gentType('TestSchema55', testSchema55);
+    data += await this.gentType('TestSchema56', testSchema56);
+    data += await this.gentType('TestSchema57', testSchema57);
+    data += await this.gentType('TestSchema58', testSchema58);
+    data += await this.gentType('TestSchema59', testSchema59);
+    data += await this.gentType('TestSchema60', testSchema60);
 
     await this.writeFiles(data);
     console.log(this.isString ? 'SUCCESS - GENERATED TYPES' : 'SUCCESS - GENERATED STRINGS');

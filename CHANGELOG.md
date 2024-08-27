@@ -25,3 +25,12 @@
 ### Update docs and add more assertions
 
 - Update docs and add more assertions
+
+
+## 0.2.0
+
+### Remove default import for asserts and add BigIntSchema
+
+- Remove default import for asserts. Now, we can use them from 'bguard/{assertFolder}'.
+- Add BigIntSchema
+- Update docs and add more assertions

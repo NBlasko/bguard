@@ -9,6 +9,7 @@ export interface TranslationErrorMap {
   'c:requiredProperty': string;
   'c:invalidType': string;
   'c:isBoolean': string;
+  'c:date': string;
   [val: string]: string;
 }
 

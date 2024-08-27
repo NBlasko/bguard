@@ -43,6 +43,24 @@ import {
   testSchema40,
   testSchema41,
   testSchema42,
+  testSchema43,
+  testSchema44,
+  testSchema45,
+  testSchema46,
+  testSchema47,
+  testSchema48,
+  testSchema49,
+  testSchema50,
+  testSchema51,
+  testSchema52,
+  testSchema53,
+  testSchema54,
+  testSchema55,
+  testSchema56,
+  testSchema57,
+  testSchema58,
+  testSchema59,
+  testSchema60,
 } from '../../jest/assets/schemas';
 import {
   TestSchema1,
@@ -87,6 +105,24 @@ import {
   TestSchema40,
   TestSchema41,
   TestSchema42,
+  TestSchema43,
+  TestSchema44,
+  TestSchema45,
+  TestSchema46,
+  TestSchema47,
+  TestSchema48,
+  TestSchema49,
+  TestSchema50,
+  TestSchema51,
+  TestSchema52,
+  TestSchema53,
+  TestSchema54,
+  TestSchema55,
+  TestSchema56,
+  TestSchema57,
+  TestSchema58,
+  TestSchema59,
+  TestSchema60,
 } from '../../jest/assets/staticTypes';
 import {
   TestSchema1String,
@@ -131,6 +167,24 @@ import {
   TestSchema40String,
   TestSchema41String,
   TestSchema42String,
+  TestSchema43String,
+  TestSchema44String,
+  TestSchema45String,
+  TestSchema46String,
+  TestSchema47String,
+  TestSchema48String,
+  TestSchema49String,
+  TestSchema50String,
+  TestSchema51String,
+  TestSchema52String,
+  TestSchema53String,
+  TestSchema54String,
+  TestSchema55String,
+  TestSchema56String,
+  TestSchema57String,
+  TestSchema58String,
+  TestSchema59String,
+  TestSchema60String,
 } from '../../jest/assets/staticTypesAsString';
 
 import { codeGen, codeGenWithName } from '../codeGen';
@@ -307,5 +361,77 @@ describe('CodeGen', () => {
     expectEqualTypes<TestSchema42, InferType<typeof testSchema42>>(true);
     expect(TestSchema42String).toBe(codeGen(testSchema42));
     expect(TestSchema42String).toMatchSnapshot('TestSchema42String');
+
+    expectEqualTypes<TestSchema43, InferType<typeof testSchema43>>(true);
+    expect(TestSchema43String).toBe(codeGen(testSchema43));
+    expect(TestSchema43String).toMatchSnapshot('TestSchema43String');
+
+    expectEqualTypes<TestSchema44, InferType<typeof testSchema44>>(true);
+    expect(TestSchema44String).toBe(codeGen(testSchema44));
+    expect(TestSchema44String).toMatchSnapshot('TestSchema44String');
+
+    expectEqualTypes<TestSchema45, InferType<typeof testSchema45>>(true);
+    expect(TestSchema45String).toBe(codeGen(testSchema45));
+    expect(TestSchema45String).toMatchSnapshot('TestSchema45String');
+
+    expectEqualTypes<TestSchema46, InferType<typeof testSchema46>>(true);
+    expect(TestSchema46String).toBe(codeGen(testSchema46));
+    expect(TestSchema46String).toMatchSnapshot('TestSchema46String');
+
+    expectEqualTypes<TestSchema47, InferType<typeof testSchema47>>(true);
+    expect(TestSchema47String).toBe(codeGen(testSchema47));
+    expect(TestSchema47String).toMatchSnapshot('TestSchema47String');
+
+    expectEqualTypes<TestSchema48, InferType<typeof testSchema48>>(true);
+    expect(TestSchema48String).toBe(codeGen(testSchema48));
+    expect(TestSchema48String).toMatchSnapshot('TestSchema48String');
+
+    expectEqualTypes<TestSchema49, InferType<typeof testSchema49>>(true);
+    expect(TestSchema49String).toBe(codeGen(testSchema49));
+    expect(TestSchema49String).toMatchSnapshot('TestSchema49String');
+
+    expectEqualTypes<TestSchema50, InferType<typeof testSchema50>>(true);
+    expect(TestSchema50String).toBe(codeGen(testSchema50));
+    expect(TestSchema50String).toMatchSnapshot('TestSchema50String');
+
+    expectEqualTypes<TestSchema51, InferType<typeof testSchema51>>(true);
+    expect(TestSchema51String).toBe(codeGen(testSchema51));
+    expect(TestSchema51String).toMatchSnapshot('TestSchema51String');
+
+    expectEqualTypes<TestSchema52, InferType<typeof testSchema52>>(true);
+    expect(TestSchema52String).toBe(codeGen(testSchema52));
+    expect(TestSchema52String).toMatchSnapshot('TestSchema52String');
+
+    expectEqualTypes<TestSchema53, InferType<typeof testSchema53>>(true);
+    expect(TestSchema53String).toBe(codeGen(testSchema53));
+    expect(TestSchema53String).toMatchSnapshot('TestSchema53String');
+
+    expectEqualTypes<TestSchema54, InferType<typeof testSchema54>>(true);
+    expect(TestSchema54String).toBe(codeGen(testSchema54));
+    expect(TestSchema54String).toMatchSnapshot('TestSchema54String');
+
+    expectEqualTypes<TestSchema55, InferType<typeof testSchema55>>(true);
+    expect(TestSchema55String).toBe(codeGen(testSchema55));
+    expect(TestSchema55String).toMatchSnapshot('TestSchema55String');
+
+    expectEqualTypes<TestSchema56, InferType<typeof testSchema56>>(true);
+    expect(TestSchema56String).toBe(codeGen(testSchema56));
+    expect(TestSchema56String).toMatchSnapshot('TestSchema56String');
+
+    expectEqualTypes<TestSchema57, InferType<typeof testSchema57>>(true);
+    expect(TestSchema57String).toBe(codeGen(testSchema57));
+    expect(TestSchema57String).toMatchSnapshot('TestSchema57String');
+
+    expectEqualTypes<TestSchema58, InferType<typeof testSchema58>>(true);
+    expect(TestSchema58String).toBe(codeGen(testSchema58));
+    expect(TestSchema58String).toMatchSnapshot('TestSchema58String');
+
+    expectEqualTypes<TestSchema59, InferType<typeof testSchema59>>(true);
+    expect(TestSchema59String).toBe(codeGen(testSchema59));
+    expect(TestSchema59String).toMatchSnapshot('TestSchema59String');
+
+    expectEqualTypes<TestSchema60, InferType<typeof testSchema60>>(true);
+    expect(TestSchema60String).toBe(codeGen(testSchema60));
+    expect(TestSchema60String).toMatchSnapshot('TestSchema60String');
   });
 });

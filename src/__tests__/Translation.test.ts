@@ -1,12 +1,5 @@
-import {
-  parseOrFail,
-  guardException,
-  BuildSchemaError,
-  object,
-  setToDefaultLocale,
-  setLocale,
-  clearLocales,
-} from '../';
+import { parseOrFail, guardException, BuildSchemaError, setToDefaultLocale, setLocale, clearLocales } from '../';
+import { object } from '../asserts/object';
 import { string } from '../asserts/string';
 import { ExceptionContext, RequiredValidation } from '../commonTypes';
 

@@ -3,6 +3,7 @@ export const ctxSymbol = Symbol('contextSymbol');
 import { ExceptionContext } from '../commonTypes';
 import { guardException } from '../exceptions';
 import type { CommonSchema } from '../schemas/CommonSchema';
+import { isValidDate } from './isValidDate';
 
 export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext) {
   const commonTmap = exCtx.t;
@@ -15,6 +16,10 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
   if (receivedValue === null) {
     if (!schemaData.isNullable) guardException('Not null', receivedValue, exCtx, commonTmap['c:nullable']);
     return receivedValue;
+  }
+
+  if (schemaData.date) {
+    if (!isValidDate(receivedValue)) guardException('Date', receivedValue, exCtx, commonTmap['c:date']);
   }
 
   if (schemaData.array) {

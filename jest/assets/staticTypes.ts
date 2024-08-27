@@ -92,3 +92,39 @@ export type TestSchema41 = 'foo';
 
 export type TestSchema42 = 'foo' | null;
 
+export type TestSchema43 = Date;
+
+export type TestSchema44 = Date | null;
+
+export type TestSchema45 = Date | undefined;
+
+export type TestSchema46 = Date | null | undefined;
+
+export type TestSchema47 = Date | null | undefined;
+
+export type TestSchema48 = Date | null | undefined;
+
+export type TestSchema49 = bigint;
+
+export type TestSchema50 = bigint | null | undefined;
+
+export type TestSchema51 = bigint | null;
+
+export type TestSchema52 = bigint | undefined;
+
+export type TestSchema53 = 5n | 9007199254740991n;
+
+export type TestSchema54 = 5n | 9007199254740991n | null;
+
+export type TestSchema55 = 5n | 9007199254740991n | undefined;
+
+export type TestSchema56 = 5n | 9007199254740991n | null | undefined;
+
+export type TestSchema57 = 9007199254740991n;
+
+export type TestSchema58 = 9007199254740991n | null | undefined;
+
+export type TestSchema59 = 9007199254740991n | null;
+
+export type TestSchema60 = 9007199254740991n | undefined;
+
