@@ -404,7 +404,7 @@ We have two sets of translations: common errors and specific assertions.
 'c:requiredProperty': 'Missing required property in the object',
 'c:invalidType': 'Invalid type of data',
 'c:isBoolean': 'The received value is not {{e}}',
-'c:date': 'The received value is not a valid instance of Date'
+'c:date': 'The received value is not a valid instance of Date',
 ```
 
 <b>Custom Assertion Translations</b>:
@@ -469,7 +469,7 @@ import { bigint } from 'bguard/bigint';
  parseOrFail(schema, 42n); // Validates successfully
  parseOrFail(schema, 42); // Throws a validation error
  parseOrFail(schema, '42'); // Throws a validation error
- ```
+```
    
         
 ##### bigintMax (bigint)
@@ -561,7 +561,7 @@ import { date } from 'bguard/date';
  const schema = date();
  parseOrFail(schema, true); // Validates successfully
  parseOrFail(schema, 'true'); // Throws a validation error
- ```
+```
    
         
 ##### dateMax (date)
@@ -619,7 +619,7 @@ import { oneOfTypes } from 'bguard/mix';
  parseOrFail(schema, 'hello'); // Validates successfully
  parseOrFail(schema, 42); // Validates successfully
  parseOrFail(schema, true); // Throws a validation error
- ```
+```
    
         
 ##### equalTo (mix)
@@ -674,7 +674,7 @@ import { number } from 'bguard/number';
  const schema = number();
  parseOrFail(schema, 42); // Validates successfully
  parseOrFail(schema, '42'); // Throws a validation error
- ```
+```
    
         
 ##### max (number)
@@ -802,7 +802,7 @@ import { string } from 'bguard/string';
  const schema = string();
  parseOrFail(schema, 'hello'); // Validates successfully
  parseOrFail(schema, 123); // Throws a validation error
- ```
+```
    
         
 ##### atLeastOneDigit (string)

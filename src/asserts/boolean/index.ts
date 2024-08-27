@@ -7,7 +7,7 @@ import { BooleanSchema } from '../../schemas/BooleanSchema';
  * const schema = boolean();
  * parseOrFail(schema, true); // Validates successfully
  * parseOrFail(schema, 'true'); // Throws a validation error
- * 
+ *
  * @instance Of BooleanSchema
  */
 export function boolean(): BooleanSchema {

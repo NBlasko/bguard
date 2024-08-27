@@ -7,7 +7,7 @@ import { DateSchema } from '../../schemas/DateSchema';
  * const schema = date();
  * parseOrFail(schema, true); // Validates successfully
  * parseOrFail(schema, 'true'); // Throws a validation error
- * 
+ *
  * @instance Of DateSchema
  */
 export function date(): DateSchema {

@@ -13,7 +13,7 @@ import { ObjectSchema, WithObject } from '../../schemas/ObjectSchema';
  * });
  * parseOrFail(schema, { name: 'John', age: 30 }); // Validates successfully
  * parseOrFail(schema, { name: 'John', age: '30' }); // Throws a validation error
- * 
+ *
  * @instance Of ObjectSchema
  */
 export function object<T extends ObjectShapeSchemaType>(shapeSchema: T): WithObject<T> {

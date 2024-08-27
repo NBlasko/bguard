@@ -8,7 +8,7 @@ import { BigIntSchema } from '../../schemas/BigIntSchema';
  * parseOrFail(schema, 42n); // Validates successfully
  * parseOrFail(schema, 42); // Throws a validation error
  * parseOrFail(schema, '42'); // Throws a validation error
- * 
+ *
  * @instance Of BigIntSchema
  */
 export function bigint(): BigIntSchema {

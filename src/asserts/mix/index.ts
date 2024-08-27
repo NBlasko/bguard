@@ -12,7 +12,7 @@ import { CommonSchema, MapMixTypes, WithMix } from '../../schemas/CommonSchema';
  * parseOrFail(schema, 'hello'); // Validates successfully
  * parseOrFail(schema, 42); // Validates successfully
  * parseOrFail(schema, true); // Throws a validation error
- * 
+ *
  * @instance Of CommonSchema
  */
 export function oneOfTypes<T extends PrimitiveType[]>(valueTypes: T): WithMix<MapMixTypes<T>> {

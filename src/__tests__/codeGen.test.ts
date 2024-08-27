@@ -122,7 +122,7 @@ import {
   TestSchema57,
   TestSchema58,
   TestSchema59,
-  TestSchema60
+  TestSchema60,
 } from '../../jest/assets/staticTypes';
 import {
   TestSchema1String,
@@ -382,21 +382,17 @@ describe('CodeGen', () => {
     expect(TestSchema47String).toBe(codeGen(testSchema47));
     expect(TestSchema47String).toMatchSnapshot('TestSchema47String');
 
-
     expectEqualTypes<TestSchema48, InferType<typeof testSchema48>>(true);
     expect(TestSchema48String).toBe(codeGen(testSchema48));
     expect(TestSchema48String).toMatchSnapshot('TestSchema48String');
-
 
     expectEqualTypes<TestSchema49, InferType<typeof testSchema49>>(true);
     expect(TestSchema49String).toBe(codeGen(testSchema49));
     expect(TestSchema49String).toMatchSnapshot('TestSchema49String');
 
-
     expectEqualTypes<TestSchema50, InferType<typeof testSchema50>>(true);
     expect(TestSchema50String).toBe(codeGen(testSchema50));
     expect(TestSchema50String).toMatchSnapshot('TestSchema50String');
-
 
     expectEqualTypes<TestSchema51, InferType<typeof testSchema51>>(true);
     expect(TestSchema51String).toBe(codeGen(testSchema51));

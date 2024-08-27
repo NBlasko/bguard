@@ -7,7 +7,7 @@ import { NumberSchema } from '../../schemas/NumberSchema';
  * const schema = number();
  * parseOrFail(schema, 42); // Validates successfully
  * parseOrFail(schema, '42'); // Throws a validation error
- * 
+ *
  * @instance Of NumberSchema
  */
 export function number(): NumberSchema {
