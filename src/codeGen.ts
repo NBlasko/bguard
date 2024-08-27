@@ -2,6 +2,8 @@ import { ctxSymbol } from './helpers/core';
 import type { CommonSchema, ValidatorContext } from './schemas/CommonSchema';
 
 function generateBaseType(schemaData: ValidatorContext) {
+  if (schemaData.date) return 'Date';
+  
   if (schemaData.strictType) {
     if (Array.isArray(schemaData.strictTypeValue)) return schemaData.strictTypeValue.join(' | ');
     return schemaData.strictTypeValue;

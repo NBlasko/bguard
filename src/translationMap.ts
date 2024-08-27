@@ -13,6 +13,7 @@ const defaultErrorMap: TranslationErrorMap = {
   'c:requiredProperty': 'Missing required property in the object',
   'c:invalidType': 'Invalid type of data',
   'c:isBoolean': 'The received value is not {{e}}',
+  'c:date': 'The received value is not a valid instance of Date'
   //@@end
 };
 

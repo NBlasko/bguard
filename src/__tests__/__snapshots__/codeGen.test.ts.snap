@@ -93,3 +93,39 @@ exports[`CodeGen should have same static and dynamic type: TestSchema40String 1`
 exports[`CodeGen should have same static and dynamic type: TestSchema41String 1`] = `"'foo';"`;
 
 exports[`CodeGen should have same static and dynamic type: TestSchema42String 1`] = `"'foo' | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema43String 1`] = `"Date;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema44String 1`] = `"Date | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema45String 1`] = `"Date | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema46String 1`] = `"Date | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema47String 1`] = `"Date | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema48String 1`] = `"Date | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema49String 1`] = `"bigint;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema50String 1`] = `"bigint | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema51String 1`] = `"bigint | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema52String 1`] = `"bigint | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema53String 1`] = `"5n | 9007199254740991n;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema54String 1`] = `"5n | 9007199254740991n | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema55String 1`] = `"5n | 9007199254740991n | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema56String 1`] = `"5n | 9007199254740991n | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema57String 1`] = `"9007199254740991n;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema58String 1`] = `"9007199254740991n | null | undefined;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema59String 1`] = `"9007199254740991n | null;"`;
+
+exports[`CodeGen should have same static and dynamic type: TestSchema60String 1`] = `"9007199254740991n | undefined;"`;

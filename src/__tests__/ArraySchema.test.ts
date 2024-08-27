@@ -1,6 +1,8 @@
 import { expectEqualTypes } from '../../jest/setup';
 import { BuildSchemaError } from '../exceptions';
-import { parseOrFail, InferType, array, number } from '../';
+import { parseOrFail, InferType } from '../';
+import { array } from '../asserts/array';
+import { number } from '../asserts/number';
 
 describe('ArraySchema', () => {
   it('should be an array', () => {

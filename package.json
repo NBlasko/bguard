@@ -2,7 +2,7 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
@@ -138,6 +138,11 @@
       "import": "./lib/asserts/bigint/*.mjs",
       "require": "./lib/asserts/bigint/*.js",
       "types": "./lib/asserts/bigint/*.d.ts"
+    },
+    "./date/*": {
+      "import": "./lib/asserts/date/*.mjs",
+      "require": "./lib/asserts/date/*.js",
+      "types": "./lib/asserts/date/*.d.ts"
     },
     "./*": {
       "import": "./*.mjs",

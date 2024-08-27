@@ -30,7 +30,12 @@ Let's define a schema for a Student object:
 
 ```typeScript
 
-import { InferType, string, number, array, object, boolean } from 'bguard';
+import { InferType } from 'bguard';
+import { object } from 'bguard/object';
+import { array } from 'bguard/array';
+import { number } from 'bguard/number';
+import { string } from 'bguard/string';
+import { boolean } from 'bguard/boolean';
 import { email } from 'bguard/string/email';
 import { min } from 'bguard/number/min';
 import { max } from 'bguard/number/max';
@@ -410,6 +415,7 @@ Keys are constructed as `'{typeId}:{functionName}'`, where `typeId` represents:
 - f - function
 - bi - bigint
 - m - mixed
+- dt - date
 
 Each `typeId` maps to the folder from which custom assertions are retrieved (except 'common', as explained above).
 

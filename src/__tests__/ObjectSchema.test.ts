@@ -1,7 +1,12 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { InferType, object, boolean, string, number, array, parseOrFail, BuildSchemaError, ValidationError } from '../';
+import { InferType, parseOrFail, BuildSchemaError, ValidationError } from '../';
 import { minLength } from '../asserts/string/minLength';
 import { email } from '../asserts/string/email';
+import { object } from '../asserts/object';
+import { number } from '../asserts/number';
+import { string } from '../asserts/string';
+import { boolean } from '../asserts/boolean';
+import { array } from '../asserts/array';
 
 describe('ObjectSchema', () => {
   type UnkownObject = {

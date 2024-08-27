@@ -1,6 +1,9 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { InferType, number, guardException, string, boolean, parseOrFail, ValidationError } from '../';
+import { InferType, guardException, parseOrFail, ValidationError } from '../';
 import { ExceptionContext, RequiredValidation } from '../commonTypes';
+import { string } from '../asserts/string';
+import { boolean } from '../asserts/boolean';
+import { number } from '../asserts/number';
 
 describe('CommonSchema', () => {
   it('should be a nullable string', () => {

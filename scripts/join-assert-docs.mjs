@@ -43,6 +43,9 @@ function extractJsDocContent(fileContent) {
       cleanedJsDoc = cleanedJsDoc.replace(/ @returns.+\n/, '').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @translation\s*/, '* _See_ ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @throws\s*/, '* _Throws_ ').trim();
+      cleanedJsDoc = cleanedJsDoc.replace(/@instance.+/, '').trim();
+      cleanedJsDoc = cleanedJsDoc.replace(/@template.+/, '').trim();
+      
 
       return cleanedJsDoc;
     })
@@ -56,13 +59,24 @@ const run = async () => {
   const translationCommonMap = await extractCommonTranslation();
   readmeStart = readmeStart.replace(/@@TRANSLATION_COMMON_MAP@@/, translationCommonMap).trim();
 
-  let textData = '\n### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} \n';
+  let textData = '\n\n### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} \n';
   const dirs = await fs.readdir(path.join('src/asserts'));
   for (const dir of dirs) {
     const files = await fs.readdir(path.join('src/asserts', dir));
     const hasAsserts = files.findIndex((file) => file.endsWith('.ts') && file !== 'index.ts');
     if (hasAsserts === -1) continue;
     textData += `\n#### ${dir}`;
+    // Prerequisites
+    const findIndexFile = files.find((file) => file === 'index.ts');
+    if (!findIndexFile) throw new Error(`Script Error, missing index file in ${dir}`);
+    const indexFileData = await fs.readFile(path.join('src/asserts', dir, findIndexFile), { encoding: 'utf8' });
+
+    textData += `
+   \n <b>Prerequisites</b>
+   \n\`\`\`typescript\nimport { ${dir === 'mix' ? 'oneOfTypes' : dir} } from 'bguard/${dir}';\n\`\`\`
+   \n${extractJsDocContent(indexFileData)}
+   `;
+
     for (const file of files) {
       if (file.endsWith('.ts') && file !== 'index.ts') {
         const fileData = await fs.readFile(path.join('src/asserts', dir, file), { encoding: 'utf8' });

@@ -13,6 +13,7 @@ export interface ValidatorContext {
   allowUnrecognizedObjectProps?: boolean;
   strictType?: boolean;
   strictTypeValue?: unknown;
+  date?: boolean;
 }
 
 export class CommonSchema {
@@ -43,7 +44,7 @@ export class CommonSchema {
   /**
    * Marks the schema as optional, allowing the value to be `undefined`.
    *
-   * @returns {WithUndefined<this>}} The schema instance marked as optional.
+   * @returns {WithUndefined<this>} The schema instance marked as optional.
    */
   optional(): WithUndefined<this> {
     this[ctxSymbol].isOptional = true;

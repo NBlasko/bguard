@@ -7,7 +7,7 @@ const oneOfValuesErrorKey = 'm:oneOfValues';
 
 /**
  * @description Creates a custom assertion that checks if a value is equal to the one of expected values.
- * @notice It has already been implemented in the number and string schema. There is no need to use it as a custom assert.
+ * @notice It has already been implemented in the number, bigint and string schema. There is no need to use it as a custom assert.
  * @param {unknown} expected The value that the received value is expected to match.
  * @returns {RequiredValidation} A validation function that takes a received value and an exception context.
  * @throws {ValidationError} If the received value does not match at least one of the expected values.
