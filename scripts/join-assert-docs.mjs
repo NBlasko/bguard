@@ -21,13 +21,8 @@ async function extractCommonTranslation() {
 }
 
 function rearrangeArray(arr, priorities) {
-  // Pronađi sve elemente sa prioritetima
   const prioritizedElements = priorities.map(priority => arr.filter(el => el === priority));
-
-  // Ukloni elemente sa prioritetima iz originalnog niza
   const remainingElements = arr.filter(el => !priorities.includes(el));
-
-  // Kreiraj novi niz sa elementima u redosledu prioriteta, pa dodaj preostale elemente
   return [...prioritizedElements.flat(), ...remainingElements];
 }
 
