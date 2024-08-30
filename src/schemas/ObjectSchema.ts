@@ -3,7 +3,7 @@ import { BuildSchemaError } from '../exceptions';
 import { CommonSchema, ObjectShapeSchemaType, ValidatorContext } from './CommonSchema';
 
 export class ObjectSchema extends CommonSchema {
-  _object = 1;
+  protected _object = 1;
   constructor(ctx: ValidatorContext, shapeSchema: ObjectShapeSchemaType) {
     super(ctx);
     this.validateObjectEntry(shapeSchema);

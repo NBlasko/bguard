@@ -65,7 +65,7 @@ describe('StringSchema', () => {
     );
   });
 
-  it('should be an alphanumeric pattern', () => {
+  it('should be a string with maxLength of 5', () => {
     const textSchema = string().custom(maxLength(5));
     expectEqualTypes<string, InferType<typeof textSchema>>(true);
     expect(parseOrFail(textSchema, 'short')).toBe('short');

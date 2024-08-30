@@ -4,6 +4,11 @@ import { ExceptionContext, RequiredValidation } from '../commonTypes';
 import { string } from '../asserts/string';
 import { boolean } from '../asserts/boolean';
 import { number } from '../asserts/number';
+import { min } from '../asserts/number/min';
+import { bigint } from '../asserts/bigint';
+import { date } from '../asserts/date';
+import { array } from '../asserts/array';
+import { object } from '../asserts/object';
 
 describe('CommonSchema', () => {
   it('should be a nullable string', () => {
@@ -53,5 +58,34 @@ describe('CommonSchema', () => {
     expect(parseOrFail(numberSchema, 4)).toBe(4);
     expect(() => parseOrFail(numberSchema, 3)).toThrow('The received value is not an even number');
     expect(() => parseOrFail(numberSchema, 3)).toThrow(ValidationError);
+  });
+
+  it('should return default value', () => {
+    const numberSchema = number().custom(min(0)).default(8);
+
+    expectEqualTypes<number, InferType<typeof numberSchema>>(true);
+    expect(parseOrFail(numberSchema, undefined)).toBe(8);
+  });
+
+  it('should throw a Build Error if we try to call some method after default', () => {
+    expect(() => number().default(8).custom(min(0))).toThrow('Default value must be the last method called in schema');
+  });
+
+  it('should throw a Build Error if we try to call default method after optional', () => {
+    expect(() => number().optional().default(8)).toThrow(`Cannot call method 'default' after method 'optional'`);
+  });
+
+  it('should throw Build Error on invalid default value', () => {
+    expect(() => number().default('8')).toThrow('Invalid type of data');
+    expect(() => string().default(true)).toThrow('Invalid type of data');
+    expect(() => boolean().default(8n)).toThrow('Invalid type of data');
+    expect(() => bigint().default(5)).toThrow('Invalid type of data');
+    expect(() => date().default(9n)).toThrow('The received value is not a valid instance of Date');
+    expect(() => array(number()).default(['5'])).toThrow('Invalid type of data');
+    expect(() => array(number()).default([5])).not.toThrow();
+    expect(() => array(number()).default([])).not.toThrow();
+    expect(() => object({ n: array(number()) }).default({ n: [true] })).toThrow('Invalid type of data');
+    expect(() => object({ n: array(number()) }).default({ n: [] })).not.toThrow();
+    expect(() => object({ n: number() }).default({})).toThrow('Missing required property in the object');
   });
 });

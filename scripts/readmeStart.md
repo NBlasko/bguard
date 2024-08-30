@@ -116,7 +116,7 @@ This would output a string:
 }
 ```
 
-Note: The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
+> **Notice:** The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
 
 #### Generating Named TypeScript Types with `codeGenWithName`
 
@@ -256,14 +256,25 @@ Explanation
 
 ### Chaining Methods
 
-- `nullable()`: Allows the value to be null.
-- `optional()`: Allows the value to be undefined.
+- `nullable()`: Allows the value to be `null`.
+- `optional()`: Allows the value to be `undefined`.
+- `default(value: unknown)`: Sets a default value if the received value is `undefined`.
+
+
+> **Notice:** You cannot chain `default()` and `optional()` together, as they are contradictory. The `optional()` method allows the value to be `undefined`, while the `default()` method assigns a value if `undefined`. Attempting to chain both will throw a `BuildSchemaError` with the message: `"Cannot call method 'default' after method 'optional'"`.
+
+
+> **Notice:** Additionally, `default()` must be the last method in the chain because it validates during schema build time that the default value is compatible with the rest of the schema. For example, if the schema is `number()`, the default value cannot be a `string`.
+
 
 Example:
 
 ```typeScript
+const schemaWithDefault = string().nullable().default('defaultString'); 
+// This schema allows null values and sets 'defaultString' if the value is undefined.
 
-const schema = string().nullable().optional();
+const optionalSchema = string().nullable().optional();
+// This schema allows both null and undefined values, but it does not provide a default value.
 ```
 
 - String Literals:

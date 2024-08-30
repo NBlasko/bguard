@@ -19,8 +19,7 @@ export class BuildSchemaError extends Error {}
 function replacePlaceholders(template: string, replacements: Record<string, unknown>): string {
   const regex = /{{(.*?)}}/g;
   return template.replace(regex, (_, key) => {
-    const vvv = key in replacements ? `${replacements[key] as string}` : `{{${key}}}`;
-    return vvv;
+    return key in replacements ? `${replacements[key] as string}` : `{{${key}}}`;
   });
 }
 
