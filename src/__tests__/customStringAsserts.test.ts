@@ -18,6 +18,9 @@ import { contains } from '../asserts/string/contains';
 import { startsWith } from '../asserts/string/startsWith';
 import { endsWith } from '../asserts/string/endsWith';
 import { validUrl } from '../asserts/string/validUrl';
+import { isValidDateTime } from '../asserts/string/isValidDateTime';
+import { isValidDate } from '../asserts/string/isValidDate';
+import { isValidTime } from '../asserts/string/isValidTime';
 
 describe('Custom String Asserts', () => {
   it('should be all lower case', () => {
@@ -206,62 +209,159 @@ describe('Custom String Asserts', () => {
     expect(() => parseOrFail(textSchema, '')).toThrow(ValidationError);
   });
 
-  it('should be a valid URL', () => {
-    const textSchema = string().custom(validUrl());
-    // Valid cases
-    expect(parseOrFail(textSchema, 'http://example.com/')).toBe('http://example.com/');
-    expect(parseOrFail(textSchema, 'https://example.com/')).toBe('https://example.com/');
-    expect(parseOrFail(textSchema, 'http://example.com')).toBe('http://example.com');
-    expect(parseOrFail(textSchema, 'https://example.com')).toBe('https://example.com');
-    expect(parseOrFail(textSchema, 'http://example.com/path/to/resource.html')).toBe(
-      'http://example.com/path/to/resource.html',
-    );
-    expect(parseOrFail(textSchema, 'http://example.com/?query=param')).toBe('http://example.com/?query=param');
-    expect(parseOrFail(textSchema, 'http://example.com:3000/resource.html')).toBe(
-      'http://example.com:3000/resource.html',
-    );
-    expect(parseOrFail(textSchema, 'http://example.com/space%20encoding.html')).toBe(
-      'http://example.com/space%20encoding.html',
-    );
-    expect(parseOrFail(textSchema, 'https://example.com/path/to/resource.html')).toBe(
-      'https://example.com/path/to/resource.html',
-    );
-    expect(parseOrFail(textSchema, 'https://example.com/?query=param')).toBe('https://example.com/?query=param');
-    expect(parseOrFail(textSchema, 'https://example.com:3000/resource.html')).toBe(
-      'https://example.com:3000/resource.html',
-    );
-    expect(parseOrFail(textSchema, 'https://example.com/space%20encoding.html')).toBe(
-      'https://example.com/space%20encoding.html',
-    );
-    expect(parseOrFail(textSchema, 'http://10.0.0.1/')).toBe('http://10.0.0.1/');
+  describe('isValidURL', () => {
+    it('should be a valid URL', () => {
+      const textSchema = string().custom(validUrl());
+      // Valid cases
+      expect(parseOrFail(textSchema, 'http://example.com/')).toBe('http://example.com/');
+      expect(parseOrFail(textSchema, 'https://example.com/')).toBe('https://example.com/');
+      expect(parseOrFail(textSchema, 'http://example.com')).toBe('http://example.com');
+      expect(parseOrFail(textSchema, 'https://example.com')).toBe('https://example.com');
+      expect(parseOrFail(textSchema, 'http://example.com/path/to/resource.html')).toBe(
+        'http://example.com/path/to/resource.html',
+      );
+      expect(parseOrFail(textSchema, 'http://example.com/?query=param')).toBe('http://example.com/?query=param');
+      expect(parseOrFail(textSchema, 'http://example.com:3000/resource.html')).toBe(
+        'http://example.com:3000/resource.html',
+      );
+      expect(parseOrFail(textSchema, 'http://example.com/space%20encoding.html')).toBe(
+        'http://example.com/space%20encoding.html',
+      );
+      expect(parseOrFail(textSchema, 'https://example.com/path/to/resource.html')).toBe(
+        'https://example.com/path/to/resource.html',
+      );
+      expect(parseOrFail(textSchema, 'https://example.com/?query=param')).toBe('https://example.com/?query=param');
+      expect(parseOrFail(textSchema, 'https://example.com:3000/resource.html')).toBe(
+        'https://example.com:3000/resource.html',
+      );
+      expect(parseOrFail(textSchema, 'https://example.com/space%20encoding.html')).toBe(
+        'https://example.com/space%20encoding.html',
+      );
+      expect(parseOrFail(textSchema, 'http://10.0.0.1/')).toBe('http://10.0.0.1/');
 
-    // Invalid cases
-    expect(() => parseOrFail(textSchema, '')).toThrow('The received value is not a valid URL');
-    expect(() => parseOrFail(textSchema, 'ftp://example.com')).toThrow('The received value is not a valid URL');
-    expect(() => parseOrFail(textSchema, 'http:example.com')).toThrow('The received value is not a valid URL');
+      // Invalid cases
+      expect(() => parseOrFail(textSchema, '')).toThrow('The received value is not a valid URL');
+      expect(() => parseOrFail(textSchema, 'ftp://example.com')).toThrow('The received value is not a valid URL');
+      expect(() => parseOrFail(textSchema, 'http:example.com')).toThrow('The received value is not a valid URL');
+    });
+
+    it('should be a valid URL with specified protocol', () => {
+      const textSchema = string().custom(validUrl('http'));
+      // Valid cases
+      expect(parseOrFail(textSchema, 'http://example.com/')).toBe('http://example.com/');
+      expect(parseOrFail(textSchema, 'http://example.com')).toBe('http://example.com');
+      expect(parseOrFail(textSchema, 'http://example.com/path/to/resource.html')).toBe(
+        'http://example.com/path/to/resource.html',
+      );
+      expect(parseOrFail(textSchema, 'http://example.com/?query=param')).toBe('http://example.com/?query=param');
+      expect(parseOrFail(textSchema, 'http://example.com:3000/resource.html')).toBe(
+        'http://example.com:3000/resource.html',
+      );
+      expect(parseOrFail(textSchema, 'http://example.com/space%20encoding.html')).toBe(
+        'http://example.com/space%20encoding.html',
+      );
+      expect(parseOrFail(textSchema, 'http://10.0.0.1/')).toBe('http://10.0.0.1/');
+
+      // Invalid cases
+      expect(() => parseOrFail(textSchema, 'https://example.com')).toThrow('The received value is not a valid URL');
+      expect(() => parseOrFail(textSchema, 'ftp://example.com')).toThrow('The received value is not a valid URL');
+      expect(() => parseOrFail(textSchema, 'http:example.com')).toThrow('The received value is not a valid URL');
+      expect(() => parseOrFail(textSchema, '')).toThrow('The received value is not a valid URL');
+    });
+  });
+  describe('isValidDateTime', () => {
+    it('should pass for valid ISO 8601 datetime strings without offset', () => {
+      const schema = string().custom(isValidDateTime());
+
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00Z')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00.250Z')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00.250816Z')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00+03:00')).toThrow(ValidationError);
+    });
+
+    it('should pass for valid ISO 8601 datetime strings with offset', () => {
+      const schema = string().custom(isValidDateTime({ offset: true }));
+
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00+03:00')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00.123+03:00')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00.123+0300')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00.123+03')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00Z')).not.toThrow();
+    });
+
+    it('should pass for valid ISO 8601 datetime strings with specific precision', () => {
+      const schema = string().custom(isValidDateTime({ precision: 3 }));
+
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00.250Z')).not.toThrow();
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00Z')).toThrow(ValidationError);
+      expect(() => parseOrFail(schema, '2024-01-01T00:00:00.250816Z')).toThrow(ValidationError);
+    });
   });
 
-  it('should be a valid URL with specified protocol', () => {
-    const textSchema = string().custom(validUrl('http'));
-    // Valid cases
-    expect(parseOrFail(textSchema, 'http://example.com/')).toBe('http://example.com/');
-    expect(parseOrFail(textSchema, 'http://example.com')).toBe('http://example.com');
-    expect(parseOrFail(textSchema, 'http://example.com/path/to/resource.html')).toBe(
-      'http://example.com/path/to/resource.html',
-    );
-    expect(parseOrFail(textSchema, 'http://example.com/?query=param')).toBe('http://example.com/?query=param');
-    expect(parseOrFail(textSchema, 'http://example.com:3000/resource.html')).toBe(
-      'http://example.com:3000/resource.html',
-    );
-    expect(parseOrFail(textSchema, 'http://example.com/space%20encoding.html')).toBe(
-      'http://example.com/space%20encoding.html',
-    );
-    expect(parseOrFail(textSchema, 'http://10.0.0.1/')).toBe('http://10.0.0.1/');
+  describe('isValidDate', () => {
+    it('should pass for valid date strings in YYYY-MM-DD format', () => {
+      const schema = string().custom(isValidDate());
 
-    // Invalid cases
-    expect(() => parseOrFail(textSchema, 'https://example.com')).toThrow('The received value is not a valid URL');
-    expect(() => parseOrFail(textSchema, 'ftp://example.com')).toThrow('The received value is not a valid URL');
-    expect(() => parseOrFail(textSchema, 'http:example.com')).toThrow('The received value is not a valid URL');
-    expect(() => parseOrFail(textSchema, '')).toThrow('The received value is not a valid URL');
+      expect(() => parseOrFail(schema, '2024-01-01')).not.toThrow(); // valid
+    });
+
+    it('should fail for date strings not in YYYY-MM-DD format', () => {
+      const schema = string().custom(isValidDate());
+
+      expect(() => parseOrFail(schema, '2024-1-1')).toThrow(); // invalid (single digit month and day)
+      expect(() => parseOrFail(schema, '2024-01-32')).toThrow(); // invalid (day out of range)
+      expect(() => parseOrFail(schema, '2024-13-01')).toThrow(); // invalid (month out of range)
+      expect(() => parseOrFail(schema, '20-01-01')).toThrow(); // invalid (year too short)
+      expect(() => parseOrFail(schema, '2024/01/01')).toThrow(); // invalid (wrong delimiter)
+    });
+  });
+
+  describe('isValidTime', () => {
+    it('should pass for valid time strings in HH:mm:ss format', () => {
+      const schema = string().custom(isValidTime());
+
+      expect(() => parseOrFail(schema, '00:00:00')).not.toThrow(); // valid
+      expect(() => parseOrFail(schema, '09:52:31')).not.toThrow(); // valid
+      expect(() => parseOrFail(schema, '23:59:59.9999999')).not.toThrow(); // valid with arbitrary precision
+    });
+
+    it('should fail for time strings with offsets or Z suffix', () => {
+      const schema = string().custom(isValidTime());
+
+      expect(() => parseOrFail(schema, '00:00:00.123Z')).toThrow(); // invalid (Z not allowed)
+      expect(() => parseOrFail(schema, '00:00:00.123+02:00')).toThrow(); // invalid (offsets not allowed)
+      expect(() => parseOrFail(schema, '00:00:00.123-02:00')).toThrow(); // invalid (offsets not allowed)
+    });
+
+    it('should enforce precision when specified', () => {
+      const schema = string().custom(isValidTime({ precision: 3 }));
+
+      expect(() => parseOrFail(schema, '00:00:00.123')).not.toThrow(); // valid with specified precision
+      expect(() => parseOrFail(schema, '00:00:00')).toThrow(); // invalid (precision required)
+      expect(() => parseOrFail(schema, '00:00:00.250816')).toThrow(); // invalid (too many fractional digits)
+    });
+
+    it('should fail if precision is specified but the time string does not include milliseconds', () => {
+      const schema = string().custom(isValidTime({ precision: 3 }));
+
+      expect(() => parseOrFail(schema, '12:34:56Z')).toThrow(); // Should throw error as 'Z' is not allowed
+      expect(() => parseOrFail(schema, '00:00:00')).toThrow(); // invalid (missing milliseconds)
+      expect(() => parseOrFail(schema, '00:00:00.12')).toThrow(); // invalid (not enough precision)
+    });
+
+    it('should fail if time string contains Z, +, or -', () => {
+      const schema = string().custom(isValidTime());
+
+      expect(() => parseOrFail(schema, '12:34:56Z')).toThrow(); // Should throw error as 'Z' is not allowed
+      expect(() => parseOrFail(schema, '12:34:56+02:00')).toThrow(); // Should throw error as '+' is not allowed
+      expect(() => parseOrFail(schema, '12:34:56-02:00')).toThrow(); // Should throw error as '-' is not allowed
+    });
+
+    it('should pass if time string does not contain Z, +, or -', () => {
+      const schema = string().custom(isValidTime());
+
+      expect(() => parseOrFail(schema, '12:34:56')).not.toThrow(); // Valid time
+      expect(() => parseOrFail(schema, '23:59:59.999')).not.toThrow(); // Valid time with milliseconds
+    });
   });
 });

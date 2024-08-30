@@ -473,6 +473,9 @@ Each key and message will be visible in text editors that support JSDoc IntelliS
     * [contains](#assert_contains_string)
     * [email](#assert_email_string)
     * [endsWith](#assert_endsWith_string)
+    * [isValidDate](#assert_isValidDate_string)
+    * [isValidDateTime](#assert_isValidDateTime_string)
+    * [isValidTime](#assert_isValidTime_string)
     * [lowerCase](#assert_lowerCase_string)
     * [maxLength](#assert_maxLength_string)
     * [minLength](#assert_minLength_string)
@@ -649,6 +652,75 @@ import { endsWith } from 'bguard/string/endsWith';
  parseOrFail(schema, 'foofoo'); // Throws an error: 'The received value does not end with the required substring'
 ```
 * _See_ Error Translation Key = 's:endsWith'
+        
+        
+##### isValidDate (string) {#assert_isValidDate_string}
+        
+```typescript
+import { isValidDate } from 'bguard/string/isValidDate';
+```
+        
+* _Description_ Asserts that a string is a valid date in the format YYYY-MM-DD.
+* _Throws_ {ValidationError} if the received string is not a valid date.
+* _Example_
+```typescript
+ const schema = string().custom(isValidDate());
+ parseOrFail(schema, "2020-01-01"); // Valid
+ parseOrFail(schema, "2020-1-1");   // Throws an error: 'The received value is not a valid date'
+ parseOrFail(schema, "2020-01-32"); // Throws an error: 'The received value is not a valid date'
+```
+* _See_ Error Translation Key = 's:isValidDate'
+        
+        
+##### isValidDateTime (string) {#assert_isValidDateTime_string}
+        
+```typescript
+import { isValidDateTime } from 'bguard/string/isValidDateTime';
+```
+        
+* _Description_ Asserts that a string value is a valid ISO 8601 datetime string.
+* _Param_ {DateTimeOptions} options Options to control the validation:
+ - `offset`: If `true`, allows timezone offsets in the datetime string.
+ - `precision`: Specify the exact number of fractional second digits allowed (e.g., 3 for milliseconds).
+* _Throws_ {ValidationError} if the received value is not a valid datetime string according to the options.
+* _Example_
+```typescript
+ const schema = string().custom(isValidDateTime());
+ parseOrFail(schema, "2024-01-01T00:00:00Z"); // Valid
+ parseOrFail(schema, "2024-01-01T00:00:00.123Z"); // Valid
+ parseOrFail(schema, "2024-01-01T00:00:00+03:00"); // Invalid (no offsets allowed)
+
+ const schemaWithOffset = string().custom(isValidDateTime({ offset: true }));
+ parseOrFail(schemaWithOffset, "2024-01-01T00:00:00+04:00"); // Valid
+
+ const schemaWithPrecision = string().custom(isValidDateTime({ precision: 3 }));
+ parseOrFail(schemaWithPrecision, "2024-01-01T00:00:00.123Z"); // Valid
+ parseOrFail(schemaWithPrecision, "2024-01-01T00:00:00.123456Z"); // Invalid
+```
+* _See_ Error Translation Key = 's:isValidDateTime'
+        
+        
+##### isValidTime (string) {#assert_isValidTime_string}
+        
+```typescript
+import { isValidTime } from 'bguard/string/isValidTime';
+```
+        
+* _Description_ Asserts that a string is a valid time in the format HH:mm:ss, with optional fractional seconds.
+* _Param_ {IsValidTimeOptions} options Optional settings to configure the validation.
+* _Throws_ {ValidationError} if the received string is not a valid time.
+* _Example_
+```typescript
+ const schema = string().custom(isValidTime());
+ parseOrFail(schema, "00:00:00"); // Valid
+ parseOrFail(schema, "23:59:59.9999999"); // Valid
+ parseOrFail(schema, "00:00:00.256Z");   // Throws an error: 'The received value is not a valid time'
+
+ const schemaWithPrecision = string().custom(isValidTime({ precision: 3 }));
+ parseOrFail(schemaWithPrecision, "00:00:00.256"); // Valid
+ parseOrFail(schemaWithPrecision, "00:00:00");    // Throws an error: 'The received value is not a valid time'
+```
+* _See_ Error Translation Key = 's:isValidTime'
         
         
 ##### lowerCase (string) {#assert_lowerCase_string}

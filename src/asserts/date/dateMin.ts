@@ -1,7 +1,7 @@
 import { setToDefaultLocale } from '../../translationMap';
 import { BuildSchemaError, guardException } from '../../exceptions';
 import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { isValidDate } from '../../helpers/isValidDate';
+import { isValidDateInner } from '../../helpers/isValidDateInner';
 
 const dateMinErrorMessage = 'The received value is less than expected';
 const dateMinErrorKey = 'dt:min';
@@ -20,7 +20,7 @@ const dateMinErrorKey = 'dt:min';
  */
 export const dateMin = (expected: Date | string): RequiredValidation => {
   const transformedExpected = typeof expected === 'string' ? new Date(expected) : expected;
-  if (!isValidDate(transformedExpected)) throw new BuildSchemaError('Invalid date in Date assertion');
+  if (!isValidDateInner(transformedExpected)) throw new BuildSchemaError('Invalid date in Date assertion');
   return (received: Date, ctx: ExceptionContext) => {
     if (transformedExpected > received) guardException(transformedExpected, received, ctx, dateMinErrorKey);
   };

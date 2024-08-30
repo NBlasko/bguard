@@ -1,16 +1,25 @@
 # bguard
 
-## 0.0.1
+## 0.3.0
 
-### Initial
+### Added default Chain Method and Validation Data Parsing
 
-- Set initial library.
+- Added default Method: Allows setting a default value if the value is undefined.
+- Enhanced Validation Data Parsing: Ensures that returned objects and arrays do not hold references after parsing, improving data immutability.
 
-## 0.0.9
+## 0.2.0
 
-### Bundle fix
+### Remove default import for asserts and add BigIntSchema
 
-- Adding custom assertions to the bundle and enhancing the README file.
+- Remove default import for asserts. Now, we can use them from 'bguard/{assertFolder}'.
+- Add BigIntSchema
+- Update docs and add more assertions
+
+## 0.1.1
+
+### Update docs and add more assertions
+
+- Update docs and add more assertions
 
 ## 0.1.0
 
@@ -20,17 +29,14 @@
 - Added parse feature
 - Added error message translation feature
 
-## 0.1.1
+## 0.0.9
 
-### Update docs and add more assertions
+### Bundle fix
 
-- Update docs and add more assertions
+- Adding custom assertions to the bundle and enhancing the README file.
 
+## 0.0.1
 
-## 0.2.0
+### Initial
 
-### Remove default import for asserts and add BigIntSchema
-
-- Remove default import for asserts. Now, we can use them from 'bguard/{assertFolder}'.
-- Add BigIntSchema
-- Update docs and add more assertions
+- Set initial library.
