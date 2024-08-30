@@ -19,7 +19,7 @@ describe('ObjectSchema', () => {
     };
     expectEqualTypes<MyObjectWithNumbers, InferType<typeof objectWithNumbersSchema>>(true);
     const myObject = { foo: 5 };
-    expect(parseOrFail(objectWithNumbersSchema, myObject)).toBe(myObject);
+    expect(parseOrFail(objectWithNumbersSchema, myObject)).toEqual(myObject);
     expect(() => parseOrFail(objectWithNumbersSchema, 'not an object')).toThrow(
       'Expected an object but received a different type',
     );
@@ -75,7 +75,7 @@ describe('ObjectSchema', () => {
     >(true);
     const receivedObject = { foo: 'recognized key', bar: 'unrecognized key' };
     const result = parseOrFail(objectSchema, receivedObject);
-    expect(result).toBe(receivedObject);
+    expect(result).toEqual({ foo: 'recognized key' });
   });
 
   it('should run with an unrecognized keys', () => {
@@ -142,7 +142,7 @@ describe('ObjectSchema', () => {
       verified: true,
     };
 
-    expect(parseOrFail(userSchema, validUser)).toBe(validUser);
+    expect(parseOrFail(userSchema, validUser)).toEqual(validUser);
 
     const userWithInvalidAddress: User = {
       email: 'foo@foo.com',

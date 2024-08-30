@@ -6,7 +6,7 @@ import { _setStrictType } from '../helpers/setStrictType';
 import { CommonSchema } from './CommonSchema';
 
 export class BigIntSchema extends CommonSchema {
-  _bigint = 1;
+  protected _bigint = 1;
   private limit: boolean | undefined;
 
   /**
@@ -17,9 +17,9 @@ export class BigIntSchema extends CommonSchema {
    *
    * @example - bigint().equalTo(42n); // Infers the type 42n
    */
-  equalTo<Y extends bigint>(expectedValue: Y): WithBigInt<this, Y> {
-    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
-    this.limit = true;
+  public equalTo<Y extends bigint>(expectedValue: Y): WithBigInt<this, Y> {
+    this.defaultValueCheck();
+    this.limitCheck();
     _setStrictType(this, `${expectedValue}n`);
     return this.custom(equalTo(expectedValue)) as WithBigInt<this, Y>;
   }
@@ -33,14 +33,19 @@ export class BigIntSchema extends CommonSchema {
    * @example
    * bigint().oneOfValues([5n, 7n]); // Infers the type 5n | 7n
    */
-  oneOfValues<Y extends bigint>(expectedValue: Y[]): WithBigInt<this, Y> {
-    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
-    this.limit = true;
+  public oneOfValues<Y extends bigint>(expectedValue: Y[]): WithBigInt<this, Y> {
+    this.defaultValueCheck();
+    this.limitCheck();
     _setStrictType(
       this,
       expectedValue.map((el) => `${el}n`),
     );
     return this.custom(oneOfValues(expectedValue)) as WithBigInt<this, Y>;
+  }
+
+  private limitCheck() {
+    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
+    this.limit = true;
   }
 }
 

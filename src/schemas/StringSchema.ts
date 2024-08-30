@@ -6,7 +6,7 @@ import { _setStrictType } from '../helpers/setStrictType';
 import { CommonSchema } from './CommonSchema';
 
 export class StringSchema extends CommonSchema {
-  _string = 1;
+  protected _string = 1;
   private limit: boolean | undefined;
 
   /**
@@ -17,9 +17,8 @@ export class StringSchema extends CommonSchema {
    *
    * @example - string().equalTo('hello'); // Infers the type 'hello'
    */
-  equalTo<Y extends string>(expectedValue: Y): WithString<this, Y> {
-    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
-    this.limit = true;
+  public equalTo<Y extends string>(expectedValue: Y): WithString<this, Y> {
+    this.limitCheck();
     _setStrictType(this, `'${expectedValue}'`);
 
     return this.custom(equalTo(expectedValue)) as WithString<this, Y>;
@@ -34,14 +33,18 @@ export class StringSchema extends CommonSchema {
    * @example
    * string().oneOfValues(['foo', 'bar']); // Infers the type 'foo' | 'bar'
    */
-  oneOfValues<Y extends string>(expectedValue: Y[]): WithString<this, Y> {
-    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
-    this.limit = true;
+  public oneOfValues<Y extends string>(expectedValue: Y[]): WithString<this, Y> {
+    this.limitCheck();
     _setStrictType(
       this,
       expectedValue.map((el) => `'${el}'`),
     );
     return this.custom(oneOfValues(expectedValue)) as WithString<this, Y>;
+  }
+
+  private limitCheck() {
+    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
+    this.limit = true;
   }
 }
 

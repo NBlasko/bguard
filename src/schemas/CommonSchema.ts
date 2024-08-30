@@ -1,5 +1,7 @@
 import { PrimitiveType, RequiredValidation } from '../commonTypes';
+import { BuildSchemaError } from '../exceptions';
 import { ctxSymbol } from '../helpers/core';
+import { parseOrFail } from '../parseOrFail';
 
 export type ObjectShapeSchemaType = Record<string, CommonSchema>;
 
@@ -14,6 +16,7 @@ export interface ValidatorContext {
   strictType?: boolean;
   strictTypeValue?: unknown;
   date?: boolean;
+  defaultValue?: unknown;
 }
 
 export class CommonSchema {
@@ -26,7 +29,8 @@ export class CommonSchema {
    * @param validators - One or more custom validation functions.
    * @returns {this} The schema instance with the added custom validation.
    */
-  custom(...validators: RequiredValidation[]): this {
+  public custom(...validators: RequiredValidation[]): this {
+    this.defaultValueCheck();
     this[ctxSymbol].requiredValidations.push(...validators);
     return this;
   }
@@ -36,7 +40,8 @@ export class CommonSchema {
    *
    * @returns {WithNull<this>} The schema instance marked as nullable.
    */
-  nullable(): WithNull<this> {
+  public nullable(): WithNull<this> {
+    this.defaultValueCheck();
     this[ctxSymbol].isNullable = true;
     return this as WithNull<this>;
   }
@@ -46,9 +51,37 @@ export class CommonSchema {
    *
    * @returns {WithUndefined<this>} The schema instance marked as optional.
    */
-  optional(): WithUndefined<this> {
+  public optional(): WithUndefined<this> {
+    this.defaultValueCheck();
     this[ctxSymbol].isOptional = true;
     return this as WithUndefined<this>;
+  }
+
+  /**
+   * Marks the schema as optional, allowing the value to be `undefined`.
+   *
+   * @returns {this} The schema instance. This method should be used as a last one because it does the check of previous methods and
+   */
+  public default(defaultValue: unknown): this {
+    const ctx = this[ctxSymbol];
+    if (ctx.isOptional) {
+      throw new BuildSchemaError(`Cannot call method 'default' after method 'optional'`);
+    }
+
+    try {
+      parseOrFail(this, defaultValue);
+    } catch (e) {
+      throw new BuildSchemaError((e as Error).message);
+    }
+
+    this[ctxSymbol].defaultValue = defaultValue;
+    return this;
+  }
+
+  protected defaultValueCheck() {
+    if (this[ctxSymbol].defaultValue !== undefined) {
+      throw new BuildSchemaError('Default value must be the last method called in schema');
+    }
   }
 }
 

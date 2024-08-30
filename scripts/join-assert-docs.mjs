@@ -20,6 +20,12 @@ async function extractCommonTranslation() {
   return formattedContent;
 }
 
+function rearrangeArray(arr, priorities) {
+  const prioritizedElements = priorities.map(priority => arr.filter(el => el === priority));
+  const remainingElements = arr.filter(el => !priorities.includes(el));
+  return [...prioritizedElements.flat(), ...remainingElements];
+}
+
 function extractJsDocContent(fileContent) {
   const jsDocRegex = /\/\*\*[\s\S]*?\*\//g;
   const jsDocMatches = fileContent.match(jsDocRegex);
@@ -45,7 +51,6 @@ function extractJsDocContent(fileContent) {
       cleanedJsDoc = cleanedJsDoc.replace(/ @throws\s*/, '* _Throws_ ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/@instance.+/, '').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/@template.+/, '').trim();
-      
 
       return cleanedJsDoc;
     })
@@ -58,14 +63,17 @@ const run = async () => {
   let readmeStart = await fs.readFile(path.join('scripts', 'readmeStart.md'), { encoding: 'utf8' });
   const translationCommonMap = await extractCommonTranslation();
   readmeStart = readmeStart.replace(/@@TRANSLATION_COMMON_MAP@@/, translationCommonMap).trim();
-
-  let textData = '\n\n### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} \n';
-  const dirs = await fs.readdir(path.join('src/asserts'));
+  let pageContext = '\n\n### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} \n';
+  let textData = '\n';
+  const rawDirs = await fs.readdir(path.join('src/asserts'));
+  const dirs = rearrangeArray(rawDirs, ['string', 'number']);
+  
   for (const dir of dirs) {
     const files = await fs.readdir(path.join('src/asserts', dir));
     const hasAsserts = files.findIndex((file) => file.endsWith('.ts') && file !== 'index.ts');
     if (hasAsserts === -1) continue;
-    textData += `\n#### ${dir}`;
+    pageContext += `\n * [${dir}](#assertdir_${dir})`
+    textData += `\n#### ${dir} {#assertdir_${dir}}`;
     // Prerequisites
     const findIndexFile = files.find((file) => file === 'index.ts');
     if (!findIndexFile) throw new Error(`Script Error, missing index file in ${dir}`);
@@ -81,8 +89,9 @@ const run = async () => {
       if (file.endsWith('.ts') && file !== 'index.ts') {
         const fileData = await fs.readFile(path.join('src/asserts', dir, file), { encoding: 'utf8' });
         const fileName = path.parse(file).name;
+        pageContext += `\n    * [${fileName}](#assert_${fileName}_${dir})`
         textData += `
-        \n##### ${fileName} (${dir})
+        \n##### ${fileName} (${dir}) {#assert_${fileName}_${dir}}
         \n\`\`\`typescript\nimport { ${fileName} } from 'bguard/${dir}/${fileName}';\n\`\`\`
         \n${extractJsDocContent(fileData)}
         `;
@@ -92,7 +101,7 @@ const run = async () => {
 
   textData += `\n### Contributing\nContributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.`;
 
-  await fs.writeFile('README.md', readmeStart + textData);
+  await fs.writeFile('README.md', readmeStart + pageContext + textData);
 };
 
 run();

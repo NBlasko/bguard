@@ -3,7 +3,7 @@ import { BuildSchemaError } from '../exceptions';
 import { CommonSchema, ValidatorContext } from './CommonSchema';
 
 export class ArraySchema extends CommonSchema {
-  _array = 1;
+  protected _array = 1;
   constructor(ctx: ValidatorContext, arraySchema: CommonSchema) {
     super(ctx);
     this.validateArrayEntry(arraySchema);

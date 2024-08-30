@@ -8,7 +8,7 @@ const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionConte
 };
 
 export class BooleanSchema extends CommonSchema {
-  _boolean = 1;
+  protected _boolean = 1;
 
   /**
    * Restricts the schema to exactly match the boolean value true and infers the true value as the TypeScript type.
@@ -17,7 +17,7 @@ export class BooleanSchema extends CommonSchema {
    *
    * @example - boolean().onlyTrue(); // Infers the type true
    */
-  onlyTrue(): WithBoolean<this, true> {
+  public onlyTrue(): WithBoolean<this, true> {
     _setStrictType(this, true);
     return this.custom(isBoolean(true)) as WithBoolean<this, true>;
   }
@@ -29,7 +29,7 @@ export class BooleanSchema extends CommonSchema {
    *
    * @example - boolean().onlyFalse(); // Infers the type false
    */
-  onlyFalse(): WithBoolean<this, false> {
+  public onlyFalse(): WithBoolean<this, false> {
     _setStrictType(this, false);
     return this.custom(isBoolean(false)) as WithBoolean<this, false>;
   }

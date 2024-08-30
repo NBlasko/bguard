@@ -1,7 +1,7 @@
 import { setToDefaultLocale } from '../../translationMap';
 import { BuildSchemaError, guardException } from '../../exceptions';
 import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { isValidDate } from '../../helpers/isValidDate';
+import { isValidDateInner } from '../../helpers/isValidDateInner';
 
 const dateMaxErrorMessage = 'The received value is greater than expected';
 const dateMaxErrorKey = 'dt:max';
@@ -20,7 +20,7 @@ const dateMaxErrorKey = 'dt:max';
  */
 export const dateMax = (expected: Date | string): RequiredValidation => {
   const transformedExpected = typeof expected === 'string' ? new Date(expected) : expected;
-  if (!isValidDate(transformedExpected)) throw new BuildSchemaError('Invalid date in Date assertion');
+  if (!isValidDateInner(transformedExpected)) throw new BuildSchemaError('Invalid date in Date assertion');
   return (received: Date, ctx: ExceptionContext) => {
     if (transformedExpected < received) guardException(transformedExpected, received, ctx, dateMaxErrorKey);
   };
