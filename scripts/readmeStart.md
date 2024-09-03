@@ -256,9 +256,28 @@ Explanation
 
 ### Chaining Methods
 
-- `nullable()`: Allows the value to be `null`.
-- `optional()`: Allows the value to be `undefined`.
-- `default(value: unknown)`: Sets a default value if the received value is `undefined`.
+#### nullable() 
+Allows the value to be `null`.
+
+Example:
+
+```typeScript
+const nullableSchema = string().nullable().optional();
+// This schema allows string or null values.
+```
+
+#### optional()
+Allows the value to be `undefined`.
+
+_Example_:
+
+```typeScript
+const optionalSchema = string().nullable().optional();
+// This schema allows string or undefined values.
+```
+
+#### default(value: InferType<this>)
+Sets a default value if the received value is `undefined`. The default value must match the inferred type of the schema, ensuring compatibility.
 
 
 > **Notice:** You cannot chain `default()` and `optional()` together, as they are contradictory. The `optional()` method allows the value to be `undefined`, while the `default()` method assigns a value if `undefined`. Attempting to chain both will throw a `BuildSchemaError` with the message: `"Cannot call method 'default' after method 'optional'"`.
@@ -266,8 +285,7 @@ Explanation
 
 > **Notice:** Additionally, `default()` must be the last method in the chain because it validates during schema build time that the default value is compatible with the rest of the schema. For example, if the schema is `number()`, the default value cannot be a `string`.
 
-
-Example:
+_Example_:
 
 ```typeScript
 const schemaWithDefault = string().nullable().default('defaultString'); 
@@ -277,15 +295,73 @@ const optionalSchema = string().nullable().optional();
 // This schema allows both null and undefined values, but it does not provide a default value.
 ```
 
-- String Literals:
+#### id(value: string)
+
+Assigns a unique identifier to the schema, useful for tracking or mapping validation errors. The `id` can be accessed via `err.meta?.id` in case of a validation error.
+
+#### description(value: string)
+
+Provides a description for the schema, which can be used to give more context about the validation error. The `description` can be accessed via `err.meta?.description` in case of a validation error.
+
+_Example_:
+
+```typeScript
+const addressSchema = string()
+  .id('address')
+  .description('Users address');
+// This schema validates that string and assigns an ID and description for better error handling.
+
+try {
+  parseOrFail(addressSchema, undefined);
+} catch (e) {
+  const err = e as ValidationError;
+  console.log(err.message);  // Output: 'The required value is missing'
+  console.log(err.pathToError);  // Output: ''
+  console.log(err.meta?.id);  // Output:  'address'
+  console.log(err.meta?.description);  // Output: 'Users address'
+}
+```
+
+#### transformBeforeValidation\<In\>(cb: TransformCallback<In, InferType\<Schema>\>)</b>
+
+This method allows you to apply a transformation to the input value before any validation occurs. The transformation is applied before the schema's other methods (like `nullable`, `custom`, etc.). The callback function can receive an input of type `unknown` by default, but you can specify the type if you know it, such as `string`. The return value of the callback must be of the same type as the inferred type of the schema, ensuring that the overall type does not change.
+
+<b>Order of Execution</b>: 
+First, transformations specified using transformBeforeValidation are applied.
+Then, the schema checks for null or undefined based on methods like `nullable` or `optional`.
+Finally, the `custom` validations and type checks are performed.
+
+This method is particularly useful for normalizing or preparing data before validation, such as trimming whitespace, converting empty strings to null, or handling other preprocessing needs.
+
+> **Notice:** Like default, `transformBeforeValidation` should be placed at the end of the chain. This ensures that the transformation is correctly applied after all other type checks are resolved, preserving the expected type.
+
+_Example_:
+
+```typescript
+const stringOrNullSchema = string()
+  .nullable()
+  .custom(minLength(3))
+  .transformBeforeValidation((val) => val + '') // First, transform value to a string
+  .transformBeforeValidation((val: string) => (val === '' ? null : val)); // Second, convert empty strings to null
+
+// Parsing 'test' will pass as 'test' is a valid string longer than 3 characters.
+parseOrFail(stringOrNullSchema, 'test');
+
+// Parsing '' will be transformed to null and will pass due to .nullable().
+parseOrFail(stringOrNullSchema, '');
+```
+
+### Literals
+
+- <b>String Literals</b>:
   `string().equalTo('myStringValue')` will infer <b>'myStringValue'</b> as the type.
   `string().oneOfValues(['foo', 'bar'])` will infer <b>'foo' | 'bar'</b> as the type.
 
-- Number Literals:
+- <b>Number Literals</b>:
   `number().equalTo(42)` will infer <b>42</b> as the type.
   `number().oneOfValues([3, 5])` will infer <b>3 | 5</b> as the type.
 
-- Boolean Literals:
+- <b>Boolean Literals</b>:
   `boolean().onlyTrue()` will infer <b>true</b> as the type.
   `boolean().onlyFalse()` will infer <b>false</b> as the type.
 

@@ -1,5 +1,6 @@
 import { equalTo } from '../asserts/mix/equalTo';
 import { oneOfValues } from '../asserts/mix/oneOfValues';
+import { WithBGuardType } from '../commonTypes';
 import { BuildSchemaError } from '../exceptions';
 import { ONLY_ONCE } from '../helpers/constants';
 import { _setStrictType } from '../helpers/setStrictType';
@@ -17,11 +18,11 @@ export class StringSchema extends CommonSchema {
    *
    * @example - string().equalTo('hello'); // Infers the type 'hello'
    */
-  public equalTo<Y extends string>(expectedValue: Y): WithString<this, Y> {
+  public equalTo<Y extends string>(expectedValue: Y): WithBGuardType<this, Y> {
     this.limitCheck();
     _setStrictType(this, `'${expectedValue}'`);
 
-    return this.custom(equalTo(expectedValue)) as WithString<this, Y>;
+    return this.custom(equalTo(expectedValue)) as WithBGuardType<this, Y>;
   }
 
   /**
@@ -33,13 +34,13 @@ export class StringSchema extends CommonSchema {
    * @example
    * string().oneOfValues(['foo', 'bar']); // Infers the type 'foo' | 'bar'
    */
-  public oneOfValues<Y extends string>(expectedValue: Y[]): WithString<this, Y> {
+  public oneOfValues<Y extends string>(expectedValue: Y[]): WithBGuardType<this, Y> {
     this.limitCheck();
     _setStrictType(
       this,
       expectedValue.map((el) => `'${el}'`),
     );
-    return this.custom(oneOfValues(expectedValue)) as WithString<this, Y>;
+    return this.custom(oneOfValues(expectedValue)) as WithBGuardType<this, Y>;
   }
 
   private limitCheck() {
@@ -47,6 +48,3 @@ export class StringSchema extends CommonSchema {
     this.limit = true;
   }
 }
-
-export type WithString<T extends StringSchema, Y = string> = T & { validation_string: Y };
-export type ExtractFromString<T> = T extends WithString<StringSchema, infer Y> ? Y : never;

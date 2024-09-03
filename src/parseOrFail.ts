@@ -1,6 +1,6 @@
 import type { InferType } from './InferType';
 import type { CommonSchema } from './schemas/CommonSchema';
-import { innerCheck } from './helpers/core';
+import { ctxSymbol, innerCheck } from './helpers/core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
 interface ParseOptions {
@@ -49,6 +49,7 @@ export function parseOrFail<T extends CommonSchema>(
     return innerCheck(schema, receivedValue, {
       t: getTranslationByLocale(options?.lng),
       pathToError: '',
+      meta: schema[ctxSymbol].meta,
     }) as InferType<T>;
   } catch (e) {
     if (e instanceof ValidationError) throw e;

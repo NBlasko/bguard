@@ -113,7 +113,7 @@ describe('ObjectSchema', () => {
       userName: string().optional(),
       verified: boolean().onlyTrue().optional(),
       phone: number().nullable().optional(),
-      address: array(string().custom(minLength(3))),
+      address: array(string().custom(minLength(3))).id('address').description('Users address'),
     });
 
     interface User {
@@ -158,6 +158,8 @@ describe('ObjectSchema', () => {
       const err = e as ValidationError;
       expect(err.pathToError).toBe('.address[0]');
       expect(err.message).toBe('The received value length is less than expected');
+      expect(err.meta?.id).toBe('address');
+      expect(err.meta?.description).toBe('Users address');
       expect(e instanceof ValidationError).toBeTruthy();
     }
 

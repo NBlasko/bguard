@@ -1,16 +1,18 @@
-import type { ExceptionContext } from './commonTypes';
+import type { ExceptionContext, MetaContext } from './commonTypes';
 
 export class ValidationError extends Error {
   expected: unknown;
   received: unknown;
   pathToError: string;
   message: string;
-  constructor(expected: unknown, received: unknown, pathToError: string, message: string) {
+  meta?: MetaContext;
+  constructor(expected: unknown, received: unknown, pathToError: string, message: string, meta?: MetaContext) {
     super();
     this.expected = expected;
     this.received = received;
     this.pathToError = pathToError;
     this.message = message;
+    this.meta = meta;
   }
 }
 
@@ -42,5 +44,5 @@ export function guardException(
 
     return;
   }
-  throw new ValidationError(expected, received, ctx.pathToError, message);
+  throw new ValidationError(expected, received, ctx.pathToError, message, ctx.meta);
 }

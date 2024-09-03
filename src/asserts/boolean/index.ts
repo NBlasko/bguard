@@ -1,8 +1,9 @@
+import { WithBGuardType } from '../../commonTypes';
 import { BooleanSchema } from '../../schemas/BooleanSchema';
 
 /**
  * @description Creates a new schema for validating boolean values.
- * @returns {BooleanSchema} A new instance of `BooleanSchema` for validating booleans.
+ * @returns {WithBGuardType<BooleanSchema, boolean>} A new instance of `BooleanSchema` for validating booleans.
  * @example
  * const schema = boolean();
  * parseOrFail(schema, true); // Validates successfully
@@ -10,6 +11,6 @@ import { BooleanSchema } from '../../schemas/BooleanSchema';
  *
  * @instance Of BooleanSchema
  */
-export function boolean(): BooleanSchema {
-  return new BooleanSchema({ type: ['boolean'], requiredValidations: [] });
+export function boolean(): WithBGuardType<BooleanSchema, boolean> {
+  return new BooleanSchema({ type: ['boolean'], requiredValidations: [] }) as WithBGuardType<BooleanSchema, boolean>;
 }

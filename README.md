@@ -257,24 +257,42 @@ Explanation
 ### Chaining Methods
 
 - `nullable()`: Allows the value to be `null`.
-- `optional()`: Allows the value to be `undefined`.
-- `default(value: unknown)`: Sets a default value if the received value is `undefined`.
 
+- `optional()`: Allows the value to be `undefined`.
+
+- `default(value: InferType<this>)`: Sets a default value if the received value is `undefined`. The default value must match the inferred type of the schema, ensuring compatibility.
+
+- `id(value: string)`: Assigns a unique identifier to the schema, useful for tracking or mapping validation errors. The `id` can be accessed via `err.meta?.id` in case of a validation error.
+
+- `description(value: string)`: Provides a description for the schema, which can be used to give more context about the validation error. The `description` can be accessed via `err.meta?.description` in case of a validation error.
 
 > **Notice:** You cannot chain `default()` and `optional()` together, as they are contradictory. The `optional()` method allows the value to be `undefined`, while the `default()` method assigns a value if `undefined`. Attempting to chain both will throw a `BuildSchemaError` with the message: `"Cannot call method 'default' after method 'optional'"`.
 
-
 > **Notice:** Additionally, `default()` must be the last method in the chain because it validates during schema build time that the default value is compatible with the rest of the schema. For example, if the schema is `number()`, the default value cannot be a `string`.
-
 
 Example:
 
 ```typeScript
-const schemaWithDefault = string().nullable().default('defaultString'); 
+const schemaWithDefault = string().nullable().default('defaultString');
 // This schema allows null values and sets 'defaultString' if the value is undefined.
 
 const optionalSchema = string().nullable().optional();
 // This schema allows both null and undefined values, but it does not provide a default value.
+
+const addressSchema = string()
+  .id('address')
+  .description('Users address');
+// This schema validates that string and assigns an ID and description for better error handling.
+
+try {
+  parseOrFail(addressSchema, undefined);
+} catch (e) {
+  const err = e as ValidationError;
+  console.log(err.message);  // Output: 'The required value is missing'
+  console.log(err.pathToError);  // Output: ''
+  console.log(err.meta?.id);  // Output:  'address'
+  console.log(err.meta?.description);  // Output: 'Users address'
+}
 ```
 
 - String Literals:
@@ -463,890 +481,937 @@ console.log(maxLength.message); // Output: 'The received value length is greater
 <b>3.</b> IDE Support:
 Each key and message will be visible in text editors that support JSDoc IntelliSense.
 
-### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} 
+### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation}
 
- * [string](#assertdir_string)
-    * [atLeastOneDigit](#assert_atLeastOneDigit_string)
-    * [atLeastOneLowerChar](#assert_atLeastOneLowerChar_string)
-    * [atLeastOneSpecialChar](#assert_atLeastOneSpecialChar_string)
-    * [atLeastOneUpperChar](#assert_atLeastOneUpperChar_string)
-    * [contains](#assert_contains_string)
-    * [email](#assert_email_string)
-    * [endsWith](#assert_endsWith_string)
-    * [isValidDate](#assert_isValidDate_string)
-    * [isValidDateTime](#assert_isValidDateTime_string)
-    * [isValidTime](#assert_isValidTime_string)
-    * [lowerCase](#assert_lowerCase_string)
-    * [maxLength](#assert_maxLength_string)
-    * [minLength](#assert_minLength_string)
-    * [regExp](#assert_regExp_string)
-    * [startsWith](#assert_startsWith_string)
-    * [upperCase](#assert_upperCase_string)
-    * [uuid](#assert_uuid_string)
-    * [uuidV1](#assert_uuidV1_string)
-    * [uuidV2](#assert_uuidV2_string)
-    * [uuidV3](#assert_uuidV3_string)
-    * [uuidV4](#assert_uuidV4_string)
-    * [uuidV5](#assert_uuidV5_string)
-    * [validUrl](#assert_validUrl_string)
- * [number](#assertdir_number)
-    * [max](#assert_max_number)
-    * [maxExcluded](#assert_maxExcluded_number)
-    * [min](#assert_min_number)
-    * [minExcluded](#assert_minExcluded_number)
-    * [negative](#assert_negative_number)
-    * [positive](#assert_positive_number)
- * [array](#assertdir_array)
-    * [maxArrayLength](#assert_maxArrayLength_array)
-    * [minArrayLength](#assert_minArrayLength_array)
- * [bigint](#assertdir_bigint)
-    * [bigintMax](#assert_bigintMax_bigint)
-    * [bigintMaxExcluded](#assert_bigintMaxExcluded_bigint)
-    * [bigintMin](#assert_bigintMin_bigint)
-    * [bigintMinExcluded](#assert_bigintMinExcluded_bigint)
- * [date](#assertdir_date)
-    * [dateMax](#assert_dateMax_date)
-    * [dateMin](#assert_dateMin_date)
- * [mix](#assertdir_mix)
-    * [equalTo](#assert_equalTo_mix)
-    * [oneOfValues](#assert_oneOfValues_mix)
+- [string](#assertdir_string)
+  - [atLeastOneDigit](#assert_atLeastOneDigit_string)
+  - [atLeastOneLowerChar](#assert_atLeastOneLowerChar_string)
+  - [atLeastOneSpecialChar](#assert_atLeastOneSpecialChar_string)
+  - [atLeastOneUpperChar](#assert_atLeastOneUpperChar_string)
+  - [contains](#assert_contains_string)
+  - [email](#assert_email_string)
+  - [endsWith](#assert_endsWith_string)
+  - [isValidDate](#assert_isValidDate_string)
+  - [isValidDateTime](#assert_isValidDateTime_string)
+  - [isValidTime](#assert_isValidTime_string)
+  - [lowerCase](#assert_lowerCase_string)
+  - [maxLength](#assert_maxLength_string)
+  - [minLength](#assert_minLength_string)
+  - [regExp](#assert_regExp_string)
+  - [startsWith](#assert_startsWith_string)
+  - [upperCase](#assert_upperCase_string)
+  - [uuid](#assert_uuid_string)
+  - [uuidV1](#assert_uuidV1_string)
+  - [uuidV2](#assert_uuidV2_string)
+  - [uuidV3](#assert_uuidV3_string)
+  - [uuidV4](#assert_uuidV4_string)
+  - [uuidV5](#assert_uuidV5_string)
+  - [validUrl](#assert_validUrl_string)
+- [number](#assertdir_number)
+  - [max](#assert_max_number)
+  - [maxExcluded](#assert_maxExcluded_number)
+  - [min](#assert_min_number)
+  - [minExcluded](#assert_minExcluded_number)
+  - [negative](#assert_negative_number)
+  - [positive](#assert_positive_number)
+- [array](#assertdir_array)
+  - [maxArrayLength](#assert_maxArrayLength_array)
+  - [minArrayLength](#assert_minArrayLength_array)
+- [bigint](#assertdir_bigint)
+  - [bigintMax](#assert_bigintMax_bigint)
+  - [bigintMaxExcluded](#assert_bigintMaxExcluded_bigint)
+  - [bigintMin](#assert_bigintMin_bigint)
+  - [bigintMinExcluded](#assert_bigintMinExcluded_bigint)
+- [date](#assertdir_date)
+  - [dateMax](#assert_dateMax_date)
+  - [dateMin](#assert_dateMin_date)
+- [mix](#assertdir_mix)
+  - [equalTo](#assert_equalTo_mix)
+  - [oneOfValues](#assert_oneOfValues_mix)
 
 #### string {#assertdir_string}
-   
- <b>Prerequisites</b>
-   
+
+<b>Prerequisites</b>
+
 ```typescript
 import { string } from 'bguard/string';
 ```
-   
-* _Description_ Creates a new schema for validating string values.
-* _Example_
+
+- _Description_ Creates a new schema for validating string values.
+- _Example_
+
 ```typescript
- const schema = string();
- parseOrFail(schema, 'hello'); // Validates successfully
- parseOrFail(schema, 123); // Throws a validation error
+const schema = string();
+parseOrFail(schema, 'hello'); // Validates successfully
+parseOrFail(schema, 123); // Throws a validation error
 ```
-   
-        
+
 ##### atLeastOneDigit (string) {#assert_atLeastOneDigit_string}
-        
+
 ```typescript
 import { atLeastOneDigit } from 'bguard/string/atLeastOneDigit';
 ```
-        
-* _Description_ Asserts that a string value contains at least one digit.
-* _Throws_ {ValidationError} if the received value does not contain at least one digit.
-* _Example_
+
+- _Description_ Asserts that a string value contains at least one digit.
+- _Throws_ {ValidationError} if the received value does not contain at least one digit.
+- _Example_
+
 ```typescript
- const schema = string().custom(atLeastOneDigit());
- parseOrFail(schema, 'abc123'); // Valid
- parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one digit'
+const schema = string().custom(atLeastOneDigit());
+parseOrFail(schema, 'abc123'); // Valid
+parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one digit'
 ```
-* _See_ Error Translation Key = 's:atLeastOneDigit'
-        
-        
+
+- _See_ Error Translation Key = 's:atLeastOneDigit'
+
 ##### atLeastOneLowerChar (string) {#assert_atLeastOneLowerChar_string}
-        
+
 ```typescript
 import { atLeastOneLowerChar } from 'bguard/string/atLeastOneLowerChar';
 ```
-        
-* _Description_ Asserts that a string value contains at least one lowercase character.
-* _Throws_ {ValidationError} if the received value does not contain at least one lowercase character.
-* _Example_
+
+- _Description_ Asserts that a string value contains at least one lowercase character.
+- _Throws_ {ValidationError} if the received value does not contain at least one lowercase character.
+- _Example_
+
 ```typescript
- const schema = string().custom(atLeastOneLowerChar());
- parseOrFail(schema, 'abcDEF'); // Valid
- parseOrFail(schema, 'ABCDEF'); // Throws an error: 'The received value does not contain at least one lowercase character'
+const schema = string().custom(atLeastOneLowerChar());
+parseOrFail(schema, 'abcDEF'); // Valid
+parseOrFail(schema, 'ABCDEF'); // Throws an error: 'The received value does not contain at least one lowercase character'
 ```
-* _See_ Error Translation Key = 's:atLeastOneLowerChar'
-        
-        
+
+- _See_ Error Translation Key = 's:atLeastOneLowerChar'
+
 ##### atLeastOneSpecialChar (string) {#assert_atLeastOneSpecialChar_string}
-        
+
 ```typescript
 import { atLeastOneSpecialChar } from 'bguard/string/atLeastOneSpecialChar';
 ```
-        
-* _Description_ Asserts that a string value contains at least one special character.
-* _Param_ {string} [allowedSpecialChars=* '@!#%&()^~{}'] The string containing allowed special characters. Defaults to '*@!#%&()^~{}'.
-* _Throws_ {ValidationError} if the received value does not contain at least one of the allowed special characters.
-* _Example_
-```typescript
- const schema = string().custom(atLeastOneSpecialChar()); // Default special characters
- parseOrFail(schema, 'abc!def'); // Valid
- parseOrFail(schema, 'abcdef');  // Throws an error: 'The received value does not contain at least one special character'
 
- const customSchema = string().custom(atLeastOneSpecialChar('@$')); // Custom special characters
- parseOrFail(customSchema, 'abc@def'); // Valid
- parseOrFail(customSchema, 'abcdef');  // Throws an error: 'The received value does not contain at least one special character'
+- _Description_ Asserts that a string value contains at least one special character.
+- _Param_ {string} [allowedSpecialChars=* '@!#%&()^~{}'] The string containing allowed special characters. Defaults to '\*@!#%&()^~{}'.
+- _Throws_ {ValidationError} if the received value does not contain at least one of the allowed special characters.
+- _Example_
+
+```typescript
+const schema = string().custom(atLeastOneSpecialChar()); // Default special characters
+parseOrFail(schema, 'abc!def'); // Valid
+parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one special character'
+
+const customSchema = string().custom(atLeastOneSpecialChar('@$')); // Custom special characters
+parseOrFail(customSchema, 'abc@def'); // Valid
+parseOrFail(customSchema, 'abcdef'); // Throws an error: 'The received value does not contain at least one special character'
 ```
-* _See_ Error Translation Key = 's:atLeastOneSpecialChar'
-        
-        
+
+- _See_ Error Translation Key = 's:atLeastOneSpecialChar'
+
 ##### atLeastOneUpperChar (string) {#assert_atLeastOneUpperChar_string}
-        
+
 ```typescript
 import { atLeastOneUpperChar } from 'bguard/string/atLeastOneUpperChar';
 ```
-        
-* _Description_ Asserts that a string value contains at least one uppercase character.
-* _Throws_ {ValidationError} if the received value does not contain at least one uppercase character.
-* _Example_
+
+- _Description_ Asserts that a string value contains at least one uppercase character.
+- _Throws_ {ValidationError} if the received value does not contain at least one uppercase character.
+- _Example_
+
 ```typescript
- const schema = string().custom(atLeastOneUpperChar());
- parseOrFail(schema, 'abcDEF'); // Valid
- parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one uppercase character'
+const schema = string().custom(atLeastOneUpperChar());
+parseOrFail(schema, 'abcDEF'); // Valid
+parseOrFail(schema, 'abcdef'); // Throws an error: 'The received value does not contain at least one uppercase character'
 ```
-* _See_ Error Translation Key = 's:atLeastOneUpperChar'
-        
-        
+
+- _See_ Error Translation Key = 's:atLeastOneUpperChar'
+
 ##### contains (string) {#assert_contains_string}
-        
+
 ```typescript
 import { contains } from 'bguard/string/contains';
 ```
-        
-* _Description_ Asserts that a string value contains a specified substring.
-* _Param_ {string} substring The substring that must be present in the string value.
-* _Throws_ {ValidationError} if the received value does not contain the required substring.
-* _Example_
+
+- _Description_ Asserts that a string value contains a specified substring.
+- _Param_ {string} substring The substring that must be present in the string value.
+- _Throws_ {ValidationError} if the received value does not contain the required substring.
+- _Example_
+
 ```typescript
- const schema = string().custom(contains('foo'));
- parseOrFail(schema, 'foobar'); // Valid
- parseOrFail(schema, 'bar'); // Throws an error: 'The received value does not contain the required substring'
+const schema = string().custom(contains('foo'));
+parseOrFail(schema, 'foobar'); // Valid
+parseOrFail(schema, 'bar'); // Throws an error: 'The received value does not contain the required substring'
 ```
-* _See_ Error Translation Key = 's:contains'
-        
-        
+
+- _See_ Error Translation Key = 's:contains'
+
 ##### email (string) {#assert_email_string}
-        
+
 ```typescript
 import { email } from 'bguard/string/email';
 ```
-        
-* _Description_ Asserts that a string value matches the email pattern. The pattern checks for a basic email format.
-* _Throws_ {ValidationError} if the received value does not match the email pattern.
-* _Example_
+
+- _Description_ Asserts that a string value matches the email pattern. The pattern checks for a basic email format.
+- _Throws_ {ValidationError} if the received value does not match the email pattern.
+- _Example_
+
 ```typescript
- const schema = string().custom(email());
- parseOrFail(schema, 'example@example.com'); // Valid
- parseOrFail(schema, 'invalid-email');      // Throws an error: 'The received value does not match the required email pattern'
+const schema = string().custom(email());
+parseOrFail(schema, 'example@example.com'); // Valid
+parseOrFail(schema, 'invalid-email'); // Throws an error: 'The received value does not match the required email pattern'
 ```
-* _See_ - Error Translation Key = 's:email'
-        
-        
+
+- _See_ - Error Translation Key = 's:email'
+
 ##### endsWith (string) {#assert_endsWith_string}
-        
+
 ```typescript
 import { endsWith } from 'bguard/string/endsWith';
 ```
-        
-* _Description_ Asserts that a string value ends with a specified substring.
-* _Param_ {string} substring The substring that the string value must end with.
-* _Throws_ {ValidationError} if the received value does not end with the required substring.
-* _Example_
+
+- _Description_ Asserts that a string value ends with a specified substring.
+- _Param_ {string} substring The substring that the string value must end with.
+- _Throws_ {ValidationError} if the received value does not end with the required substring.
+- _Example_
+
 ```typescript
- const schema = string().custom(endsWith('bar'));
- parseOrFail(schema, 'foobar'); // Valid
- parseOrFail(schema, 'foofoo'); // Throws an error: 'The received value does not end with the required substring'
+const schema = string().custom(endsWith('bar'));
+parseOrFail(schema, 'foobar'); // Valid
+parseOrFail(schema, 'foofoo'); // Throws an error: 'The received value does not end with the required substring'
 ```
-* _See_ Error Translation Key = 's:endsWith'
-        
-        
+
+- _See_ Error Translation Key = 's:endsWith'
+
 ##### isValidDate (string) {#assert_isValidDate_string}
-        
+
 ```typescript
 import { isValidDate } from 'bguard/string/isValidDate';
 ```
-        
-* _Description_ Asserts that a string is a valid date in the format YYYY-MM-DD.
-* _Throws_ {ValidationError} if the received string is not a valid date.
-* _Example_
+
+- _Description_ Asserts that a string is a valid date in the format YYYY-MM-DD.
+- _Throws_ {ValidationError} if the received string is not a valid date.
+- _Example_
+
 ```typescript
- const schema = string().custom(isValidDate());
- parseOrFail(schema, "2020-01-01"); // Valid
- parseOrFail(schema, "2020-1-1");   // Throws an error: 'The received value is not a valid date'
- parseOrFail(schema, "2020-01-32"); // Throws an error: 'The received value is not a valid date'
+const schema = string().custom(isValidDate());
+parseOrFail(schema, '2020-01-01'); // Valid
+parseOrFail(schema, '2020-1-1'); // Throws an error: 'The received value is not a valid date'
+parseOrFail(schema, '2020-01-32'); // Throws an error: 'The received value is not a valid date'
 ```
-* _See_ Error Translation Key = 's:isValidDate'
-        
-        
+
+- _See_ Error Translation Key = 's:isValidDate'
+
 ##### isValidDateTime (string) {#assert_isValidDateTime_string}
-        
+
 ```typescript
 import { isValidDateTime } from 'bguard/string/isValidDateTime';
 ```
-        
-* _Description_ Asserts that a string value is a valid ISO 8601 datetime string.
-* _Param_ {DateTimeOptions} options Options to control the validation:
- - `offset`: If `true`, allows timezone offsets in the datetime string.
- - `precision`: Specify the exact number of fractional second digits allowed (e.g., 3 for milliseconds).
-* _Throws_ {ValidationError} if the received value is not a valid datetime string according to the options.
-* _Example_
+
+- _Description_ Asserts that a string value is a valid ISO 8601 datetime string.
+- _Param_ {DateTimeOptions} options Options to control the validation:
+
+* `offset`: If `true`, allows timezone offsets in the datetime string.
+* `precision`: Specify the exact number of fractional second digits allowed (e.g., 3 for milliseconds).
+
+- _Throws_ {ValidationError} if the received value is not a valid datetime string according to the options.
+- _Example_
+
 ```typescript
- const schema = string().custom(isValidDateTime());
- parseOrFail(schema, "2024-01-01T00:00:00Z"); // Valid
- parseOrFail(schema, "2024-01-01T00:00:00.123Z"); // Valid
- parseOrFail(schema, "2024-01-01T00:00:00+03:00"); // Invalid (no offsets allowed)
+const schema = string().custom(isValidDateTime());
+parseOrFail(schema, '2024-01-01T00:00:00Z'); // Valid
+parseOrFail(schema, '2024-01-01T00:00:00.123Z'); // Valid
+parseOrFail(schema, '2024-01-01T00:00:00+03:00'); // Invalid (no offsets allowed)
 
- const schemaWithOffset = string().custom(isValidDateTime({ offset: true }));
- parseOrFail(schemaWithOffset, "2024-01-01T00:00:00+04:00"); // Valid
+const schemaWithOffset = string().custom(isValidDateTime({ offset: true }));
+parseOrFail(schemaWithOffset, '2024-01-01T00:00:00+04:00'); // Valid
 
- const schemaWithPrecision = string().custom(isValidDateTime({ precision: 3 }));
- parseOrFail(schemaWithPrecision, "2024-01-01T00:00:00.123Z"); // Valid
- parseOrFail(schemaWithPrecision, "2024-01-01T00:00:00.123456Z"); // Invalid
+const schemaWithPrecision = string().custom(isValidDateTime({ precision: 3 }));
+parseOrFail(schemaWithPrecision, '2024-01-01T00:00:00.123Z'); // Valid
+parseOrFail(schemaWithPrecision, '2024-01-01T00:00:00.123456Z'); // Invalid
 ```
-* _See_ Error Translation Key = 's:isValidDateTime'
-        
-        
+
+- _See_ Error Translation Key = 's:isValidDateTime'
+
 ##### isValidTime (string) {#assert_isValidTime_string}
-        
+
 ```typescript
 import { isValidTime } from 'bguard/string/isValidTime';
 ```
-        
-* _Description_ Asserts that a string is a valid time in the format HH:mm:ss, with optional fractional seconds.
-* _Param_ {IsValidTimeOptions} options Optional settings to configure the validation.
-* _Throws_ {ValidationError} if the received string is not a valid time.
-* _Example_
-```typescript
- const schema = string().custom(isValidTime());
- parseOrFail(schema, "00:00:00"); // Valid
- parseOrFail(schema, "23:59:59.9999999"); // Valid
- parseOrFail(schema, "00:00:00.256Z");   // Throws an error: 'The received value is not a valid time'
 
- const schemaWithPrecision = string().custom(isValidTime({ precision: 3 }));
- parseOrFail(schemaWithPrecision, "00:00:00.256"); // Valid
- parseOrFail(schemaWithPrecision, "00:00:00");    // Throws an error: 'The received value is not a valid time'
+- _Description_ Asserts that a string is a valid time in the format HH:mm:ss, with optional fractional seconds.
+- _Param_ {IsValidTimeOptions} options Optional settings to configure the validation.
+- _Throws_ {ValidationError} if the received string is not a valid time.
+- _Example_
+
+```typescript
+const schema = string().custom(isValidTime());
+parseOrFail(schema, '00:00:00'); // Valid
+parseOrFail(schema, '23:59:59.9999999'); // Valid
+parseOrFail(schema, '00:00:00.256Z'); // Throws an error: 'The received value is not a valid time'
+
+const schemaWithPrecision = string().custom(isValidTime({ precision: 3 }));
+parseOrFail(schemaWithPrecision, '00:00:00.256'); // Valid
+parseOrFail(schemaWithPrecision, '00:00:00'); // Throws an error: 'The received value is not a valid time'
 ```
-* _See_ Error Translation Key = 's:isValidTime'
-        
-        
+
+- _See_ Error Translation Key = 's:isValidTime'
+
 ##### lowerCase (string) {#assert_lowerCase_string}
-        
+
 ```typescript
 import { lowerCase } from 'bguard/string/lowerCase';
 ```
-        
-* _Description_ Asserts that a string value is in lowercase.
-* _Throws_ {ValidationError} if the received value is not in lowercase.
-* _Example_
+
+- _Description_ Asserts that a string value is in lowercase.
+- _Throws_ {ValidationError} if the received value is not in lowercase.
+- _Example_
+
 ```typescript
- const schema = string().custom(lowerCase());
- parseOrFail(schema, 'valid');   // Valid
- parseOrFail(schema, 'Invalid'); // Throws an error: 'The received value is not in lowercase'
+const schema = string().custom(lowerCase());
+parseOrFail(schema, 'valid'); // Valid
+parseOrFail(schema, 'Invalid'); // Throws an error: 'The received value is not in lowercase'
 ```
-* _See_ Error Translation Key = 's:lowerCase'
-        
-        
+
+- _See_ Error Translation Key = 's:lowerCase'
+
 ##### maxLength (string) {#assert_maxLength_string}
-        
+
 ```typescript
 import { maxLength } from 'bguard/string/maxLength';
 ```
-        
-* _Description_ Asserts that the length of a string value is not greater than a specified maximum length.
-* _Param_ {number} expected The maximum allowed length for the string.
-* _Throws_ {ValidationError} if the length of the received value is greater than the expected length.
-* _Example_
+
+- _Description_ Asserts that the length of a string value is not greater than a specified maximum length.
+- _Param_ {number} expected The maximum allowed length for the string.
+- _Throws_ {ValidationError} if the length of the received value is greater than the expected length.
+- _Example_
+
 ```typescript
- const schema = string().custom(maxLength(10));
- parseOrFail(schema, 'short');   // Valid
- parseOrFail(schema, 'this is a very long string'); // Throws an error: 'The received value length is greater than expected'
+const schema = string().custom(maxLength(10));
+parseOrFail(schema, 'short'); // Valid
+parseOrFail(schema, 'this is a very long string'); // Throws an error: 'The received value length is greater than expected'
 ```
-* _See_ Error Translation Key = 's:maxLength'
-        
-        
+
+- _See_ Error Translation Key = 's:maxLength'
+
 ##### minLength (string) {#assert_minLength_string}
-        
+
 ```typescript
 import { minLength } from 'bguard/string/minLength';
 ```
-        
-* _Description_ Asserts that the length of a string value is not less than a specified minimum length.
-* _Param_ {number} expected The minimum required length for the string.
-* _Throws_ {ValidationError} if the length of the received value is less than the expected length.
-* _Example_
+
+- _Description_ Asserts that the length of a string value is not less than a specified minimum length.
+- _Param_ {number} expected The minimum required length for the string.
+- _Throws_ {ValidationError} if the length of the received value is less than the expected length.
+- _Example_
+
 ```typescript
- const schema = string().custom(minLength(5));
- parseOrFail(schema, 'short');    // Throws an error: 'The received value length is less than expected'
- parseOrFail(schema, 'adequate'); // Valid
+const schema = string().custom(minLength(5));
+parseOrFail(schema, 'short'); // Throws an error: 'The received value length is less than expected'
+parseOrFail(schema, 'adequate'); // Valid
 ```
-* _See_ Error Translation Key = 's:minLength'
-        
-        
+
+- _See_ Error Translation Key = 's:minLength'
+
 ##### regExp (string) {#assert_regExp_string}
-        
+
 ```typescript
 import { regExp } from 'bguard/string/regExp';
 ```
-        
-* _Description_ Asserts that a string value matches a specified regular expression pattern.
-* _Param_ {RegExp} expected The regular expression pattern that the string value should match.
-* _Throws_ {ValidationError} if the received value does not match the expected pattern.
-* _Example_
+
+- _Description_ Asserts that a string value matches a specified regular expression pattern.
+- _Param_ {RegExp} expected The regular expression pattern that the string value should match.
+- _Throws_ {ValidationError} if the received value does not match the expected pattern.
+- _Example_
+
 ```typescript
- const schema = string().custom(regExp(/^[A-Za-z0-9]+$/)); // Validates against alphanumeric pattern
- parseOrFail(schema, 'valid123');   // Valid
- parseOrFail(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
+const schema = string().custom(regExp(/^[A-Za-z0-9]+$/)); // Validates against alphanumeric pattern
+parseOrFail(schema, 'valid123'); // Valid
+parseOrFail(schema, 'invalid!@#'); // Throws an error: 'The received value does not match the required text pattern'
 ```
-* _See_ Error Translation Key = 's:regExp'
-        
-        
+
+- _See_ Error Translation Key = 's:regExp'
+
 ##### startsWith (string) {#assert_startsWith_string}
-        
+
 ```typescript
 import { startsWith } from 'bguard/string/startsWith';
 ```
-        
-* _Description_ Asserts that a string value starts with a specified substring.
-* _Param_ {string} substring The substring that the string value must start with.
-* _Throws_ {ValidationError} if the received value does not start with the required substring.
-* _Example_
+
+- _Description_ Asserts that a string value starts with a specified substring.
+- _Param_ {string} substring The substring that the string value must start with.
+- _Throws_ {ValidationError} if the received value does not start with the required substring.
+- _Example_
+
 ```typescript
- const schema = string().custom(startsWith('foo'));
- parseOrFail(schema, 'foobar'); // Valid
- parseOrFail(schema, 'barfoo'); // Throws an error: 'The received value does not start with the required substring'
+const schema = string().custom(startsWith('foo'));
+parseOrFail(schema, 'foobar'); // Valid
+parseOrFail(schema, 'barfoo'); // Throws an error: 'The received value does not start with the required substring'
 ```
-* _See_ Error Translation Key = 's:startsWith'
-        
-        
+
+- _See_ Error Translation Key = 's:startsWith'
+
 ##### upperCase (string) {#assert_upperCase_string}
-        
+
 ```typescript
 import { upperCase } from 'bguard/string/upperCase';
 ```
-        
-* _Description_ Asserts that a string value is entirely in uppercase.
-* _Throws_ {ValidationError} if the received value is not in uppercase.
-* _Example_
+
+- _Description_ Asserts that a string value is entirely in uppercase.
+- _Throws_ {ValidationError} if the received value is not in uppercase.
+- _Example_
+
 ```typescript
- const schema = string().custom(upperCase());
- parseOrFail(schema, 'VALID');    // Valid
- parseOrFail(schema, 'INVALID');  // Throws an error: 'The received value is not in uppercase'
- parseOrFail(schema, 'Valid');    // Throws an error: 'The received value is not in uppercase'
+const schema = string().custom(upperCase());
+parseOrFail(schema, 'VALID'); // Valid
+parseOrFail(schema, 'INVALID'); // Throws an error: 'The received value is not in uppercase'
+parseOrFail(schema, 'Valid'); // Throws an error: 'The received value is not in uppercase'
 ```
-* _See_ Error Translation Key = 's:upperCase'
-        
-        
+
+- _See_ Error Translation Key = 's:upperCase'
+
 ##### uuid (string) {#assert_uuid_string}
-        
+
 ```typescript
 import { uuid } from 'bguard/string/uuid';
 ```
-        
-* _Description_ Asserts that a string value matches the UUID format.
-* _Throws_ {ValidationError} if the received value is not a valid UUID.
-* _Example_
+
+- _Description_ Asserts that a string value matches the UUID format.
+- _Throws_ {ValidationError} if the received value is not a valid UUID.
+- _Example_
+
 ```typescript
- const schema = string().custom(uuid());
- parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Valid
- parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID'
+const schema = string().custom(uuid());
+parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Valid
+parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID'
 ```
-* _See_ Error Translation Key = 's:uuid'
-        
-        
+
+- _See_ Error Translation Key = 's:uuid'
+
 ##### uuidV1 (string) {#assert_uuidV1_string}
-        
+
 ```typescript
 import { uuidV1 } from 'bguard/string/uuidV1';
 ```
-        
-* _Description_ Asserts that a string value matches the UUID v1 format.
-* _Throws_ {ValidationError} if the received value is not a valid UUID v1.
-* _Example_
+
+- _Description_ Asserts that a string value matches the UUID v1 format.
+- _Throws_ {ValidationError} if the received value is not a valid UUID v1.
+- _Example_
+
 ```typescript
- const schema = string().custom(uuidV1());
- parseOrFail(schema, '550e8400-e29b-11d4-a716-446655440000'); // Valid
- parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v1'
- parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v1'
+const schema = string().custom(uuidV1());
+parseOrFail(schema, '550e8400-e29b-11d4-a716-446655440000'); // Valid
+parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v1'
+parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v1'
 ```
-* _See_ Error Translation Key = 's:uuidV1'
-        
-        
+
+- _See_ Error Translation Key = 's:uuidV1'
+
 ##### uuidV2 (string) {#assert_uuidV2_string}
-        
+
 ```typescript
 import { uuidV2 } from 'bguard/string/uuidV2';
 ```
-        
-* _Description_ Asserts that a string value matches the UUID v2 format.
-* _Throws_ {ValidationError} if the received value is not a valid UUID v2.
-* _Example_
+
+- _Description_ Asserts that a string value matches the UUID v2 format.
+- _Throws_ {ValidationError} if the received value is not a valid UUID v2.
+- _Example_
+
 ```typescript
- const schema = string().custom(uuidV2());
- parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Valid
- parseOrFail(schema, '550e8400-e29b-31d4-d716-446655440000'); // Throws an error: 'The received value is not a valid UUID v2'
- parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v2'
+const schema = string().custom(uuidV2());
+parseOrFail(schema, '550e8400-e29b-21d4-a716-446655440000'); // Valid
+parseOrFail(schema, '550e8400-e29b-31d4-d716-446655440000'); // Throws an error: 'The received value is not a valid UUID v2'
+parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v2'
 ```
-* _See_ Error Translation Key = 's:uuidV2'
-        
-        
+
+- _See_ Error Translation Key = 's:uuidV2'
+
 ##### uuidV3 (string) {#assert_uuidV3_string}
-        
+
 ```typescript
 import { uuidV3 } from 'bguard/string/uuidV3';
 ```
-        
-* _Description_ Asserts that a string value matches the UUID v3 format.
-* _Throws_ {ValidationError} if the received value is not a valid UUID v3.
-* _Example_
+
+- _Description_ Asserts that a string value matches the UUID v3 format.
+- _Throws_ {ValidationError} if the received value is not a valid UUID v3.
+- _Example_
+
 ```typescript
- const schema = string().custom(uuidV3());
- parseOrFail(schema, '550e8400-e29b-38d1-a456-426614174000'); // Valid
- parseOrFail(schema, '550e8400-e29b-28d1-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v3'
- parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v3'
+const schema = string().custom(uuidV3());
+parseOrFail(schema, '550e8400-e29b-38d1-a456-426614174000'); // Valid
+parseOrFail(schema, '550e8400-e29b-28d1-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v3'
+parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v3'
 ```
-* _See_ Error Translation Key = 's:uuidV3'
-        
-        
+
+- _See_ Error Translation Key = 's:uuidV3'
+
 ##### uuidV4 (string) {#assert_uuidV4_string}
-        
+
 ```typescript
 import { uuidV4 } from 'bguard/string/uuidV4';
 ```
-        
-* _Description_ Asserts that a string value matches the UUID v4 format.
-* _Throws_ {ValidationError} if the received value is not a valid UUID v4.
-* _Example_
+
+- _Description_ Asserts that a string value matches the UUID v4 format.
+- _Throws_ {ValidationError} if the received value is not a valid UUID v4.
+- _Example_
+
 ```typescript
- const schema = string().custom(uuidV4());
- parseOrFail(schema, '123e4567-e89b-42d3-a456-426614174000'); // Valid
- parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
- parseOrFail(schema, '123e4567-e89b-a2d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
- parseOrFail(schema, '123e4567-e89b-42d3-c456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
- parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v4'
+const schema = string().custom(uuidV4());
+parseOrFail(schema, '123e4567-e89b-42d3-a456-426614174000'); // Valid
+parseOrFail(schema, '123e4567-e89b-12d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+parseOrFail(schema, '123e4567-e89b-a2d3-a456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+parseOrFail(schema, '123e4567-e89b-42d3-c456-426614174000'); // Throws an error: 'The received value is not a valid UUID v4'
+parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v4'
 ```
-* _See_ Error Translation Key = 's:uuidV4'
-        
-        
+
+- _See_ Error Translation Key = 's:uuidV4'
+
 ##### uuidV5 (string) {#assert_uuidV5_string}
-        
+
 ```typescript
 import { uuidV5 } from 'bguard/string/uuidV5';
 ```
-        
-* _Description_ Asserts that a string value matches the UUID v5 format.
-* _Throws_ {ValidationError} if the received value is not a valid UUID v5.
-* _Example_
+
+- _Description_ Asserts that a string value matches the UUID v5 format.
+- _Throws_ {ValidationError} if the received value is not a valid UUID v5.
+- _Example_
+
 ```typescript
- const schema = string().custom(uuidV5());
- parseOrFail(schema, '550e8400-e29b-51d4-a716-446655440000'); // Valid
- parseOrFail(schema, '550e8400-e29b-41d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v5'
- parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v5'
+const schema = string().custom(uuidV5());
+parseOrFail(schema, '550e8400-e29b-51d4-a716-446655440000'); // Valid
+parseOrFail(schema, '550e8400-e29b-41d4-a716-446655440000'); // Throws an error: 'The received value is not a valid UUID v5'
+parseOrFail(schema, 'invalid-uuid'); // Throws an error: 'The received value is not a valid UUID v5'
 ```
-* _See_ Error Translation Key = 's:uuidV5'
-        
-        
+
+- _See_ Error Translation Key = 's:uuidV5'
+
 ##### validUrl (string) {#assert_validUrl_string}
-        
+
 ```typescript
 import { validUrl } from 'bguard/string/validUrl';
 ```
-        
-* _Description_ Asserts that the string value is a valid URL with optional protocol validation.
-* _Param_ {string} [protocol] The protocol that the URL must start with (e.g., 'http'). If not provided, any URL starting with 'http://' or 'https://' is considered valid.
-* _Throws_ {ValidationError} if the received value does not match the expected URL pattern.
-* _Example_
+
+- _Description_ Asserts that the string value is a valid URL with optional protocol validation.
+- _Param_ {string} [protocol] The protocol that the URL must start with (e.g., 'http'). If not provided, any URL starting with 'http://' or 'https://' is considered valid.
+- _Throws_ {ValidationError} if the received value does not match the expected URL pattern.
+- _Example_
+
 ```typescript
- const schema = string().custom(validUrl()); // Validates any URL starting with 'http://' or 'https://'
- parseOrFail(schema, 'http://example.com'); // Valid
- parseOrFail(schema, 'https://example.com'); // Valid
- parseOrFail(schema, 'ftp://example.com');   // Throws an error
- parseOrFail(schema, 'http:example.com');    // Throws an error
+const schema = string().custom(validUrl()); // Validates any URL starting with 'http://' or 'https://'
+parseOrFail(schema, 'http://example.com'); // Valid
+parseOrFail(schema, 'https://example.com'); // Valid
+parseOrFail(schema, 'ftp://example.com'); // Throws an error
+parseOrFail(schema, 'http:example.com'); // Throws an error
 ```
-* _See_ Error Translation Key = 's:url'
-        
+
+- _See_ Error Translation Key = 's:url'
+
 #### number {#assertdir_number}
-   
- <b>Prerequisites</b>
-   
+
+<b>Prerequisites</b>
+
 ```typescript
 import { number } from 'bguard/number';
 ```
-   
-* _Description_ Creates a new schema for validating number values.
-* _Example_
+
+- _Description_ Creates a new schema for validating number values.
+- _Example_
+
 ```typescript
- const schema = number();
- parseOrFail(schema, 42); // Validates successfully
- parseOrFail(schema, '42'); // Throws a validation error
+const schema = number();
+parseOrFail(schema, 42); // Validates successfully
+parseOrFail(schema, '42'); // Throws a validation error
 ```
-   
-        
+
 ##### max (number) {#assert_max_number}
-        
+
 ```typescript
 import { max } from 'bguard/number/max';
 ```
-        
-* _Description_ Asserts that a number value does not exceed a specified maximum value.
-* _Param_ {number} expected The maximum allowable value.
-* _Throws_ {ValidationError} if the received value exceeds the expected maximum value.
-* _Example_
+
+- _Description_ Asserts that a number value does not exceed a specified maximum value.
+- _Param_ {number} expected The maximum allowable value.
+- _Throws_ {ValidationError} if the received value exceeds the expected maximum value.
+- _Example_
+
 ```typescript
- const schema = number().custom(max(100));
- parseOrFail(schema, 99);  // Valid
- parseOrFail(schema, 100); // Valid
- parseOrFail(schema, 101); // Throws an error: 'The received value is greater than expected'
+const schema = number().custom(max(100));
+parseOrFail(schema, 99); // Valid
+parseOrFail(schema, 100); // Valid
+parseOrFail(schema, 101); // Throws an error: 'The received value is greater than expected'
 ```
-* _See_ Error Translation Key = 'n:max'
-        
-        
+
+- _See_ Error Translation Key = 'n:max'
+
 ##### maxExcluded (number) {#assert_maxExcluded_number}
-        
+
 ```typescript
 import { maxExcluded } from 'bguard/number/maxExcluded';
 ```
-        
-* _Description_ - Asserts that a number value is strictly less than a specified maximum value (i.e., the maximum value is excluded).
-* _Param_ {number} expected - The maximum allowable value, which is excluded.
-* _Throws_ {ValidationError} if the received value is greater than or equal to the expected maximum value.
-* _Example_
+
+- _Description_ - Asserts that a number value is strictly less than a specified maximum value (i.e., the maximum value is excluded).
+- _Param_ {number} expected - The maximum allowable value, which is excluded.
+- _Throws_ {ValidationError} if the received value is greater than or equal to the expected maximum value.
+- _Example_
+
 ```typescript
- const schema = number().custom(maxExcluded(100));
- parseOrFail(schema, 99);  // Valid
- parseOrFail(schema, 100); // Throws an error: 'The received value is greater than or equal to expected'
- parseOrFail(schema, 101); // Throws an error: 'The received value is greater than or equal to expected'
+const schema = number().custom(maxExcluded(100));
+parseOrFail(schema, 99); // Valid
+parseOrFail(schema, 100); // Throws an error: 'The received value is greater than or equal to expected'
+parseOrFail(schema, 101); // Throws an error: 'The received value is greater than or equal to expected'
 ```
-* _See_ Error Translation Key = 'n:maxExcluded'
-        
-        
+
+- _See_ Error Translation Key = 'n:maxExcluded'
+
 ##### min (number) {#assert_min_number}
-        
+
 ```typescript
 import { min } from 'bguard/number/min';
 ```
-        
-* _Description_ Asserts that a number value is not less than a specified minimum value.
-* _Param_ {number} expected The minimum allowable value.
-* _Throws_ {ValidationError} if the received value is less than the expected minimum value.
-* _Example_
+
+- _Description_ Asserts that a number value is not less than a specified minimum value.
+- _Param_ {number} expected The minimum allowable value.
+- _Throws_ {ValidationError} if the received value is less than the expected minimum value.
+- _Example_
+
 ```typescript
- const schema = number().custom(min(10));
- parseOrFail(schema, 11);  // Valid
- parseOrFail(schema, 10);  // Valid
- parseOrFail(schema, 9);   // Throws an error: 'The received value is less than expected'
+const schema = number().custom(min(10));
+parseOrFail(schema, 11); // Valid
+parseOrFail(schema, 10); // Valid
+parseOrFail(schema, 9); // Throws an error: 'The received value is less than expected'
 ```
-* _See_ Error Translation Key = 'n:min'
-        
-        
+
+- _See_ Error Translation Key = 'n:min'
+
 ##### minExcluded (number) {#assert_minExcluded_number}
-        
+
 ```typescript
 import { minExcluded } from 'bguard/number/minExcluded';
 ```
-        
-* _Description_ Asserts that a number value is strictly greater than a specified minimum value (i.e., the minimum value is excluded).
-* _Param_ {number} expected The minimum allowable value, which is excluded.
-* _Throws_ {ValidationError} if the received value is less than or equal to the expected minimum value.
-* _Example_
+
+- _Description_ Asserts that a number value is strictly greater than a specified minimum value (i.e., the minimum value is excluded).
+- _Param_ {number} expected The minimum allowable value, which is excluded.
+- _Throws_ {ValidationError} if the received value is less than or equal to the expected minimum value.
+- _Example_
+
 ```typescript
- const schema = number().custom(minExcluded(10));
- parseOrFail(schema, 11);  // Valid
- parseOrFail(schema, 10); // Throws an error: 'The received value is less than or equal to expected'
- parseOrFail(schema, 9);  // Throws an error: 'The received value is less than or equal to expected'
+const schema = number().custom(minExcluded(10));
+parseOrFail(schema, 11); // Valid
+parseOrFail(schema, 10); // Throws an error: 'The received value is less than or equal to expected'
+parseOrFail(schema, 9); // Throws an error: 'The received value is less than or equal to expected'
 ```
-* _See_ Error Translation Key = 'n:minExcluded'
-        
-        
+
+- _See_ Error Translation Key = 'n:minExcluded'
+
 ##### negative (number) {#assert_negative_number}
-        
+
 ```typescript
 import { negative } from 'bguard/number/negative';
 ```
-        
-* _Description_ Asserts that a number value is negative (less than zero).
-* _Throws_ {ValidationError} if the received value is not negative.
-* _Example_
+
+- _Description_ Asserts that a number value is negative (less than zero).
+- _Throws_ {ValidationError} if the received value is not negative.
+- _Example_
+
 ```typescript
- const schema = number().custom(negative());
- parseOrFail(schema, -10); // Valid
- parseOrFail(schema, 0);  // Throws an error: 'The received value is not a negative number'
- parseOrFail(schema, 5);  // Throws an error: 'The received value is not a negative number'
+const schema = number().custom(negative());
+parseOrFail(schema, -10); // Valid
+parseOrFail(schema, 0); // Throws an error: 'The received value is not a negative number'
+parseOrFail(schema, 5); // Throws an error: 'The received value is not a negative number'
 ```
-* _See_ - Error Translation Key = 'n:negative'
-        
-        
+
+- _See_ - Error Translation Key = 'n:negative'
+
 ##### positive (number) {#assert_positive_number}
-        
+
 ```typescript
 import { positive } from 'bguard/number/positive';
 ```
-        
-* _Description_ Asserts that a number value is positive (greater than zero).
-* _Throws_ {ValidationError} if the received value is not positive.
-* _Example_
+
+- _Description_ Asserts that a number value is positive (greater than zero).
+- _Throws_ {ValidationError} if the received value is not positive.
+- _Example_
+
 ```typescript
- const schema = number().custom(positive());
- parseOrFail(schema, 10);  // Valid
- parseOrFail(schema, 0);  // Throws an error: 'The received value is not a positive number'
- parseOrFail(schema, -5); // Throws an error: 'The received value is not a positive number'
+const schema = number().custom(positive());
+parseOrFail(schema, 10); // Valid
+parseOrFail(schema, 0); // Throws an error: 'The received value is not a positive number'
+parseOrFail(schema, -5); // Throws an error: 'The received value is not a positive number'
 ```
-* _See_ Error Translation Key = 'n:positive'
-        
+
+- _See_ Error Translation Key = 'n:positive'
+
 #### array {#assertdir_array}
-   
- <b>Prerequisites</b>
-   
+
+<b>Prerequisites</b>
+
 ```typescript
 import { array } from 'bguard/array';
 ```
-   
-* _Description_ Creates a new schema for validating arrays where each element must match the specified schema.
- 
-* _Param_ {T} arraySchema - The schema that each element of the array must match.
-* _Example_
+
+- _Description_ Creates a new schema for validating arrays where each element must match the specified schema.
+
+- _Param_ {T} arraySchema - The schema that each element of the array must match.
+- _Example_
+
 ```typescript
- const schema = array(string());
- parseOrFail(schema, ['hello', 'world']); // Validates successfully
- parseOrFail(schema, ['hello', 123]); // Throws a validation error
+const schema = array(string());
+parseOrFail(schema, ['hello', 'world']); // Validates successfully
+parseOrFail(schema, ['hello', 123]); // Throws a validation error
 ```
-   
-        
+
 ##### maxArrayLength (array) {#assert_maxArrayLength_array}
-        
+
 ```typescript
 import { maxArrayLength } from 'bguard/array/maxArrayLength';
 ```
-        
-* _Description_ Asserts that the length of an array is not greater than a specified maximum length.
-* _Param_ {number} expected The maximum allowed length for the array.
-* _Throws_ {ValidationError} if the length of the received value is greater than the expected length.
-* _Example_
+
+- _Description_ Asserts that the length of an array is not greater than a specified maximum length.
+- _Param_ {number} expected The maximum allowed length for the array.
+- _Throws_ {ValidationError} if the length of the received value is greater than the expected length.
+- _Example_
+
 ```typescript
- const schema = array(string()).custom(maxArrayLength(3));
- parseOrFail(schema, ['adequate', 'array']);   // Valid
- parseOrFail(schema, ['adequate', 'array', 'length']);   // Valid
- parseOrFail(schema, ['adequate', 'array', 'length', 'test']); // Throws an error: 'The received value length is greater than expected'
+const schema = array(string()).custom(maxArrayLength(3));
+parseOrFail(schema, ['adequate', 'array']); // Valid
+parseOrFail(schema, ['adequate', 'array', 'length']); // Valid
+parseOrFail(schema, ['adequate', 'array', 'length', 'test']); // Throws an error: 'The received value length is greater than expected'
 ```
-* _See_ Error Translation Key = 'a:maxArrayLength'
-        
-        
+
+- _See_ Error Translation Key = 'a:maxArrayLength'
+
 ##### minArrayLength (array) {#assert_minArrayLength_array}
-        
+
 ```typescript
 import { minArrayLength } from 'bguard/array/minArrayLength';
 ```
-        
-* _Description_ Asserts that the length of na array is not less than a specified minimum length.
-* _Param_ {number} expected The minimum required length for the array.
-* _Throws_ {ValidationError} if the length of the received value is less than the expected length.
-* _Example_
+
+- _Description_ Asserts that the length of na array is not less than a specified minimum length.
+- _Param_ {number} expected The minimum required length for the array.
+- _Throws_ {ValidationError} if the length of the received value is less than the expected length.
+- _Example_
+
 ```typescript
- const schema = array(string()).custom(minArrayLength(3));
- parseOrFail(schema, ['short', 'array']);    // Throws an error: 'The received value length is less than expected'
- parseOrFail(schema, ['adequate', 'array', 'length']); // Valid
- parseOrFail(schema, ['adequate', 'array', 'length', 'test']); // Valid
+const schema = array(string()).custom(minArrayLength(3));
+parseOrFail(schema, ['short', 'array']); // Throws an error: 'The received value length is less than expected'
+parseOrFail(schema, ['adequate', 'array', 'length']); // Valid
+parseOrFail(schema, ['adequate', 'array', 'length', 'test']); // Valid
 ```
-* _See_ Error Translation Key = 'a:minArrayLength'
-        
+
+- _See_ Error Translation Key = 'a:minArrayLength'
+
 #### bigint {#assertdir_bigint}
-   
- <b>Prerequisites</b>
-   
+
+<b>Prerequisites</b>
+
 ```typescript
 import { bigint } from 'bguard/bigint';
 ```
-   
-* _Description_ Creates a new schema for validating bigint values.
-* _Example_
+
+- _Description_ Creates a new schema for validating bigint values.
+- _Example_
+
 ```typescript
- const schema = bigint();
- parseOrFail(schema, 42n); // Validates successfully
- parseOrFail(schema, 42); // Throws a validation error
- parseOrFail(schema, '42'); // Throws a validation error
+const schema = bigint();
+parseOrFail(schema, 42n); // Validates successfully
+parseOrFail(schema, 42); // Throws a validation error
+parseOrFail(schema, '42'); // Throws a validation error
 ```
-   
-        
+
 ##### bigintMax (bigint) {#assert_bigintMax_bigint}
-        
+
 ```typescript
 import { bigintMax } from 'bguard/bigint/bigintMax';
 ```
-        
-* _Description_ Asserts that a bigint value does not exceed a specified maximum value.
-* _Param_ {bigint} expected The maximum allowable value.
-* _Throws_ {ValidationError} if the received value exceeds the expected maximum value.
-* _Example_
+
+- _Description_ Asserts that a bigint value does not exceed a specified maximum value.
+- _Param_ {bigint} expected The maximum allowable value.
+- _Throws_ {ValidationError} if the received value exceeds the expected maximum value.
+- _Example_
+
 ```typescript
- const schema = bigint().custom(bigintMax(100n));
- parseOrFail(schema, 99n);  // Valid
- parseOrFail(schema, 100n); // Valid
- parseOrFail(schema, 101n); // Throws an error: 'The received value is greater than expected'
+const schema = bigint().custom(bigintMax(100n));
+parseOrFail(schema, 99n); // Valid
+parseOrFail(schema, 100n); // Valid
+parseOrFail(schema, 101n); // Throws an error: 'The received value is greater than expected'
 ```
-* _See_ Error Translation Key = 'bi:max'
-        
-        
+
+- _See_ Error Translation Key = 'bi:max'
+
 ##### bigintMaxExcluded (bigint) {#assert_bigintMaxExcluded_bigint}
-        
+
 ```typescript
 import { bigintMaxExcluded } from 'bguard/bigint/bigintMaxExcluded';
 ```
-        
-* _Description_ - Asserts that a bigint value is strictly less than a specified maximum value (i.e., the maximum value is excluded).
-* _Param_ {bigint} expected - The maximum allowable value, which is excluded.
-* _Throws_ {ValidationError} if the received value is greater than or equal to the expected maximum value.
-* _Example_
+
+- _Description_ - Asserts that a bigint value is strictly less than a specified maximum value (i.e., the maximum value is excluded).
+- _Param_ {bigint} expected - The maximum allowable value, which is excluded.
+- _Throws_ {ValidationError} if the received value is greater than or equal to the expected maximum value.
+- _Example_
+
 ```typescript
- const schema = bigint().custom(bigintMaxExcluded(100n));
- parseOrFail(schema, 99n);  // Valid
- parseOrFail(schema, 100n); // Throws an error: 'The received value is greater than or equal to expected'
- parseOrFail(schema, 101n); // Throws an error: 'The received value is greater than or equal to expected'
+const schema = bigint().custom(bigintMaxExcluded(100n));
+parseOrFail(schema, 99n); // Valid
+parseOrFail(schema, 100n); // Throws an error: 'The received value is greater than or equal to expected'
+parseOrFail(schema, 101n); // Throws an error: 'The received value is greater than or equal to expected'
 ```
-* _See_ Error Translation Key = 'bi:maxExcluded'
-        
-        
+
+- _See_ Error Translation Key = 'bi:maxExcluded'
+
 ##### bigintMin (bigint) {#assert_bigintMin_bigint}
-        
+
 ```typescript
 import { bigintMin } from 'bguard/bigint/bigintMin';
 ```
-        
-* _Description_ Asserts that a bigint value is not less than a specified minimum value.
-* _Param_ {bigint} expected The minimum allowable value.
-* _Throws_ {ValidationError} if the received value is less than the expected minimum value.
-* _Example_
+
+- _Description_ Asserts that a bigint value is not less than a specified minimum value.
+- _Param_ {bigint} expected The minimum allowable value.
+- _Throws_ {ValidationError} if the received value is less than the expected minimum value.
+- _Example_
+
 ```typescript
- const schema = bigint().custom(bigintMin(10n));
- parseOrFail(schema, 11n);  // Valid
- parseOrFail(schema, 10n);  // Valid
- parseOrFail(schema, 9n);   // Throws an error: 'The received value is less than expected'
+const schema = bigint().custom(bigintMin(10n));
+parseOrFail(schema, 11n); // Valid
+parseOrFail(schema, 10n); // Valid
+parseOrFail(schema, 9n); // Throws an error: 'The received value is less than expected'
 ```
-* _See_ Error Translation Key = 'bi:min'
-        
-        
+
+- _See_ Error Translation Key = 'bi:min'
+
 ##### bigintMinExcluded (bigint) {#assert_bigintMinExcluded_bigint}
-        
+
 ```typescript
 import { bigintMinExcluded } from 'bguard/bigint/bigintMinExcluded';
 ```
-        
-* _Description_ Asserts that a bigint value is strictly greater than a specified minimum value (i.e., the minimum value is excluded).
-* _Param_ {bigint} expected The minimum allowable value, which is excluded.
-* _Throws_ {ValidationError} if the received value is less than or equal to the expected minimum value.
-* _Example_
+
+- _Description_ Asserts that a bigint value is strictly greater than a specified minimum value (i.e., the minimum value is excluded).
+- _Param_ {bigint} expected The minimum allowable value, which is excluded.
+- _Throws_ {ValidationError} if the received value is less than or equal to the expected minimum value.
+- _Example_
+
 ```typescript
- const schema = bigint().custom(bigintMinExcluded(10n));
- parseOrFail(schema, 11n);  // Valid
- parseOrFail(schema, 10n); // Throws an error: 'The received value is less than or equal to expected'
- parseOrFail(schema, 9n);  // Throws an error: 'The received value is less than or equal to expected'
+const schema = bigint().custom(bigintMinExcluded(10n));
+parseOrFail(schema, 11n); // Valid
+parseOrFail(schema, 10n); // Throws an error: 'The received value is less than or equal to expected'
+parseOrFail(schema, 9n); // Throws an error: 'The received value is less than or equal to expected'
 ```
-* _See_ Error Translation Key = 'bi:minExcluded'
-        
+
+- _See_ Error Translation Key = 'bi:minExcluded'
+
 #### date {#assertdir_date}
-   
- <b>Prerequisites</b>
-   
+
+<b>Prerequisites</b>
+
 ```typescript
 import { date } from 'bguard/date';
 ```
-   
-* _Description_ Creates a new schema for validating date values.
-* _Example_
+
+- _Description_ Creates a new schema for validating date values.
+- _Example_
+
 ```typescript
- const schema = date();
- parseOrFail(schema, true); // Validates successfully
- parseOrFail(schema, 'true'); // Throws a validation error
+const schema = date();
+parseOrFail(schema, true); // Validates successfully
+parseOrFail(schema, 'true'); // Throws a validation error
 ```
-   
-        
+
 ##### dateMax (date) {#assert_dateMax_date}
-        
+
 ```typescript
 import { dateMax } from 'bguard/date/dateMax';
 ```
-        
-* _Description_ Asserts that a date value is not greater than a specified maximum value.
-* _Param_ {Date | string} expected The maximum allowable value.
-* _Throws_ {ValidationError} if the received value is greater than the expected maximum value.
-* _Example_
+
+- _Description_ Asserts that a date value is not greater than a specified maximum value.
+- _Param_ {Date | string} expected The maximum allowable value.
+- _Throws_ {ValidationError} if the received value is greater than the expected maximum value.
+- _Example_
+
 ```typescript
- const schema = date().custom(dateMax('2024-12-31'));
- parseOrFail(schema, new Date('2024-12-30'));  // Valid
- parseOrFail(schema, new Date('2024-12-31'));  // Valid
- parseOrFail(schema, new Date('2025-01-01'));  // Throws an error: 'The received value is greater than expected'
+const schema = date().custom(dateMax('2024-12-31'));
+parseOrFail(schema, new Date('2024-12-30')); // Valid
+parseOrFail(schema, new Date('2024-12-31')); // Valid
+parseOrFail(schema, new Date('2025-01-01')); // Throws an error: 'The received value is greater than expected'
 ```
-* _See_ Error Translation Key = 'dt:max'
-        
-        
+
+- _See_ Error Translation Key = 'dt:max'
+
 ##### dateMin (date) {#assert_dateMin_date}
-        
+
 ```typescript
 import { dateMin } from 'bguard/date/dateMin';
 ```
-        
-* _Description_ Asserts that a number value is not less than a specified minimum value.
-* _Param_ {Date | string} expected The minimum allowable value.
-* _Throws_ {ValidationError} if the received value is less than the expected minimum value.
-* _Example_
+
+- _Description_ Asserts that a number value is not less than a specified minimum value.
+- _Param_ {Date | string} expected The minimum allowable value.
+- _Throws_ {ValidationError} if the received value is less than the expected minimum value.
+- _Example_
+
 ```typescript
- const schema = date().custom(dateMin('2023-01-01'));
- parseOrFail(schema, new Date('2023-01-02'));  // Valid
- parseOrFail(schema, new Date('2023-01-01'));  // Valid
- parseOrFail(schema, new Date('2022-12-31'));  // Throws an error: 'The received value is less than expected'
+const schema = date().custom(dateMin('2023-01-01'));
+parseOrFail(schema, new Date('2023-01-02')); // Valid
+parseOrFail(schema, new Date('2023-01-01')); // Valid
+parseOrFail(schema, new Date('2022-12-31')); // Throws an error: 'The received value is less than expected'
 ```
-* _See_ Error Translation Key = 'dt:min'
-        
+
+- _See_ Error Translation Key = 'dt:min'
+
 #### mix {#assertdir_mix}
-   
- <b>Prerequisites</b>
-   
+
+<b>Prerequisites</b>
+
 ```typescript
 import { oneOfTypes } from 'bguard/mix';
 ```
-   
-* _Description_ Creates a new schema for validating values that can match any one of the specified primitive types.
 
- 
-* _Param_ {T} valueTypes - An array of primitive types that the value can match.
-* _Example_
+- _Description_ Creates a new schema for validating values that can match any one of the specified primitive types.
+
+- _Param_ {T} valueTypes - An array of primitive types that the value can match.
+- _Example_
+
 ```typescript
- const schema = oneOfTypes(['string', 'number']);
- parseOrFail(schema, 'hello'); // Validates successfully
- parseOrFail(schema, 42); // Validates successfully
- parseOrFail(schema, true); // Throws a validation error
+const schema = oneOfTypes(['string', 'number']);
+parseOrFail(schema, 'hello'); // Validates successfully
+parseOrFail(schema, 42); // Validates successfully
+parseOrFail(schema, true); // Throws a validation error
 ```
-   
-        
+
 ##### equalTo (mix) {#assert_equalTo_mix}
-        
+
 ```typescript
 import { equalTo } from 'bguard/mix/equalTo';
 ```
-        
-* _Description_ Creates a custom assertion that checks if a value is equal to the expected value.
-* > **Notice:** It has already been implemented in the number, bigint and string schema. There is no need to use it as a custom assert.
-* _Param_ {unknown} expected The value that the received value is expected to match.
-* _Throws_ {ValidationError} If the received value does not match the expected value.
-* _Example_
+
+- _Description_ Creates a custom assertion that checks if a value is equal to the expected value.
+- > **Notice:** It has already been implemented in the number, bigint and string schema. There is no need to use it as a custom assert.
+- _Param_ {unknown} expected The value that the received value is expected to match.
+- _Throws_ {ValidationError} If the received value does not match the expected value.
+- _Example_
+
 ```typescript
- const schema = number().custom(equalTo(5)); // Define a schema with a custom assertion
- parseOrFail(schema, 5); // Valid
- parseOrFail(schema, 3); // Throws an error: 'The received value is not equal to expected'
+const schema = number().custom(equalTo(5)); // Define a schema with a custom assertion
+parseOrFail(schema, 5); // Valid
+parseOrFail(schema, 3); // Throws an error: 'The received value is not equal to expected'
 ```
-* _See_ Error Translation Key = 'm:equalTo'
-        
-        
+
+- _See_ Error Translation Key = 'm:equalTo'
+
 ##### oneOfValues (mix) {#assert_oneOfValues_mix}
-        
+
 ```typescript
 import { oneOfValues } from 'bguard/mix/oneOfValues';
 ```
-        
-* _Description_ Creates a custom assertion that checks if a value is equal to the one of expected values.
-* > **Notice:** It has already been implemented in the number, bigint and string schema. There is no need to use it as a custom assert.
-* _Param_ {unknown} expected The value that the received value is expected to match.
-* _Throws_ {ValidationError} If the received value does not match at least one of the expected values.
-* _Example_
+
+- _Description_ Creates a custom assertion that checks if a value is equal to the one of expected values.
+- > **Notice:** It has already been implemented in the number, bigint and string schema. There is no need to use it as a custom assert.
+- _Param_ {unknown} expected The value that the received value is expected to match.
+- _Throws_ {ValidationError} If the received value does not match at least one of the expected values.
+- _Example_
+
 ```typescript
- const schema = number().custom(oneOfValues([5, 4])); // Define a schema with a custom assertion
- parseOrFail(schema, 5); // Valid
- parseOrFail(schema, 4); // Valid
- parseOrFail(schema, 3); // Throws an error: 'The received value is not equal to expected'
+const schema = number().custom(oneOfValues([5, 4])); // Define a schema with a custom assertion
+parseOrFail(schema, 5); // Valid
+parseOrFail(schema, 4); // Valid
+parseOrFail(schema, 3); // Throws an error: 'The received value is not equal to expected'
 ```
-* _See_ Error Translation Key = 'm:oneOfValues'
-        
+
+- _See_ Error Translation Key = 'm:oneOfValues'
+
 ### Contributing
+
 Contributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.

@@ -1,8 +1,9 @@
+import { WithBGuardType } from '../../commonTypes';
 import { StringSchema } from '../../schemas/StringSchema';
 
 /**
  * @description Creates a new schema for validating string values.
- * @returns {StringSchema} A new instance of `StringSchema` for validating strings.
+ * @returns {WithBGuardType<StringSchema, string>} A new instance of `StringSchema` for validating strings.
  * @example
  * const schema = string();
  * parseOrFail(schema, 'hello'); // Validates successfully
@@ -10,6 +11,6 @@ import { StringSchema } from '../../schemas/StringSchema';
  *
  * @instance Of StringSchema
  */
-export function string(): StringSchema {
-  return new StringSchema({ type: ['string'], requiredValidations: [] });
+export function string(): WithBGuardType<StringSchema, string> {
+  return new StringSchema({ type: ['string'], requiredValidations: [] }) as WithBGuardType<StringSchema, string>;
 }

@@ -8,6 +8,11 @@ import { isValidDateInner } from './isValidDateInner';
 export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext): unknown {
   const commonTmap = exCtx.t;
   const schemaData = schema[ctxSymbol];
+
+  schemaData.transformListBefore?.forEach((transformCallback) => {
+    receivedValue = transformCallback(receivedValue);
+  });
+
   if (receivedValue === undefined) {
     if (schemaData.defaultValue !== undefined) return schemaData.defaultValue;
     if (!schemaData.isOptional) guardException('Required', receivedValue, exCtx, commonTmap['c:optional']);
@@ -30,17 +35,22 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
       guardException(schemaData.type, typeOfVal, exCtx, commonTmap['c:invalidType']);
   }
 
-  schemaData.requiredValidations.forEach((requiredValidation) => {
-    requiredValidation(receivedValue, exCtx);
-  });
-
   if (schemaData.array) {
     if (!Array.isArray(receivedValue)) return guardException('Array', receivedValue, exCtx, commonTmap['c:array']);
+
+    schemaData.requiredValidations.forEach((requiredValidation) => {
+      requiredValidation(receivedValue, exCtx);
+    });
+
     const schema = schemaData.array;
     const pathToError = exCtx.pathToError;
     const parsedReceivedValue: unknown[] = [];
     receivedValue.forEach((elem, i) => {
-      const parsedElement = innerCheck(schema, elem, { ...exCtx, pathToError: `${pathToError}[${i}]` });
+      const parsedElement = innerCheck(schema, elem, {
+        ...exCtx,
+        pathToError: `${pathToError}[${i}]`,
+        meta: schemaData.meta,
+      });
       parsedReceivedValue.push(parsedElement);
     });
 
@@ -50,6 +60,11 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
   if (schemaData.object) {
     if (typeOfVal !== 'object') guardException('Object', receivedValue, exCtx, commonTmap['c:objectType']);
     if (Array.isArray(receivedValue)) guardException('Object', receivedValue, exCtx, commonTmap['c:objectTypeAsArray']);
+
+    schemaData.requiredValidations.forEach((requiredValidation) => {
+      requiredValidation(receivedValue, exCtx);
+    });
+
     const shapeSchema = schemaData.object;
     const parsedReceivedValue: Record<string, unknown> = {};
 
@@ -71,6 +86,7 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
       const parsedReceivedObjectValuePropery = innerCheck(valueOfSchema, receivedObjectValuePropery, {
         ...exCtx,
         pathToError: `${pathToError}.${keyOfSchema}`,
+        meta: schemaData.meta,
       });
 
       parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
@@ -78,6 +94,10 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
 
     return parsedReceivedValue;
   }
+
+  schemaData.requiredValidations.forEach((requiredValidation) => {
+    requiredValidation(receivedValue, exCtx);
+  });
 
   return receivedValue;
 }

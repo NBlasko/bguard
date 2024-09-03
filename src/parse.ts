@@ -1,5 +1,5 @@
 import { InferType } from './InferType';
-import { innerCheck } from './helpers/core';
+import { ctxSymbol, innerCheck } from './helpers/core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
 import { CommonSchema } from './schemas/CommonSchema';
@@ -72,6 +72,7 @@ export function parse<T extends CommonSchema>(
       pathToError: '',
       getAllErrors: options?.getAllErrors,
       errors: [],
+      meta: schema[ctxSymbol].meta
     };
 
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;
@@ -94,6 +95,7 @@ export function parse<T extends CommonSchema>(
           expected: '',
           received: '',
           pathToError: '',
+          meta: undefined
         },
       ],
       undefined,
