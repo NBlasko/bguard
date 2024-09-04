@@ -2,13 +2,11 @@ import fs from 'fs/promises';
 import path from 'path';
 
 function generateTOC(content) {
-  // Regularni izraz za pronalaženje potrebnih redova
   const regex = /^(###|####) <a id="([^"]+)">([^<]+)<\/a>/gm;
 
   let toc = '';
   let match;
 
-  // Pronalazimo sve podudarnosti sa regularnim izrazom
   while ((match = regex.exec(content)) !== null) {
     const level = match[1] === '###' ? ' * ' : '    * ';
     const title = match[3].trim();
@@ -83,7 +81,6 @@ const run = async () => {
   const translationCommonMap = await extractCommonTranslation();
   readmeStart = readmeStart.replace(/@@TRANSLATION_COMMON_MAP@@/, translationCommonMap).trim();
 
-
   let pageContext = '\n * [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) \n';
   let textData = '\n### <a id="builtin_custom_assert_documentation"> Built-in Custom Assert Documentation </a> \n';
   const rawDirs = await fs.readdir(path.join('src/asserts'));
@@ -130,4 +127,3 @@ const run = async () => {
 };
 
 run();
-
