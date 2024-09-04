@@ -11,12 +11,12 @@ Table of contents
  * [Usage](#h3_usage)
     * [Defining a Schema](#h4_usage_defining_a_schema)
     * [Inferring TypeScript Types](#h4_usage_inferring_typescript_types)
-    * [Generating TypeScript Types with `codeGen`](#h4_usage_generating_typescript_types_with_codeGen)
-    * [Generating Named TypeScript Types with `codeGenWithName`](#h4_usage_generating_typescript_types_with_codeGenWithName)
+    * [Generating TypeScript Types with `codeGen`](#h4_usage_generating_typescript_types_with_codegen)
+    * [Generating Named TypeScript Types with `codeGenWithName`](#h4_usage_generating_typescript_types_with_codegenwithname)
     * [Summary:](#h4_usage_summary)
  * [Validating Data](#h3_validating_data)
     * [`parse` Method](#h4_validating_data_parse)
-    * [`parseOrFail` Method](#h4_validating_data_parseOrFail)
+    * [`parseOrFail` Method](#h4_validating_data_parseorfail)
  * [Chaining Methods](#h3_chaining_methods)
     * [nullable()](#h4_chaining_nullable)
     * [optional()](#h4_chaining_optional)
@@ -32,52 +32,52 @@ Table of contents
  * [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) 
 
      * [string](#assertdir_string)
-          * [atLeastOneDigit](#assert_atLeastOneDigit_string)
-          * [atLeastOneLowerChar](#assert_atLeastOneLowerChar_string)
-          * [atLeastOneSpecialChar](#assert_atLeastOneSpecialChar_string)
-          * [atLeastOneUpperChar](#assert_atLeastOneUpperChar_string)
+          * [atLeastOneDigit](#assert_atleastonedigit_string)
+          * [atLeastOneLowerChar](#assert_atleastonelowerchar_string)
+          * [atLeastOneSpecialChar](#assert_atleastonespecialchar_string)
+          * [atLeastOneUpperChar](#assert_atleastoneupperchar_string)
           * [contains](#assert_contains_string)
           * [email](#assert_email_string)
-          * [endsWith](#assert_endsWith_string)
-          * [isValidDate](#assert_isValidDate_string)
-          * [isValidDateTime](#assert_isValidDateTime_string)
-          * [isValidTime](#assert_isValidTime_string)
-          * [lowerCase](#assert_lowerCase_string)
-          * [maxLength](#assert_maxLength_string)
-          * [minLength](#assert_minLength_string)
-          * [regExp](#assert_regExp_string)
-          * [startsWith](#assert_startsWith_string)
-          * [upperCase](#assert_upperCase_string)
+          * [endsWith](#assert_endswith_string)
+          * [isValidDate](#assert_isvaliddate_string)
+          * [isValidDateTime](#assert_isvaliddatetime_string)
+          * [isValidTime](#assert_isvalidtime_string)
+          * [lowerCase](#assert_lowercase_string)
+          * [maxLength](#assert_maxlength_string)
+          * [minLength](#assert_minlength_string)
+          * [regExp](#assert_regexp_string)
+          * [startsWith](#assert_startswith_string)
+          * [upperCase](#assert_uppercase_string)
           * [uuid](#assert_uuid_string)
-          * [uuidV1](#assert_uuidV1_string)
-          * [uuidV2](#assert_uuidV2_string)
-          * [uuidV3](#assert_uuidV3_string)
-          * [uuidV4](#assert_uuidV4_string)
-          * [uuidV5](#assert_uuidV5_string)
-          * [validUrl](#assert_validUrl_string)
+          * [uuidV1](#assert_uuidv1_string)
+          * [uuidV2](#assert_uuidv2_string)
+          * [uuidV3](#assert_uuidv3_string)
+          * [uuidV4](#assert_uuidv4_string)
+          * [uuidV5](#assert_uuidv5_string)
+          * [validUrl](#assert_validurl_string)
      * [number](#assertdir_number)
           * [max](#assert_max_number)
-          * [maxExcluded](#assert_maxExcluded_number)
+          * [maxExcluded](#assert_maxexcluded_number)
           * [min](#assert_min_number)
-          * [minExcluded](#assert_minExcluded_number)
+          * [minExcluded](#assert_minexcluded_number)
           * [negative](#assert_negative_number)
           * [positive](#assert_positive_number)
      * [array](#assertdir_array)
-          * [maxArrayLength](#assert_maxArrayLength_array)
-          * [minArrayLength](#assert_minArrayLength_array)
+          * [maxArrayLength](#assert_maxarraylength_array)
+          * [minArrayLength](#assert_minarraylength_array)
      * [bigint](#assertdir_bigint)
-          * [bigintMax](#assert_bigintMax_bigint)
-          * [bigintMaxExcluded](#assert_bigintMaxExcluded_bigint)
-          * [bigintMin](#assert_bigintMin_bigint)
-          * [bigintMinExcluded](#assert_bigintMinExcluded_bigint)
+          * [bigintMax](#assert_bigintmax_bigint)
+          * [bigintMaxExcluded](#assert_bigintmaxexcluded_bigint)
+          * [bigintMin](#assert_bigintmin_bigint)
+          * [bigintMinExcluded](#assert_bigintminexcluded_bigint)
      * [date](#assertdir_date)
-          * [dateMax](#assert_dateMax_date)
-          * [dateMin](#assert_dateMin_date)
+          * [dateMax](#assert_datemax_date)
+          * [dateMin](#assert_datemin_date)
      * [mix](#assertdir_mix)
-          * [equalTo](#assert_equalTo_mix)
-          * [oneOfValues](#assert_oneOfValues_mix)
+          * [equalTo](#assert_equalto_mix)
+          * [oneOfValues](#assert_oneofvalues_mix)
      * [object](#assertdir_object)
-          * [maxKeys](#assert_maxKeys_object)
+          * [maxKeys](#assert_maxkeys_object)
 
 ### <a id="h3_features"> Features </a>
 
@@ -158,7 +158,7 @@ type StudentSchema = {
 
 ```
 
-#### <a id="h4_usage_generating_typescript_types_with_codeGen"> Generating TypeScript Types with `codeGen` </a>
+#### <a id="h4_usage_generating_typescript_types_with_codegen"> Generating TypeScript Types with `codeGen` </a>
 
 If you prefer to generate TypeScript types as a string, you can use the `codeGen` function:
 
@@ -193,7 +193,7 @@ This would output a string:
 
 > **Notice:** The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
 
-#### <a id="h4_usage_generating_typescript_types_with_codeGenWithName"> Generating Named TypeScript Types with `codeGenWithName` </a>
+#### <a id="h4_usage_generating_typescript_types_with_codegenwithname"> Generating Named TypeScript Types with `codeGenWithName` </a>
 
 For convenience, if you want to generate a complete type definition including a name, use the `codeGenWithName` function:
 
@@ -290,7 +290,7 @@ Options:
 - `lng`: Specifies the language for error messages. Default is `'default'`.
 - `getAllErrors`: If `true`, collects all validation errors. If `false` or `undefined`, stops at the first error. Turning off `getAllErrors` provides a runtime optimization, as it stops validation at the first error, avoiding unnecessary checks for the remaining received value.
 
-#### <a id="h4_validating_data_parseOrFail"> `parseOrFail` Method </a>
+#### <a id="h4_validating_data_parseorfail"> `parseOrFail` Method </a>
 
 The `parseOrFail` method validates the data and throws an error on the first validation failure. It is useful when you want to halt processing immediately upon encountering an error.
 
@@ -628,7 +628,7 @@ import { string } from 'bguard/string';
 ```
    
         
-##### <a id="assert_atLeastOneDigit_string"> atLeastOneDigit </a>
+##### <a id="assert_atleastonedigit_string"> atLeastOneDigit </a>
         
 ```typescript
 import { atLeastOneDigit } from 'bguard/string/atLeastOneDigit';
@@ -645,7 +645,7 @@ import { atLeastOneDigit } from 'bguard/string/atLeastOneDigit';
 * _See_ Error Translation Key = 's:atLeastOneDigit'
         
         
-##### <a id="assert_atLeastOneLowerChar_string"> atLeastOneLowerChar </a>
+##### <a id="assert_atleastonelowerchar_string"> atLeastOneLowerChar </a>
         
 ```typescript
 import { atLeastOneLowerChar } from 'bguard/string/atLeastOneLowerChar';
@@ -662,7 +662,7 @@ import { atLeastOneLowerChar } from 'bguard/string/atLeastOneLowerChar';
 * _See_ Error Translation Key = 's:atLeastOneLowerChar'
         
         
-##### <a id="assert_atLeastOneSpecialChar_string"> atLeastOneSpecialChar </a>
+##### <a id="assert_atleastonespecialchar_string"> atLeastOneSpecialChar </a>
         
 ```typescript
 import { atLeastOneSpecialChar } from 'bguard/string/atLeastOneSpecialChar';
@@ -684,7 +684,7 @@ import { atLeastOneSpecialChar } from 'bguard/string/atLeastOneSpecialChar';
 * _See_ Error Translation Key = 's:atLeastOneSpecialChar'
         
         
-##### <a id="assert_atLeastOneUpperChar_string"> atLeastOneUpperChar </a>
+##### <a id="assert_atleastoneupperchar_string"> atLeastOneUpperChar </a>
         
 ```typescript
 import { atLeastOneUpperChar } from 'bguard/string/atLeastOneUpperChar';
@@ -736,7 +736,7 @@ import { email } from 'bguard/string/email';
 * _See_ - Error Translation Key = 's:email'
         
         
-##### <a id="assert_endsWith_string"> endsWith </a>
+##### <a id="assert_endswith_string"> endsWith </a>
         
 ```typescript
 import { endsWith } from 'bguard/string/endsWith';
@@ -754,7 +754,7 @@ import { endsWith } from 'bguard/string/endsWith';
 * _See_ Error Translation Key = 's:endsWith'
         
         
-##### <a id="assert_isValidDate_string"> isValidDate </a>
+##### <a id="assert_isvaliddate_string"> isValidDate </a>
         
 ```typescript
 import { isValidDate } from 'bguard/string/isValidDate';
@@ -772,7 +772,7 @@ import { isValidDate } from 'bguard/string/isValidDate';
 * _See_ Error Translation Key = 's:isValidDate'
         
         
-##### <a id="assert_isValidDateTime_string"> isValidDateTime </a>
+##### <a id="assert_isvaliddatetime_string"> isValidDateTime </a>
         
 ```typescript
 import { isValidDateTime } from 'bguard/string/isValidDateTime';
@@ -800,7 +800,7 @@ import { isValidDateTime } from 'bguard/string/isValidDateTime';
 * _See_ Error Translation Key = 's:isValidDateTime'
         
         
-##### <a id="assert_isValidTime_string"> isValidTime </a>
+##### <a id="assert_isvalidtime_string"> isValidTime </a>
         
 ```typescript
 import { isValidTime } from 'bguard/string/isValidTime';
@@ -823,7 +823,7 @@ import { isValidTime } from 'bguard/string/isValidTime';
 * _See_ Error Translation Key = 's:isValidTime'
         
         
-##### <a id="assert_lowerCase_string"> lowerCase </a>
+##### <a id="assert_lowercase_string"> lowerCase </a>
         
 ```typescript
 import { lowerCase } from 'bguard/string/lowerCase';
@@ -840,7 +840,7 @@ import { lowerCase } from 'bguard/string/lowerCase';
 * _See_ Error Translation Key = 's:lowerCase'
         
         
-##### <a id="assert_maxLength_string"> maxLength </a>
+##### <a id="assert_maxlength_string"> maxLength </a>
         
 ```typescript
 import { maxLength } from 'bguard/string/maxLength';
@@ -858,7 +858,7 @@ import { maxLength } from 'bguard/string/maxLength';
 * _See_ Error Translation Key = 's:maxLength'
         
         
-##### <a id="assert_minLength_string"> minLength </a>
+##### <a id="assert_minlength_string"> minLength </a>
         
 ```typescript
 import { minLength } from 'bguard/string/minLength';
@@ -876,7 +876,7 @@ import { minLength } from 'bguard/string/minLength';
 * _See_ Error Translation Key = 's:minLength'
         
         
-##### <a id="assert_regExp_string"> regExp </a>
+##### <a id="assert_regexp_string"> regExp </a>
         
 ```typescript
 import { regExp } from 'bguard/string/regExp';
@@ -894,7 +894,7 @@ import { regExp } from 'bguard/string/regExp';
 * _See_ Error Translation Key = 's:regExp'
         
         
-##### <a id="assert_startsWith_string"> startsWith </a>
+##### <a id="assert_startswith_string"> startsWith </a>
         
 ```typescript
 import { startsWith } from 'bguard/string/startsWith';
@@ -912,7 +912,7 @@ import { startsWith } from 'bguard/string/startsWith';
 * _See_ Error Translation Key = 's:startsWith'
         
         
-##### <a id="assert_upperCase_string"> upperCase </a>
+##### <a id="assert_uppercase_string"> upperCase </a>
         
 ```typescript
 import { upperCase } from 'bguard/string/upperCase';
@@ -947,7 +947,7 @@ import { uuid } from 'bguard/string/uuid';
 * _See_ Error Translation Key = 's:uuid'
         
         
-##### <a id="assert_uuidV1_string"> uuidV1 </a>
+##### <a id="assert_uuidv1_string"> uuidV1 </a>
         
 ```typescript
 import { uuidV1 } from 'bguard/string/uuidV1';
@@ -965,7 +965,7 @@ import { uuidV1 } from 'bguard/string/uuidV1';
 * _See_ Error Translation Key = 's:uuidV1'
         
         
-##### <a id="assert_uuidV2_string"> uuidV2 </a>
+##### <a id="assert_uuidv2_string"> uuidV2 </a>
         
 ```typescript
 import { uuidV2 } from 'bguard/string/uuidV2';
@@ -983,7 +983,7 @@ import { uuidV2 } from 'bguard/string/uuidV2';
 * _See_ Error Translation Key = 's:uuidV2'
         
         
-##### <a id="assert_uuidV3_string"> uuidV3 </a>
+##### <a id="assert_uuidv3_string"> uuidV3 </a>
         
 ```typescript
 import { uuidV3 } from 'bguard/string/uuidV3';
@@ -1001,7 +1001,7 @@ import { uuidV3 } from 'bguard/string/uuidV3';
 * _See_ Error Translation Key = 's:uuidV3'
         
         
-##### <a id="assert_uuidV4_string"> uuidV4 </a>
+##### <a id="assert_uuidv4_string"> uuidV4 </a>
         
 ```typescript
 import { uuidV4 } from 'bguard/string/uuidV4';
@@ -1021,7 +1021,7 @@ import { uuidV4 } from 'bguard/string/uuidV4';
 * _See_ Error Translation Key = 's:uuidV4'
         
         
-##### <a id="assert_uuidV5_string"> uuidV5 </a>
+##### <a id="assert_uuidv5_string"> uuidV5 </a>
         
 ```typescript
 import { uuidV5 } from 'bguard/string/uuidV5';
@@ -1039,7 +1039,7 @@ import { uuidV5 } from 'bguard/string/uuidV5';
 * _See_ Error Translation Key = 's:uuidV5'
         
         
-##### <a id="assert_validUrl_string"> validUrl </a>
+##### <a id="assert_validurl_string"> validUrl </a>
         
 ```typescript
 import { validUrl } from 'bguard/string/validUrl';
@@ -1094,7 +1094,7 @@ import { max } from 'bguard/number/max';
 * _See_ Error Translation Key = 'n:max'
         
         
-##### <a id="assert_maxExcluded_number"> maxExcluded </a>
+##### <a id="assert_maxexcluded_number"> maxExcluded </a>
         
 ```typescript
 import { maxExcluded } from 'bguard/number/maxExcluded';
@@ -1132,7 +1132,7 @@ import { min } from 'bguard/number/min';
 * _See_ Error Translation Key = 'n:min'
         
         
-##### <a id="assert_minExcluded_number"> minExcluded </a>
+##### <a id="assert_minexcluded_number"> minExcluded </a>
         
 ```typescript
 import { minExcluded } from 'bguard/number/minExcluded';
@@ -1205,7 +1205,7 @@ import { array } from 'bguard/array';
 ```
    
         
-##### <a id="assert_maxArrayLength_array"> maxArrayLength </a>
+##### <a id="assert_maxarraylength_array"> maxArrayLength </a>
         
 ```typescript
 import { maxArrayLength } from 'bguard/array/maxArrayLength';
@@ -1224,7 +1224,7 @@ import { maxArrayLength } from 'bguard/array/maxArrayLength';
 * _See_ Error Translation Key = 'a:maxArrayLength'
         
         
-##### <a id="assert_minArrayLength_array"> minArrayLength </a>
+##### <a id="assert_minarraylength_array"> minArrayLength </a>
         
 ```typescript
 import { minArrayLength } from 'bguard/array/minArrayLength';
@@ -1260,7 +1260,7 @@ import { bigint } from 'bguard/bigint';
 ```
    
         
-##### <a id="assert_bigintMax_bigint"> bigintMax </a>
+##### <a id="assert_bigintmax_bigint"> bigintMax </a>
         
 ```typescript
 import { bigintMax } from 'bguard/bigint/bigintMax';
@@ -1279,7 +1279,7 @@ import { bigintMax } from 'bguard/bigint/bigintMax';
 * _See_ Error Translation Key = 'bi:max'
         
         
-##### <a id="assert_bigintMaxExcluded_bigint"> bigintMaxExcluded </a>
+##### <a id="assert_bigintmaxexcluded_bigint"> bigintMaxExcluded </a>
         
 ```typescript
 import { bigintMaxExcluded } from 'bguard/bigint/bigintMaxExcluded';
@@ -1298,7 +1298,7 @@ import { bigintMaxExcluded } from 'bguard/bigint/bigintMaxExcluded';
 * _See_ Error Translation Key = 'bi:maxExcluded'
         
         
-##### <a id="assert_bigintMin_bigint"> bigintMin </a>
+##### <a id="assert_bigintmin_bigint"> bigintMin </a>
         
 ```typescript
 import { bigintMin } from 'bguard/bigint/bigintMin';
@@ -1317,7 +1317,7 @@ import { bigintMin } from 'bguard/bigint/bigintMin';
 * _See_ Error Translation Key = 'bi:min'
         
         
-##### <a id="assert_bigintMinExcluded_bigint"> bigintMinExcluded </a>
+##### <a id="assert_bigintminexcluded_bigint"> bigintMinExcluded </a>
         
 ```typescript
 import { bigintMinExcluded } from 'bguard/bigint/bigintMinExcluded';
@@ -1352,7 +1352,7 @@ import { date } from 'bguard/date';
 ```
    
         
-##### <a id="assert_dateMax_date"> dateMax </a>
+##### <a id="assert_datemax_date"> dateMax </a>
         
 ```typescript
 import { dateMax } from 'bguard/date/dateMax';
@@ -1371,7 +1371,7 @@ import { dateMax } from 'bguard/date/dateMax';
 * _See_ Error Translation Key = 'dt:max'
         
         
-##### <a id="assert_dateMin_date"> dateMin </a>
+##### <a id="assert_datemin_date"> dateMin </a>
         
 ```typescript
 import { dateMin } from 'bguard/date/dateMin';
@@ -1410,7 +1410,7 @@ import { oneOfTypes } from 'bguard/mix';
 ```
    
         
-##### <a id="assert_equalTo_mix"> equalTo </a>
+##### <a id="assert_equalto_mix"> equalTo </a>
         
 ```typescript
 import { equalTo } from 'bguard/mix/equalTo';
@@ -1429,7 +1429,7 @@ import { equalTo } from 'bguard/mix/equalTo';
 * _See_ Error Translation Key = 'm:equalTo'
         
         
-##### <a id="assert_oneOfValues_mix"> oneOfValues </a>
+##### <a id="assert_oneofvalues_mix"> oneOfValues </a>
         
 ```typescript
 import { oneOfValues } from 'bguard/mix/oneOfValues';
@@ -1470,7 +1470,7 @@ import { object } from 'bguard/object';
 ```
    
         
-##### <a id="assert_maxKeys_object"> maxKeys </a>
+##### <a id="assert_maxkeys_object"> maxKeys </a>
         
 ```typescript
 import { maxKeys } from 'bguard/object/maxKeys';

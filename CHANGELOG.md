@@ -1,5 +1,7 @@
 # bguard
 
+## 0.4.1 Readme Table of contents update
+
 ## 0.4.0 New Features and Improvements
  - Added new tests to ensure the reliability and accuracy of the new methods and enhancements.
  - This release focuses on improving flexibility in data transformation, better metadata management with id and description, and stronger TypeScript support.
