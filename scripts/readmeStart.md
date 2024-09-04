@@ -87,7 +87,7 @@ type StudentSchema = {
 
 ```
 
-#### <a id="h4_usage_generating_typescript_types_with_codeGen"> Generating TypeScript Types with `codeGen` </a>
+#### <a id="h4_usage_generating_typescript_types_with_codegen"> Generating TypeScript Types with `codeGen` </a>
 
 If you prefer to generate TypeScript types as a string, you can use the `codeGen` function:
 
@@ -122,7 +122,7 @@ This would output a string:
 
 > **Notice:** The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
 
-#### <a id="h4_usage_generating_typescript_types_with_codeGenWithName"> Generating Named TypeScript Types with `codeGenWithName` </a>
+#### <a id="h4_usage_generating_typescript_types_with_codegenwithname"> Generating Named TypeScript Types with `codeGenWithName` </a>
 
 For convenience, if you want to generate a complete type definition including a name, use the `codeGenWithName` function:
 
@@ -219,7 +219,7 @@ Options:
 - `lng`: Specifies the language for error messages. Default is `'default'`.
 - `getAllErrors`: If `true`, collects all validation errors. If `false` or `undefined`, stops at the first error. Turning off `getAllErrors` provides a runtime optimization, as it stops validation at the first error, avoiding unnecessary checks for the remaining received value.
 
-#### <a id="h4_validating_data_parseOrFail"> `parseOrFail` Method </a>
+#### <a id="h4_validating_data_parseorfail"> `parseOrFail` Method </a>
 
 The `parseOrFail` method validates the data and throws an error on the first validation failure. It is useful when you want to halt processing immediately upon encountering an error.
 

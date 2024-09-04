@@ -90,8 +90,8 @@ const run = async () => {
     const files = await fs.readdir(path.join('src/asserts', dir));
     const hasAsserts = files.findIndex((file) => file.endsWith('.ts') && file !== 'index.ts');
     if (hasAsserts === -1) continue;
-    pageContext += `\n     * [${dir}](#assertdir_${dir})`;
-    textData += `\n#### <a id="assertdir_${dir}"> ${dir} </a>`;
+    pageContext += `\n     * [${dir}](#assertdir_${dir.toLowerCase()})`;
+    textData += `\n#### <a id="assertdir_${dir.toLowerCase()}"> ${dir} </a>`;
 
     // Prerequisites
     const findIndexFile = files.find((file) => file === 'index.ts');
@@ -108,9 +108,9 @@ const run = async () => {
       if (file.endsWith('.ts') && file !== 'index.ts') {
         const fileData = await fs.readFile(path.join('src/asserts', dir, file), { encoding: 'utf8' });
         const fileName = path.parse(file).name;
-        pageContext += `\n          * [${fileName}](#assert_${fileName}_${dir})`;
+        pageContext += `\n          * [${fileName}](#assert_${fileName.toLowerCase()}_${dir.toLowerCase()})`;
         textData += `
-        \n##### <a id="assert_${fileName}_${dir}"> ${fileName} </a>
+        \n##### <a id="assert_${fileName.toLowerCase()}_${dir.toLowerCase()}"> ${fileName} </a>
         \n\`\`\`typescript\nimport { ${fileName} } from 'bguard/${dir}/${fileName}';\n\`\`\`
         \n${extractJsDocContent(fileData)}
         `;
