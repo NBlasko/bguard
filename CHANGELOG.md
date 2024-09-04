@@ -1,5 +1,9 @@
 # bguard
 
+## 0.4.0 New Features and Improvements
+ - Added new tests to ensure the reliability and accuracy of the new methods and enhancements.
+ - This release focuses on improving flexibility in data transformation, better metadata management with id and description, and stronger TypeScript support.
+
 ## 0.3.0
 
 ### Added default Chain Method and Validation Data Parsing
