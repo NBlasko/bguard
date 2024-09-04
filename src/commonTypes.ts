@@ -54,5 +54,4 @@ export type WithArray<T, Y> = T & { validation_array: Y };
 export type ExtractFromArray<T> = T extends WithArray<unknown, infer X> ? X : never;
 export type WithObject<T, Y> = T & { validation_object: Y };
 
-
 export type TransformCallback<In = unknown, Out = unknown> = (val: In) => Out;

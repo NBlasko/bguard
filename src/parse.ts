@@ -72,7 +72,7 @@ export function parse<T extends CommonSchema>(
       pathToError: '',
       getAllErrors: options?.getAllErrors,
       errors: [],
-      meta: schema[ctxSymbol].meta
+      meta: schema[ctxSymbol].meta,
     };
 
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;
@@ -95,7 +95,7 @@ export function parse<T extends CommonSchema>(
           expected: '',
           received: '',
           pathToError: '',
-          meta: undefined
+          meta: undefined,
         },
       ],
       undefined,
