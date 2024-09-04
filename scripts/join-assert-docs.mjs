@@ -1,6 +1,25 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+function generateTOC(content) {
+  // Regularni izraz za pronalaženje potrebnih redova
+  const regex = /^(###|####) <a id="([^"]+)">([^<]+)<\/a>/gm;
+
+  let toc = '';
+  let match;
+
+  // Pronalazimo sve podudarnosti sa regularnim izrazom
+  while ((match = regex.exec(content)) !== null) {
+    const level = match[1] === '###' ? ' * ' : '    * ';
+    const title = match[3].trim();
+    const anchor = match[2].trim();
+
+    toc += `${level}[${title}](#${anchor})\n`;
+  }
+
+  return toc;
+}
+
 async function extractCommonTranslation() {
   const fileContent = await fs.readFile(path.join('src', 'translationMap.ts'));
   const regex = /\/\/@@start([\s\S]*?)\/\/@@end/g;
@@ -21,8 +40,8 @@ async function extractCommonTranslation() {
 }
 
 function rearrangeArray(arr, priorities) {
-  const prioritizedElements = priorities.map(priority => arr.filter(el => el === priority));
-  const remainingElements = arr.filter(el => !priorities.includes(el));
+  const prioritizedElements = priorities.map((priority) => arr.filter((el) => el === priority));
+  const remainingElements = arr.filter((el) => !priorities.includes(el));
   return [...prioritizedElements.flat(), ...remainingElements];
 }
 
@@ -63,17 +82,20 @@ const run = async () => {
   let readmeStart = await fs.readFile(path.join('scripts', 'readmeStart.md'), { encoding: 'utf8' });
   const translationCommonMap = await extractCommonTranslation();
   readmeStart = readmeStart.replace(/@@TRANSLATION_COMMON_MAP@@/, translationCommonMap).trim();
-  let pageContext = '\n\n### Built-in Custom Assert Documentation {#builtin_custom_assert_documentation} \n';
-  let textData = '\n';
+
+
+  let pageContext = '\n * [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) \n';
+  let textData = '\n### <a id="builtin_custom_assert_documentation"> Built-in Custom Assert Documentation </a> \n';
   const rawDirs = await fs.readdir(path.join('src/asserts'));
   const dirs = rearrangeArray(rawDirs, ['string', 'number']);
-  
+
   for (const dir of dirs) {
     const files = await fs.readdir(path.join('src/asserts', dir));
     const hasAsserts = files.findIndex((file) => file.endsWith('.ts') && file !== 'index.ts');
     if (hasAsserts === -1) continue;
-    pageContext += `\n * [${dir}](#assertdir_${dir})`
-    textData += `\n#### ${dir} {#assertdir_${dir}}`;
+    pageContext += `\n     * [${dir}](#assertdir_${dir})`;
+    textData += `\n#### <a id="assertdir_${dir}"> ${dir} </a>`;
+
     // Prerequisites
     const findIndexFile = files.find((file) => file === 'index.ts');
     if (!findIndexFile) throw new Error(`Script Error, missing index file in ${dir}`);
@@ -89,9 +111,9 @@ const run = async () => {
       if (file.endsWith('.ts') && file !== 'index.ts') {
         const fileData = await fs.readFile(path.join('src/asserts', dir, file), { encoding: 'utf8' });
         const fileName = path.parse(file).name;
-        pageContext += `\n    * [${fileName}](#assert_${fileName}_${dir})`
+        pageContext += `\n          * [${fileName}](#assert_${fileName}_${dir})`;
         textData += `
-        \n##### ${fileName} (${dir}) {#assert_${fileName}_${dir}}
+        \n##### <a id="assert_${fileName}_${dir}"> ${fileName} </a>
         \n\`\`\`typescript\nimport { ${fileName} } from 'bguard/${dir}/${fileName}';\n\`\`\`
         \n${extractJsDocContent(fileData)}
         `;
@@ -99,13 +121,13 @@ const run = async () => {
     }
   }
 
+  const toc = generateTOC(readmeStart);
+  readmeStart = readmeStart.replace(/@@TABLE_OF_CONTENTS@@/, toc + pageContext).trim();
+
   textData += `\n### Contributing\nContributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.`;
 
-  await fs.writeFile('README.md', readmeStart + pageContext + textData);
+  await fs.writeFile('README.md', readmeStart + textData);
 };
 
 run();
 
-
-//TODO fix context links in README
-//TODO Add them on start of the page

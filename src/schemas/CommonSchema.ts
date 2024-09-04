@@ -82,10 +82,6 @@ export class CommonSchema {
     return this;
   }
 
-  // TODO add more tests for parse with id and description
-  // TODO add more tests for transform
-  // TODO add more custom asserts for object
-
   /**
    * Applies a transformation to the input value before any validation occurs.
    * The transformation should return a value of the same type as the inferred type of the schema,

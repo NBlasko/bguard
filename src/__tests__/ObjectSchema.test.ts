@@ -7,6 +7,7 @@ import { number } from '../asserts/number';
 import { string } from '../asserts/string';
 import { boolean } from '../asserts/boolean';
 import { array } from '../asserts/array';
+import { maxKeys } from '../asserts/object/maxKeys';
 
 describe('ObjectSchema', () => {
   type UnkownObject = {
@@ -113,7 +114,9 @@ describe('ObjectSchema', () => {
       userName: string().optional(),
       verified: boolean().onlyTrue().optional(),
       phone: number().nullable().optional(),
-      address: array(string().custom(minLength(3))).id('address').description('Users address'),
+      address: array(string().custom(minLength(3)))
+        .id('address')
+        .description('Users address'),
     });
 
     interface User {
@@ -173,5 +176,38 @@ describe('ObjectSchema', () => {
     expect(() => parseOrFail(userSchema, userWithInvalidEmail)).toThrow(
       'The received value does not match the required email pattern',
     );
+  });
+
+  it('should pass when the object has fewer or equal keys than the limit', () => {
+    const schema = object({
+      name: string(),
+      email: string(),
+    })
+      .allowUnrecognized()
+      .custom(maxKeys(3));
+
+    expect(parseOrFail(schema, { name: 'John', email: 'john@example.com' })).toEqual({
+      name: 'John',
+      email: 'john@example.com',
+    });
+  });
+
+  it('should throw an error when the object has more keys than the limit', () => {
+    const schema = object({
+      name: string(),
+      email: string(),
+    })
+      .allowUnrecognized()
+      .custom(maxKeys(2));
+
+    try {
+      parseOrFail(schema, { name: 'John', email: 'john@example.com', address: '123 Main St' });
+      expect(true).toBe(false);
+    } catch (e) {
+      const err = e as ValidationError;
+      expect(err.message).toBe('The received number of keys is greater than expected');
+      expect(err.meta?.id).toBeUndefined(); // Assuming no id is set for this test
+      expect(e instanceof ValidationError).toBeTruthy();
+    }
   });
 });

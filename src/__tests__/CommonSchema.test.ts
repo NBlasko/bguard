@@ -115,5 +115,6 @@ describe('CommonSchema', () => {
     expect(parseOrFail(stringOrNullSchema, 1234567)).toBe('1234567');
     expect(parseOrFail(stringOrNullSchema, '')).toBe(null);
     expect(parseOrFail(stringOrNullSchema, 'abcdefg')).toBe('abcdefg');
+    expect(() => parseOrFail(stringOrNullSchema, 'a')).toThrow('The received value length is less than expected');
   });
 });
