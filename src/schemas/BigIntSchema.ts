@@ -1,5 +1,6 @@
 import { equalTo } from '../asserts/mix/equalTo';
 import { oneOfValues } from '../asserts/mix/oneOfValues';
+import { WithBGuardType } from '../commonTypes';
 import { BuildSchemaError } from '../exceptions';
 import { ONLY_ONCE } from '../helpers/constants';
 import { _setStrictType } from '../helpers/setStrictType';
@@ -17,11 +18,11 @@ export class BigIntSchema extends CommonSchema {
    *
    * @example - bigint().equalTo(42n); // Infers the type 42n
    */
-  public equalTo<Y extends bigint>(expectedValue: Y): WithBigInt<this, Y> {
+  public equalTo<Y extends bigint>(expectedValue: Y): WithBGuardType<this, Y> {
     this.defaultValueCheck();
     this.limitCheck();
     _setStrictType(this, `${expectedValue}n`);
-    return this.custom(equalTo(expectedValue)) as WithBigInt<this, Y>;
+    return this.custom(equalTo(expectedValue)) as WithBGuardType<this, Y>;
   }
 
   /**
@@ -33,14 +34,14 @@ export class BigIntSchema extends CommonSchema {
    * @example
    * bigint().oneOfValues([5n, 7n]); // Infers the type 5n | 7n
    */
-  public oneOfValues<Y extends bigint>(expectedValue: Y[]): WithBigInt<this, Y> {
+  public oneOfValues<Y extends bigint>(expectedValue: Y[]): WithBGuardType<this, Y> {
     this.defaultValueCheck();
     this.limitCheck();
     _setStrictType(
       this,
       expectedValue.map((el) => `${el}n`),
     );
-    return this.custom(oneOfValues(expectedValue)) as WithBigInt<this, Y>;
+    return this.custom(oneOfValues(expectedValue)) as WithBGuardType<this, Y>;
   }
 
   private limitCheck() {
@@ -48,6 +49,3 @@ export class BigIntSchema extends CommonSchema {
     this.limit = true;
   }
 }
-
-export type WithBigInt<T extends BigIntSchema, Y = bigint> = T & { validation_bigint: Y };
-export type ExtractFromBigInt<T> = T extends WithBigInt<BigIntSchema, infer Y> ? Y : never;

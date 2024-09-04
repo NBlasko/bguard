@@ -1,3 +1,4 @@
+import { WithBGuardType } from '../../commonTypes';
 import { NumberSchema } from '../../schemas/NumberSchema';
 
 /**
@@ -10,6 +11,6 @@ import { NumberSchema } from '../../schemas/NumberSchema';
  *
  * @instance Of NumberSchema
  */
-export function number(): NumberSchema {
-  return new NumberSchema({ type: ['number'], requiredValidations: [] });
+export function number(): WithBGuardType<NumberSchema, number> {
+  return new NumberSchema({ type: ['number'], requiredValidations: [] }) as WithBGuardType<NumberSchema, number>;
 }

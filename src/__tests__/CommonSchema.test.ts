@@ -9,6 +9,7 @@ import { bigint } from '../asserts/bigint';
 import { date } from '../asserts/date';
 import { array } from '../asserts/array';
 import { object } from '../asserts/object';
+import { minLength } from '../asserts/string/minLength';
 
 describe('CommonSchema', () => {
   it('should be a nullable string', () => {
@@ -76,16 +77,44 @@ describe('CommonSchema', () => {
   });
 
   it('should throw Build Error on invalid default value', () => {
-    expect(() => number().default('8')).toThrow('Invalid type of data');
-    expect(() => string().default(true)).toThrow('Invalid type of data');
-    expect(() => boolean().default(8n)).toThrow('Invalid type of data');
-    expect(() => bigint().default(5)).toThrow('Invalid type of data');
-    expect(() => date().default(9n)).toThrow('The received value is not a valid instance of Date');
-    expect(() => array(number()).default(['5'])).toThrow('Invalid type of data');
+    expect(() => number().default('8' as unknown as number)).toThrow('Invalid type of data');
+    expect(() => string().default(true as unknown as string)).toThrow('Invalid type of data');
+    expect(() => boolean().default(8n as unknown as boolean)).toThrow('Invalid type of data');
+    expect(() => bigint().default(5 as unknown as bigint)).toThrow('Invalid type of data');
+    expect(() => date().default(9n as unknown as Date)).toThrow('The received value is not a valid instance of Date');
+    expect(() => array(number()).default(['5' as unknown as number])).toThrow('Invalid type of data');
     expect(() => array(number()).default([5])).not.toThrow();
     expect(() => array(number()).default([])).not.toThrow();
-    expect(() => object({ n: array(number()) }).default({ n: [true] })).toThrow('Invalid type of data');
+    expect(() => object({ n: array(number()) }).default({ n: [true as unknown as number] })).toThrow(
+      'Invalid type of data',
+    );
     expect(() => object({ n: array(number()) }).default({ n: [] })).not.toThrow();
-    expect(() => object({ n: number() }).default({})).toThrow('Missing required property in the object');
+    expect(() => object({ n: number() }).default({} as unknown as { n: number })).toThrow(
+      'Missing required property in the object',
+    );
+  });
+
+  it('should transform value', () => {
+    const numberSchema = number()
+      .custom(min(0))
+      .transformBeforeValidation((val: number) => (val === 5 ? 1 : val))
+      .transformBeforeValidation((val: number) => (val === 10 ? 0 : val));
+
+    expectEqualTypes<number, InferType<typeof numberSchema>>(true);
+    expect(parseOrFail(numberSchema, 8)).toBe(8);
+    expect(parseOrFail(numberSchema, 5)).toBe(1);
+    expect(parseOrFail(numberSchema, 10)).toBe(0);
+
+    const stringOrNullSchema = string() // forth , check if it is type of string
+      .nullable() // third, check if null
+      .custom(minLength(3)) // fifth  check if 'The received value length is less than expected'
+      .transformBeforeValidation((val) => val + '') // first we do transform
+      .transformBeforeValidation((val: string) => (val === '' ? null : val)); // second, do another transform
+
+    expectEqualTypes<string | null, InferType<typeof stringOrNullSchema>>(true);
+    expect(parseOrFail(stringOrNullSchema, 1234567)).toBe('1234567');
+    expect(parseOrFail(stringOrNullSchema, '')).toBe(null);
+    expect(parseOrFail(stringOrNullSchema, 'abcdefg')).toBe('abcdefg');
+    expect(() => parseOrFail(stringOrNullSchema, 'a')).toThrow('The received value length is less than expected');
   });
 });

@@ -41,5 +41,3 @@ export class ObjectSchema extends CommonSchema {
     return this;
   }
 }
-
-export type WithObject<Y extends ObjectShapeSchemaType> = ObjectSchema & { validation_object: Y };

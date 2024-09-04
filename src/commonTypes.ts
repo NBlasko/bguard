@@ -18,10 +18,18 @@ export interface ValidationErrorData {
   expected: unknown;
   received: unknown;
   pathToError: string;
+  meta?: MetaContext;
+}
+
+export interface MetaContext {
+  id?: string;
+  description?: string;
 }
 
 export type ExceptionContext = {
   pathToError: string;
+  meta?: MetaContext;
+
   t: TranslationErrorMap;
 } & (
   | {
@@ -36,4 +44,14 @@ export type ExceptionContext = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type RequiredValidation = (received: any, ctx: ExceptionContext) => void;
 
-export type PrimitiveType = 'number' | 'string' | 'boolean' | 'undefined' | 'object' | 'function' | 'symbol' | 'bigint';
+export type BaseType = 'number' | 'string' | 'boolean' | 'undefined' | 'object' | 'function' | 'symbol' | 'bigint';
+
+export type WithBGuardType<T, Y> = T & { validation_bguard: Y };
+export type ExtractFromBGuardType<T> = T extends WithBGuardType<unknown, infer Y> ? Y : never;
+export type WithNull<T> = T & { validation_null: true };
+export type WithUndefined<T> = T & { validation_undefined: true };
+export type WithArray<T, Y> = T & { validation_array: Y };
+export type ExtractFromArray<T> = T extends WithArray<unknown, infer X> ? X : never;
+export type WithObject<T, Y> = T & { validation_object: Y };
+
+export type TransformCallback<In = unknown, Out = unknown> = (val: In) => Out;

@@ -1,7 +1,7 @@
 import { expectEqualTypes } from '../../jest/setup';
 import { parseOrFail } from '../parseOrFail';
 import { regExp } from '../asserts/string/regExp';
-import { BuildSchemaError, InferType } from '../';
+import { BuildSchemaError, InferType, ValidationError } from '../';
 import { string } from '../asserts/string';
 import { maxLength } from '../asserts/string/maxLength';
 
@@ -92,5 +92,21 @@ describe('StringSchema', () => {
     expect(() => string().oneOfValues(['foo', 'bar']).oneOfValues(['foo', 'bar'])).toThrow(BuildSchemaError);
     expect(() => string().oneOfValues(['foo', 'bar']).equalTo('foo')).toThrow(defaultErrorMessage);
     expect(() => string().oneOfValues(['foo', 'bar']).equalTo('foo')).toThrow(BuildSchemaError);
+  });
+
+  it('should output id and description', () => {
+    const addressSchema = string().id('address').description('Users address');
+
+    try {
+      parseOrFail(addressSchema, undefined);
+      expect(true).toBe(false);
+    } catch (e) {
+      const err = e as ValidationError;
+      console.log(err);
+      expect(err.message).toBe('The required value is missing');
+      expect(err.meta?.id).toBe('address');
+      expect(err.meta?.description).toBe('Users address');
+      expect(err.pathToError).toBe('');
+    }
   });
 });

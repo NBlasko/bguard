@@ -4,7 +4,11 @@
 
 ![Coveralls branch](https://img.shields.io/coverallsCoverage/github/NBlasko/bguard) ![npm](https://img.shields.io/npm/dt/bguard) ![Known Vulnerabilities](https://snyk.io/test/github/NBlasko/bguard/badge.svg)
 
-### Features
+Table of contents
+
+@@TABLE_OF_CONTENTS@@
+
+### <a id="h3_features"> Features </a>
 
 - **Type Inference**: Automatically infer TypeScript types from your validation schemas.
 - **Custom Assertions**: Add custom validation logic for your schemas.
@@ -14,17 +18,17 @@
 - **Small Bundle Size**: Each assertion is in its own file, minimizing your final bundle size.
 - **Lightweight**: No dependencies and optimized for performance.
 
-### Installation
+### <a id="h3_installation"> Installation </a>
 
 ```bash
 npm install bguard
 ```
 
-### Usage
+### <a id="h3_usage"> Usage </a>
 
 Here’s a basic example of how to use `bguard` to define and validate a schema.
 
-#### Defining a Schema
+#### <a id="h4_usage_defining_a_schema"> Defining a Schema </a>
 
 Let's define a schema for a Student object:
 
@@ -57,7 +61,7 @@ const studentSchema = object({
 
 ```
 
-#### Inferring TypeScript Types
+#### <a id="h4_usage_inferring_typescript_types"> Inferring TypeScript Types </a>
 
 Using the InferType utility, you can infer the TypeScript type of the schema:
 
@@ -83,7 +87,7 @@ type StudentSchema = {
 
 ```
 
-#### Generating TypeScript Types with `codeGen`
+#### <a id="h4_usage_generating_typescript_types_with_codeGen"> Generating TypeScript Types with `codeGen` </a>
 
 If you prefer to generate TypeScript types as a string, you can use the `codeGen` function:
 
@@ -118,7 +122,7 @@ This would output a string:
 
 > **Notice:** The returned string does not include a type name or the `=` symbol. You would need to add these manually if you want a complete type definition.
 
-#### Generating Named TypeScript Types with `codeGenWithName`
+#### <a id="h4_usage_generating_typescript_types_with_codeGenWithName"> Generating Named TypeScript Types with `codeGenWithName` </a>
 
 For convenience, if you want to generate a complete type definition including a name, use the `codeGenWithName` function:
 
@@ -150,14 +154,13 @@ type StudentSchema = {
   verified?: boolean | undefined;
 }
 ```
-
-#### Summary:
+#### <a id="h4_usage_summary"> Summary: </a>
 
 `codeGen(schema: CommonSchema): string` - Generates a string of the TypeScript type based on the schema. You need to manually add a type name and assignment if needed.
 
 `codeGenWithName(typeName: string, schema: CommonSchema): string` - Generates a complete TypeScript type definition string, including the type keyword and type name.
 
-### Validating Data
+### <a id="h3_validating_data"> Validating Data </a>
 
 This library provides two methods to parse data against schemas: `parse` and `parseOrFail`. These methods help in validating the data and obtaining structured errors if any issues are found during validation.
 
@@ -193,7 +196,7 @@ const invalidStudentData = {
 };
 ```
 
-#### `parse` Method
+#### <a id="h4_validating_data_parse"> `parse` Method </a>
 
 The `parse` method validates the data and returns a tuple containing errors and the parsed value. This method allows you to choose whether to collect all errors or stop at the first error using an options flag.
 
@@ -216,7 +219,7 @@ Options:
 - `lng`: Specifies the language for error messages. Default is `'default'`.
 - `getAllErrors`: If `true`, collects all validation errors. If `false` or `undefined`, stops at the first error. Turning off `getAllErrors` provides a runtime optimization, as it stops validation at the first error, avoiding unnecessary checks for the remaining received value.
 
-#### `parseOrFail` Method
+#### <a id="h4_validating_data_parseOrFail"> `parseOrFail` Method </a>
 
 The `parseOrFail` method validates the data and throws an error on the first validation failure. It is useful when you want to halt processing immediately upon encountering an error.
 
@@ -244,8 +247,6 @@ Options:
 
 - `lng`: Specifies the language for error messages. Default is `'default'`.
 
-####
-
 Explanation
 
 - **`parse` Method**: This method returns a tuple where the first element is an array of validation errors (if any), and the second element is the successfully parsed value (or `undefined` if errors exist). It allows collecting all errors by setting the `getAllErrors` flag.
@@ -254,11 +255,31 @@ Explanation
 
 - **Options**: Both methods accept options for language settings and error collection, enhancing flexibility in handling validation processes.
 
-### Chaining Methods
+### <a id="h3_chaining_methods"> Chaining Methods </a>
 
-- `nullable()`: Allows the value to be `null`.
-- `optional()`: Allows the value to be `undefined`.
-- `default(value: unknown)`: Sets a default value if the received value is `undefined`.
+#### <a id="h4_chaining_nullable"> nullable() </a>
+
+Allows the value to be `null`.
+
+Example:
+
+```typeScript
+const nullableSchema = string().nullable().optional();
+// This schema allows string or null values.
+```
+
+#### <a id="h4_chaining_optional"> optional() </a>
+Allows the value to be `undefined`.
+
+_Example_:
+
+```typeScript
+const optionalSchema = string().nullable().optional();
+// This schema allows string or undefined values.
+```
+
+#### <a id="h4_chaining_default"> default(value: InferType<this>)</a>
+Sets a default value if the received value is `undefined`. The default value must match the inferred type of the schema, ensuring compatibility.
 
 
 > **Notice:** You cannot chain `default()` and `optional()` together, as they are contradictory. The `optional()` method allows the value to be `undefined`, while the `default()` method assigns a value if `undefined`. Attempting to chain both will throw a `BuildSchemaError` with the message: `"Cannot call method 'default' after method 'optional'"`.
@@ -266,8 +287,7 @@ Explanation
 
 > **Notice:** Additionally, `default()` must be the last method in the chain because it validates during schema build time that the default value is compatible with the rest of the schema. For example, if the schema is `number()`, the default value cannot be a `string`.
 
-
-Example:
+_Example_:
 
 ```typeScript
 const schemaWithDefault = string().nullable().default('defaultString'); 
@@ -276,20 +296,76 @@ const schemaWithDefault = string().nullable().default('defaultString');
 const optionalSchema = string().nullable().optional();
 // This schema allows both null and undefined values, but it does not provide a default value.
 ```
+#### <a id="h4_chaining_id"> id(value: string) </a> 
 
-- String Literals:
+Assigns a unique identifier to the schema, useful for tracking or mapping validation errors. The `id` can be accessed via `err.meta?.id` in case of a validation error.
+
+#### <a id="h4_chaining_description"> description(value: string) </a> 
+
+Provides a description for the schema, which can be used to give more context about the validation error. The `description` can be accessed via `err.meta?.description` in case of a validation error.
+
+_Example_:
+
+```typeScript
+const addressSchema = string()
+  .id('address')
+  .description('Users address');
+// This schema validates that string and assigns an ID and description for better error handling.
+
+try {
+  parseOrFail(addressSchema, undefined);
+} catch (e) {
+  const err = e as ValidationError;
+  console.log(err.message);  // Output: 'The required value is missing'
+  console.log(err.pathToError);  // Output: ''
+  console.log(err.meta?.id);  // Output:  'address'
+  console.log(err.meta?.description);  // Output: 'Users address'
+}
+```
+#### <a id="h4_chaining_transformbeforevalidation"> transformBeforeValidation\<In\>(cb: TransformCallback<In, InferType\<Schema>\>) </a>
+
+This method allows you to apply a transformation to the input value before any validation occurs. The transformation is applied before the schema's other methods (like `nullable`, `custom`, etc.). The callback function can receive an input of type `unknown` by default, but you can specify the type if you know it, such as `string`. The return value of the callback must be of the same type as the inferred type of the schema, ensuring that the overall type does not change.
+
+<b>Order of Execution</b>: 
+First, transformations specified using transformBeforeValidation are applied.
+Then, the schema checks for null or undefined based on methods like `nullable` or `optional`.
+Finally, the `custom` validations and type checks are performed.
+
+This method is particularly useful for normalizing or preparing data before validation, such as trimming whitespace, converting empty strings to null, or handling other preprocessing needs.
+
+> **Notice:** Like default, `transformBeforeValidation` should be placed at the end of the chain. This ensures that the transformation is correctly applied after all other type checks are resolved, preserving the expected type.
+
+_Example_:
+
+```typescript
+const stringOrNullSchema = string()
+  .nullable()
+  .custom(minLength(3))
+  .transformBeforeValidation((val) => val + '') // First, transform value to a string
+  .transformBeforeValidation((val: string) => (val === '' ? null : val)); // Second, convert empty strings to null
+
+// Parsing 'test' will pass as 'test' is a valid string longer than 3 characters.
+parseOrFail(stringOrNullSchema, 'test');
+
+// Parsing '' will be transformed to null and will pass due to .nullable().
+parseOrFail(stringOrNullSchema, '');
+```
+
+### <a id="h3_literals"> Literals </a>
+
+- <b>String Literals</b>:
   `string().equalTo('myStringValue')` will infer <b>'myStringValue'</b> as the type.
   `string().oneOfValues(['foo', 'bar'])` will infer <b>'foo' | 'bar'</b> as the type.
 
-- Number Literals:
+- <b>Number Literals</b>:
   `number().equalTo(42)` will infer <b>42</b> as the type.
   `number().oneOfValues([3, 5])` will infer <b>3 | 5</b> as the type.
 
-- Boolean Literals:
+- <b>Boolean Literals</b>:
   `boolean().onlyTrue()` will infer <b>true</b> as the type.
   `boolean().onlyFalse()` will infer <b>false</b> as the type.
 
-### Custom (Library Built-in) Assertions
+### <a id="h3_custom_builtin_assertions"> Custom (Library Built-in) Assertions </a>
 
 The `custom` method allows you to extend the validation schema with additional asserts. These asserts can either be user-defined or selected from the comprehensive set provided by the library. This flexibility ensures that you can tailor validations to meet specific requirements beyond the standard methods available.
 All built-in asserts are documented in the [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) section.
@@ -305,7 +381,7 @@ const ageSchema = number().custom(min(18), max(120));
 
 Library built-in assertions are imported from specific paths for better tree-shaking and smaller bundle sizes.
 
-### Create Custom Assertions
+### <a id="h3_create_custom_assertions"> Create Custom Assertions </a>
 
 Bguard allows developers to create custom validation functions that can be integrated seamlessly with the library's existing functionality. Below is a detailed example demonstrating how to create a custom validation function, `minLength`, and how to properly document and map error messages for translations.
 
@@ -349,7 +425,7 @@ Explanation
   3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
      For single-language applications, you can override the default message by directly passing your custom message to `guardException`.
 
-### Translation {#translation}
+### <a id="translation"> Translation </a>
 
 Bguard provides default translations for error messages, but you can customize them as needed. Each potential error has an `errorKey` and `errorMessage`.
 
@@ -389,7 +465,7 @@ With this setup, in the translation namespace 'SR', if the received value is 4, 
 
 > **Notice:** Do not overwrite the 'default' namespace. If a translation is missing, it will fall back to the 'default' translation.
 
-#### Using Translations
+#### <a id="h4_using_translation"> Using Translations </a>
 
 To apply the new translation, both `parse` and `parseOrFail` functions accept a lng property in the options object provided as the third parameter:
 
@@ -399,7 +475,7 @@ parseOrFail(testSchema, { foo: 4 }, { lng: 'SR' });
 parse(testSchema, { foo: 4 }, { lng: 'SR' });
 ```
 
-#### Common and Custom Translations {#common_and_custom_translations}
+#### <a id="common_and_custom_translations"> Common and Custom Translations </a>
 
 We have two sets of translations: common errors and specific assertions.
 

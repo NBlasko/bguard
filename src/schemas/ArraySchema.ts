@@ -15,6 +15,3 @@ export class ArraySchema extends CommonSchema {
     if (!(arraySchema instanceof CommonSchema)) throw new BuildSchemaError('Invalid schema in array method');
   }
 }
-
-export type WithArray<Y extends CommonSchema> = ArraySchema & { validation_array: Y };
-export type ExtractFromArray<T> = T extends WithArray<infer X> ? X : never;

@@ -1,4 +1,5 @@
-import { PrimitiveType, RequiredValidation } from '../commonTypes';
+import { InferType } from '../InferType';
+import { MetaContext, BaseType, RequiredValidation, WithNull, WithUndefined, TransformCallback } from '../commonTypes';
 import { BuildSchemaError } from '../exceptions';
 import { ctxSymbol } from '../helpers/core';
 import { parseOrFail } from '../parseOrFail';
@@ -6,7 +7,7 @@ import { parseOrFail } from '../parseOrFail';
 export type ObjectShapeSchemaType = Record<string, CommonSchema>;
 
 export interface ValidatorContext {
-  type: PrimitiveType[];
+  type: BaseType[];
   isNullable?: boolean;
   isOptional?: boolean;
   requiredValidations: RequiredValidation[];
@@ -17,6 +18,9 @@ export interface ValidatorContext {
   strictTypeValue?: unknown;
   date?: boolean;
   defaultValue?: unknown;
+  meta?: MetaContext;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  transformListBefore?: TransformCallback<any, any>[];
 }
 
 export class CommonSchema {
@@ -62,7 +66,7 @@ export class CommonSchema {
    *
    * @returns {this} The schema instance. This method should be used as a last one because it does the check of previous methods and
    */
-  public default(defaultValue: unknown): this {
+  public default(defaultValue: InferType<this>): this {
     const ctx = this[ctxSymbol];
     if (ctx.isOptional) {
       throw new BuildSchemaError(`Cannot call method 'default' after method 'optional'`);
@@ -78,15 +82,79 @@ export class CommonSchema {
     return this;
   }
 
+  /**
+   * Applies a transformation to the input value before any validation occurs.
+   * The transformation should return a value of the same type as the inferred type of the schema,
+   * ensuring that the overall type is not altered.
+   *
+   * @template In - The type of the input value before transformation (defaults to `unknown`).
+   * @param {TransformCallback<In, InferType<this>>} cb - The callback function that performs the transformation.
+   * @returns {this} The updated schema with the applied transformation.
+   *
+   * @example
+   * const schema = string()
+   *   .nullable()
+   *   .transformBeforeValidation((val) => val + '') // Ensure the value is a string
+   *   .transformBeforeValidation((val: string) => (val === '' ? null : val)); // Convert empty strings to null
+   *
+   * // Parse 'test' will pass as 'test' is a valid string longer than 3 characters.
+   * parseOrFail(schema, 'test');
+   *
+   * // Parsing '' will be transformed to null and will pass due to .nullable().
+   * parseOrFail(schema, '');
+   */
+  public transformBeforeValidation<In>(cb: TransformCallback<In, InferType<this>>): this {
+    const ctx = this[ctxSymbol];
+    if (ctx.transformListBefore) {
+      ctx.transformListBefore.push(cb);
+    } else {
+      ctx.transformListBefore = [cb];
+    }
+
+    return this;
+  }
+
+  /**
+   * Assigns a unique identifier to the schema.
+   * This ID can be used to track or map validation errors back to specific fields
+   * in a form or other structures.
+   *
+   * @param {string} value - The unique identifier for the schema.
+   * @returns {this} The updated schema with the assigned ID.
+   *
+   * @example
+   * const schema = string().id('username');
+   */
+  public id(value: string): this {
+    return this.meta('id', value);
+  }
+
+  /**
+   * Provides a description for the schema, offering additional context or information.
+   * The description can be used when displaying validation errors or for documentation purposes.
+   *
+   * @param {string} value - The description for the schema.
+   * @returns {this} The updated schema with the added description.
+   *
+   * @example
+   * const schema = string().description('The username of the account holder.');
+   */
+  public description(value: string): this {
+    return this.meta('description', value);
+  }
+
+  private meta(key: string, value: string): this {
+    const ctx = this[ctxSymbol];
+    ctx.meta = { ...ctx.meta, [key]: value };
+    return this;
+  }
+
   protected defaultValueCheck() {
     if (this[ctxSymbol].defaultValue !== undefined) {
       throw new BuildSchemaError('Default value must be the last method called in schema');
     }
   }
 }
-
-export type WithNull<T extends CommonSchema> = T & { validation_null: true };
-export type WithUndefined<T extends CommonSchema> = T & { validation_undefined: true };
 
 type TypeMapping = {
   number: number;
@@ -100,10 +168,7 @@ type TypeMapping = {
   bigint: bigint;
 };
 
-export type WithMix<Y = unknown> = CommonSchema & { validation_mix: Y };
-export type ExtractFromMix<T> = T extends WithMix<infer X> ? X : never;
-
-export type MapMixTypes<T extends PrimitiveType[]> = T extends (infer U)[]
+export type MapMixTypes<T extends BaseType[]> = T extends (infer U)[]
   ? U extends keyof TypeMapping
     ? TypeMapping[U]
     : never

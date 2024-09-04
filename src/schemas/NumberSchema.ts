@@ -1,5 +1,6 @@
 import { equalTo } from '../asserts/mix/equalTo';
 import { oneOfValues } from '../asserts/mix/oneOfValues';
+import { WithBGuardType } from '../commonTypes';
 import { BuildSchemaError } from '../exceptions';
 import { ONLY_ONCE } from '../helpers/constants';
 import { _setStrictType } from '../helpers/setStrictType';
@@ -17,11 +18,11 @@ export class NumberSchema extends CommonSchema {
    *
    * @example - number().equalTo(42); // Infers the type 42
    */
-  public equalTo<Y extends number>(expectedValue: Y): WithNumber<this, Y> {
+  public equalTo<Y extends number>(expectedValue: Y): WithBGuardType<this, Y> {
     if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
     this.limit = true;
     _setStrictType(this, expectedValue);
-    return this.custom(equalTo(expectedValue)) as WithNumber<this, Y>;
+    return this.custom(equalTo(expectedValue)) as WithBGuardType<this, Y>;
   }
 
   /**
@@ -33,13 +34,10 @@ export class NumberSchema extends CommonSchema {
    * @example
    * number().oneOfValues([5, 7]); // Infers the type 5 | 7
    */
-  public oneOfValues<Y extends number>(expectedValue: Y[]): WithNumber<this, Y> {
+  public oneOfValues<Y extends number>(expectedValue: Y[]): WithBGuardType<this, Y> {
     if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
     this.limit = true;
     _setStrictType(this, expectedValue);
-    return this.custom(oneOfValues(expectedValue)) as WithNumber<this, Y>;
+    return this.custom(oneOfValues(expectedValue)) as WithBGuardType<this, Y>;
   }
 }
-
-export type WithNumber<T extends NumberSchema, Y = number> = T & { validation_number: Y };
-export type ExtractFromNumber<T> = T extends WithNumber<NumberSchema, infer Y> ? Y : never;

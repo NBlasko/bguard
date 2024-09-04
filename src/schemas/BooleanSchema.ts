@@ -1,6 +1,6 @@
 import { CommonSchema } from './CommonSchema';
 import { guardException } from '../exceptions';
-import { ExceptionContext } from '../commonTypes';
+import { ExceptionContext, WithBGuardType } from '../commonTypes';
 import { _setStrictType } from '../helpers/setStrictType';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
@@ -17,9 +17,9 @@ export class BooleanSchema extends CommonSchema {
    *
    * @example - boolean().onlyTrue(); // Infers the type true
    */
-  public onlyTrue(): WithBoolean<this, true> {
+  public onlyTrue(): WithBGuardType<this, true> {
     _setStrictType(this, true);
-    return this.custom(isBoolean(true)) as WithBoolean<this, true>;
+    return this.custom(isBoolean(true)) as WithBGuardType<this, true>;
   }
 
   /**
@@ -29,11 +29,11 @@ export class BooleanSchema extends CommonSchema {
    *
    * @example - boolean().onlyFalse(); // Infers the type false
    */
-  public onlyFalse(): WithBoolean<this, false> {
+  public onlyFalse(): WithBGuardType<this, false> {
     _setStrictType(this, false);
-    return this.custom(isBoolean(false)) as WithBoolean<this, false>;
+    return this.custom(isBoolean(false)) as WithBGuardType<this, false>;
   }
 }
 
-export type WithBoolean<T extends BooleanSchema, Y = boolean> = T & { validation_boolean: Y };
-export type ExtractFromBoolean<T> = T extends WithBoolean<BooleanSchema, infer Y> ? Y : never;
+// export type WithBoolean<T extends BooleanSchema, Y = boolean> = T & { validation_boolean: Y };
+// export type ExtractFromBoolean<T> = T extends WithBoolean<BooleanSchema, infer Y> ? Y : never;
