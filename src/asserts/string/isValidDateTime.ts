@@ -1,6 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 
 // Default error messages and keys
 const dateTimeErrorMessage = 'The received value is not a valid ISO 8601 datetime string';
@@ -49,7 +48,7 @@ export const isValidDateTime = (options: DateTimeOptions = defaultOptions): Requ
     );
 
     if (!dateTimeRegex.test(received)) {
-      guardException(received, dateTimeErrorMessage, ctx, dateTimeErrorKey);
+      ctx.addIssue(received, dateTimeErrorMessage, dateTimeErrorKey);
     }
   };
 };

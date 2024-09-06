@@ -102,7 +102,6 @@ describe('StringSchema', () => {
       expect(true).toBe(false);
     } catch (e) {
       const err = e as ValidationError;
-      console.log(err);
       expect(err.message).toBe('The required value is missing');
       expect(err.meta?.id).toBe('address');
       expect(err.meta?.description).toBe('Users address');

@@ -1,5 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const regExpErrorMessage = 'The received value does not match the required text pattern';
@@ -20,7 +19,7 @@ const regExpErrorKey = 's:regExp';
 export const regExp =
   (expected: RegExp): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
-    if (!expected.test(received)) guardException(expected, received, ctx, regExpErrorMessage);
+    if (!expected.test(received)) ctx.addIssue(expected, received, regExpErrorMessage);
   };
 
 regExp.key = regExpErrorKey;

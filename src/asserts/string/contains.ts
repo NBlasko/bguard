@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const containsErrorMessage = 'The received value does not contain the required substring';
@@ -21,7 +20,7 @@ export const contains =
   (substring: string): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
     if (!received.includes(substring)) {
-      guardException(`contains '${substring}'`, received, ctx, containsErrorKey);
+      ctx.addIssue(`contains '${substring}'`, received, containsErrorKey);
     }
   };
 

@@ -1,6 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 
 const bigintMaxExcludedErrorMessage = 'The received value is greater than or equal to expected';
 const bigintMaxExcludedErrorKey = 'bi:maxExcluded';
@@ -21,7 +20,7 @@ const bigintMaxExcludedErrorKey = 'bi:maxExcluded';
 export const bigintMaxExcluded =
   (expected: bigint): RequiredValidation =>
   (received: bigint, ctx: ExceptionContext) => {
-    if (expected <= received) guardException(expected, received, ctx, bigintMaxExcludedErrorKey);
+    if (expected <= received) ctx.addIssue(expected, received, bigintMaxExcludedErrorKey);
   };
 
 bigintMaxExcluded.key = bigintMaxExcludedErrorKey;

@@ -1,6 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { InferType, guardException, parseOrFail, ValidationError } from '../';
-import { ExceptionContext, RequiredValidation } from '../commonTypes';
+import { InferType, parseOrFail, ValidationError } from '../';
 import { string } from '../asserts/string';
 import { boolean } from '../asserts/boolean';
 import { number } from '../asserts/number';
@@ -10,6 +9,7 @@ import { date } from '../asserts/date';
 import { array } from '../asserts/array';
 import { object } from '../asserts/object';
 import { minLength } from '../asserts/string/minLength';
+import { ExceptionContext, RequiredValidation } from '../ExceptionContext';
 
 describe('CommonSchema', () => {
   it('should be a nullable string', () => {
@@ -50,7 +50,7 @@ describe('CommonSchema', () => {
 
   it('should work with custom assert', () => {
     const even = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
-      if (received % 2 !== 0) guardException('even', received, ctx, 'The received value is not an even number');
+      if (received % 2 !== 0) ctx.addIssue('even', received, 'The received value is not an even number');
     };
 
     const numberSchema = number().custom(even());

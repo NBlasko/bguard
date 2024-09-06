@@ -1,5 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const atLeastOneSpecialCharErrorMessage = 'The received value does not contain at least one special character';
@@ -7,7 +6,7 @@ const atLeastOneSpecialCharErrorKey = 's:atLeastOneSpecialChar';
 
 /**
  * @description Asserts that a string value contains at least one special character.
- * @param {string} [allowedSpecialChars=* '@!#%&()^~{}'] The string containing allowed special characters. Defaults to '*@!#%&()^~{}'.
+ * @param {string} [allowedSpecialChars=*] The string containing allowed special characters. Defaults to '*@$!#%&()^~{}'.
  * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
  * @throws {ValidationError} if the received value does not contain at least one of the allowed special characters.
  * @example
@@ -23,11 +22,10 @@ const atLeastOneSpecialCharErrorKey = 's:atLeastOneSpecialChar';
  */
 export const atLeastOneSpecialChar = (allowedSpecialChars?: string): RequiredValidation => {
   const specialCharRegExp = new RegExp(
-    `[${(allowedSpecialChars ?? '*@!#%&()^~{}').replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}]`,
+    `[${(allowedSpecialChars ?? '*@$!#%&()^~{}').replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}]`,
   );
   return (received: string, ctx: ExceptionContext) => {
-    if (!specialCharRegExp.test(received))
-      guardException('special character', received, ctx, atLeastOneSpecialCharErrorKey);
+    if (!specialCharRegExp.test(received)) ctx.addIssue('special character', received, atLeastOneSpecialCharErrorKey);
   };
 };
 

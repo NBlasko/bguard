@@ -1,5 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const atLeastOneUpperCharErrorMessage = 'The received value does not contain at least one uppercase character';
@@ -19,7 +18,7 @@ const atLeastOneUpperCharErrorKey = 's:atLeastOneUpperChar';
 export const atLeastOneUpperChar = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
   const upperCharRegExp = /[A-Z]/;
   if (!upperCharRegExp.test(received))
-    guardException('at least one uppercase character', received, ctx, atLeastOneUpperCharErrorKey);
+    ctx.addIssue('at least one uppercase character', received, atLeastOneUpperCharErrorKey);
 };
 
 atLeastOneUpperChar.key = atLeastOneUpperCharErrorKey;

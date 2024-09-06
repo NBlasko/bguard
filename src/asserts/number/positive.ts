@@ -1,6 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 
 const positiveErrorMessage = 'The received value is not a positive number';
 const positiveErrorKey = 'n:positive';
@@ -18,7 +17,7 @@ const positiveErrorKey = 'n:positive';
  * @translation Error Translation Key = 'n:positive'
  */
 export const positive = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
-  if (received <= 0) guardException('positive', received, ctx, positiveErrorMessage);
+  if (received <= 0) ctx.addIssue('positive', received, positiveErrorMessage);
 };
 
 positive.key = positiveErrorKey;

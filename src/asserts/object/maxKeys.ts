@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const maxKeysErrorMessage = 'The received number of keys is greater than expected';
@@ -31,7 +30,7 @@ export const maxKeys =
   (receivedObject: Record<string, unknown>, ctx: ExceptionContext) => {
     const keysCount = Object.keys(receivedObject).length;
     if (keysCount > expected) {
-      guardException(expected, keysCount, ctx, maxKeysErrorKey);
+      ctx.addIssue(expected, keysCount, maxKeysErrorKey);
     }
   };
 

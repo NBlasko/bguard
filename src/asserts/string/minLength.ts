@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const minLengthErrorMessage = 'The received value length is less than expected';
@@ -20,7 +19,7 @@ const minLengthErrorKey = 's:minLength';
 export const minLength =
   (expected: number): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
-    if (received.length < expected) guardException(expected, received, ctx, minLengthErrorMessage);
+    if (received.length < expected) ctx.addIssue(expected, received, minLengthErrorMessage);
   };
 
 minLength.key = minLengthErrorKey;

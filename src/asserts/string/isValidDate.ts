@@ -1,9 +1,11 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 
 const dateErrorMessage = 'The received value is not a valid date';
 const dateErrorKey = 's:isValidDate';
+
+// Regex to match YYYY-MM-DD format
+const dateRegexPattern = /^(19|20)\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 /**
  * @description Asserts that a string is a valid date in the format YYYY-MM-DD.
@@ -19,11 +21,8 @@ const dateErrorKey = 's:isValidDate';
  */
 export const isValidDate = (): RequiredValidation => {
   return (received: string, ctx: ExceptionContext) => {
-    // Regex to match YYYY-MM-DD format
-    const dateRegex = /^(19|20)\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-
-    if (!dateRegex.test(received)) {
-      guardException(received, dateErrorMessage, ctx, dateErrorKey);
+    if (!dateRegexPattern.test(received)) {
+      ctx.addIssue(received, dateErrorMessage, dateErrorKey);
     }
   };
 };

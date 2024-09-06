@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const validUrlErrorMessage = 'The received value is not a valid URL';
@@ -30,12 +29,7 @@ export const validUrl =
     }
 
     if (!regex.test(received)) {
-      guardException(
-        `URL must start with '${protocol ? protocol + '://' : 'http:// or https://'}'`,
-        received,
-        ctx,
-        validUrlErrorKey,
-      );
+      ctx.addIssue('Invalid URL', received, validUrlErrorKey);
     }
   };
 

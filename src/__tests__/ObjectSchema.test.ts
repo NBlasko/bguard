@@ -8,6 +8,10 @@ import { string } from '../asserts/string';
 import { boolean } from '../asserts/boolean';
 import { array } from '../asserts/array';
 import { maxKeys } from '../asserts/object/maxKeys';
+import { atLeastOneDigit } from '../asserts/string/atLeastOneDigit';
+import { atLeastOneLowerChar } from '../asserts/string/atLeastOneLowerChar';
+import { atLeastOneUpperChar } from '../asserts/string/atLeastOneUpperChar';
+import { atLeastOneSpecialChar } from '../asserts/string/atLeastOneSpecialChar';
 
 describe('ObjectSchema', () => {
   type UnkownObject = {
@@ -209,5 +213,66 @@ describe('ObjectSchema', () => {
       expect(err.meta?.id).toBeUndefined(); // Assuming no id is set for this test
       expect(e instanceof ValidationError).toBeTruthy();
     }
+  });
+
+  it('should validate login schema', () => {
+    const loginSchema = object({
+      something: string().custom((received, ctx) => {
+        if (received !== ctx.ref('foo.bar')) ctx.addIssue('Equal', received, 'NOT EQUAL');
+      }),
+      email: string().custom(email()),
+      password: string().custom(
+        minLength(8),
+        atLeastOneDigit(),
+        atLeastOneLowerChar(),
+        atLeastOneUpperChar(),
+        atLeastOneSpecialChar(),
+      ),
+      confirmPassword: string().custom((received, ctx) => {
+        if (received !== ctx.ref('password')) ctx.addIssue('Equal', received, 'NOT EQUAL TO PASSWORD');
+      }),
+      foo: object({ bar: string() }),
+    });
+
+    const loginData = {
+      something: 'baz',
+      foo: { bar: 'baz' },
+      email: 'foo@foo.com',
+      password: '12password1P$',
+      confirmPassword: '12password1P$',
+    };
+
+    expectEqualTypes<
+      {
+        something: string;
+        foo: { bar: string };
+        email: string;
+        password: string;
+        confirmPassword: string;
+      },
+      InferType<typeof loginSchema>
+    >(true);
+
+    expect(parseOrFail(loginSchema, loginData)).toEqual(loginData);
+
+    expect(() =>
+      parseOrFail(loginSchema, {
+        something: 'bazwrong',
+        foo: { bar: 'baz' },
+        email: 'foo@foo.com',
+        password: '12password1P$',
+        confirmPassword: '12password1P$',
+      }),
+    ).toThrow('NOT EQUAL');
+
+    expect(() =>
+      parseOrFail(loginSchema, {
+        something: 'baz',
+        foo: { bar: 'baz' },
+        email: 'foo@foo.com',
+        password: '12password1P$',
+        confirmPassword: '12password1',
+      }),
+    ).toThrow('NOT EQUAL TO PASSWORD');
   });
 });

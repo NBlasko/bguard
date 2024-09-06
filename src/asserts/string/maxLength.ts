@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const maxLengthErrorMessage = 'The received value length is greater than expected';
@@ -20,7 +19,7 @@ const maxLengthErrorKey = 's:maxLength';
 export const maxLength =
   (expected: number): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
-    if (received.length > expected) guardException(expected, received, ctx, maxLengthErrorMessage);
+    if (received.length > expected) ctx.addIssue(expected, received, maxLengthErrorMessage);
   };
 
 maxLength.key = maxLengthErrorKey;

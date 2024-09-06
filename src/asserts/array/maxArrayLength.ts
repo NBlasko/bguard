@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const maxArrayLengthErrorMessage = 'The received value length is greater than expected';
@@ -21,7 +20,7 @@ const maxArrayLengthErrorKey = 'a:maxArrayLength';
 export const maxArrayLength =
   (expected: number): RequiredValidation =>
   (received: unknown[], ctx: ExceptionContext) => {
-    if (received.length > expected) guardException(expected, received, ctx, maxArrayLengthErrorMessage);
+    if (received.length > expected) ctx.addIssue(expected, received, maxArrayLengthErrorMessage);
   };
 
 maxArrayLength.key = maxArrayLengthErrorKey;

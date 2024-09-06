@@ -1,9 +1,8 @@
-export const ctxSymbol = Symbol('contextSymbol');
-
-import { ExceptionContext } from '../commonTypes';
-import { guardException } from '../exceptions';
 import type { CommonSchema } from '../schemas/CommonSchema';
+import { ExceptionContext } from '../ExceptionContext';
 import { isValidDateInner } from './isValidDateInner';
+
+export const ctxSymbol = Symbol('contextSymbol');
 
 export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext): unknown {
   const commonTmap = exCtx.t;
@@ -15,28 +14,27 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
 
   if (receivedValue === undefined) {
     if (schemaData.defaultValue !== undefined) return schemaData.defaultValue;
-    if (!schemaData.isOptional) guardException('Required', receivedValue, exCtx, commonTmap['c:optional']);
+    if (!schemaData.isOptional) exCtx.addIssue('Required', receivedValue, commonTmap['c:optional']);
     return receivedValue;
   }
 
   if (receivedValue === null) {
-    if (!schemaData.isNullable) guardException('Not null', receivedValue, exCtx, commonTmap['c:nullable']);
+    if (!schemaData.isNullable) exCtx.addIssue('Not null', receivedValue, commonTmap['c:nullable']);
     return receivedValue;
   }
 
   if (schemaData.date) {
-    if (!isValidDateInner(receivedValue)) guardException('Date', receivedValue, exCtx, commonTmap['c:date']);
+    if (!isValidDateInner(receivedValue)) exCtx.addIssue('Date', receivedValue, commonTmap['c:date']);
   }
 
   const typeOfVal = typeof receivedValue;
 
   if (schemaData.type.length) {
-    if (!schemaData.type.includes(typeOfVal))
-      guardException(schemaData.type, typeOfVal, exCtx, commonTmap['c:invalidType']);
+    if (!schemaData.type.includes(typeOfVal)) exCtx.addIssue(schemaData.type, typeOfVal, commonTmap['c:invalidType']);
   }
 
   if (schemaData.array) {
-    if (!Array.isArray(receivedValue)) return guardException('Array', receivedValue, exCtx, commonTmap['c:array']);
+    if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, commonTmap['c:array']);
 
     schemaData.requiredValidations.forEach((requiredValidation) => {
       requiredValidation(receivedValue, exCtx);
@@ -46,11 +44,7 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
     const pathToError = exCtx.pathToError;
     const parsedReceivedValue: unknown[] = [];
     receivedValue.forEach((elem, i) => {
-      const parsedElement = innerCheck(schema, elem, {
-        ...exCtx,
-        pathToError: `${pathToError}[${i}]`,
-        meta: schemaData.meta,
-      });
+      const parsedElement = innerCheck(schema, elem, exCtx.createChild(`${pathToError}[${i}]`, schemaData.meta));
       parsedReceivedValue.push(parsedElement);
     });
 
@@ -58,8 +52,8 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
   }
 
   if (schemaData.object) {
-    if (typeOfVal !== 'object') guardException('Object', receivedValue, exCtx, commonTmap['c:objectType']);
-    if (Array.isArray(receivedValue)) guardException('Object', receivedValue, exCtx, commonTmap['c:objectTypeAsArray']);
+    if (typeOfVal !== 'object') exCtx.addIssue('Object', receivedValue, commonTmap['c:objectType']);
+    if (Array.isArray(receivedValue)) exCtx.addIssue('Object', receivedValue, commonTmap['c:objectTypeAsArray']);
 
     schemaData.requiredValidations.forEach((requiredValidation) => {
       requiredValidation(receivedValue, exCtx);
@@ -71,7 +65,7 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
     if (!schemaData.allowUnrecognizedObjectProps) {
       for (const keyPerReceivedValue of Object.keys(receivedValue)) {
         if (shapeSchema[keyPerReceivedValue] === undefined)
-          guardException('Unrecognized property', keyPerReceivedValue, exCtx, commonTmap['c:unrecognizedProperty']);
+          exCtx.addIssue('Unrecognized property', keyPerReceivedValue, commonTmap['c:unrecognizedProperty']);
       }
     }
 
@@ -80,14 +74,14 @@ export function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: 
       const receivedObjectValuePropery = (receivedValue as Record<string, unknown>)[keyOfSchema];
       if (receivedObjectValuePropery === undefined) {
         if (!valueOfSchema[ctxSymbol].isOptional)
-          guardException('Required', receivedObjectValuePropery, exCtx, commonTmap['c:requiredProperty']);
+          exCtx.addIssue('Required', receivedObjectValuePropery, commonTmap['c:requiredProperty']);
       }
 
-      const parsedReceivedObjectValuePropery = innerCheck(valueOfSchema, receivedObjectValuePropery, {
-        ...exCtx,
-        pathToError: `${pathToError}.${keyOfSchema}`,
-        meta: schemaData.meta,
-      });
+      const parsedReceivedObjectValuePropery = innerCheck(
+        valueOfSchema,
+        receivedObjectValuePropery,
+        exCtx.createChild(`${pathToError}.${keyOfSchema}`, schemaData.meta),
+      );
 
       parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
     }

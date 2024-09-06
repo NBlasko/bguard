@@ -459,8 +459,7 @@ Bguard allows developers to create custom validation functions that can be integ
 Example: Creating a `minLength` Custom Validation
 
 ```typescript
-import { guardException } from 'bguard/exceptions';
-import { ExceptionContext, RequiredValidation } from 'bguard/commonTypes';
+import { ExceptionContext, RequiredValidation } from 'bguard/ExceptionContext';
 import { setToDefaultLocale } from 'bguard/translationMap';
 
 const minLengthErrorMessage = 'The received value {{r}} is shorter than the expected length {{e}}';
@@ -470,7 +469,7 @@ export const minLength =
   (expected: number): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
     if (received.length < expected) {
-      guardException(expected, received, ctx, minLengthErrorKey);
+      ctx.addIssue(expected, received, minLengthErrorKey);
     }
   };
 
@@ -485,17 +484,30 @@ Explanation
 
 - Error Message (`minLength.message`): The message supports [interpolation](#translation), where `{{e}}` will be replaced by the expected value, and `{{r}}` will be replaced by the received value during validation .
 
-- Exception Handling (`guardException`): This function is responsible for throwing the error when the validation fails. The `ctx` parameter must be passed to ensure the internal logic of the application works correctly.
+- Exception Handling (`ctx.addIssue`): This method is responsible for throwing the error when the validation fails.
 
 - Localization Support (`setToDefaultLocale`): This function registers the default error message with its associated key. If you later decide to support multiple languages, you can easily map this key to different messages.
+
+ - Using `ctx.ref` to Reference Other Properties: The `ctx.ref` method allows you to reference other properties in the input object during validation. Method ctx.ref can access nested properties by passing a string that references them, with each level of nesting separated by a dot (.). However, it's important to note that `ctx.ref` retrieves the <b>original</b> value from the object before any transformations (e.g., `transformBeforeValidation`). This ensures that validations based on cross-property references work consistently, regardless of any transformations applied before validation.
+ ```typescript
+const loginSchema = object({
+  password: string().custom(minLength(8)),
+  confirmPassword: string().custom((received, ctx) => {
+    if (received !== ctx.ref('password')) {
+      ctx.addIssue(ctx.ref('password'), received, 'Not equal to password');
+    }
+  })
+});
+
+```
 
 - Key Points for Developers:
 
   1. Always create unique error keys for custom validations to avoid potential conflicts with Bguard's built-in validations.
   2. Custom validations should use prefixes other than `s:`, `n:`, `b:`, and similar ones reserved for Bguard's internal validations.
   3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
-     For single-language applications, you can override the default message by directly passing your custom message to `guardException`.
-
+     For single-language applications, you can override the default message by directly passing your custom message to `addIssue` method.
+  4. If we have a nested object { foo: { bar: 'baz' } }, we should use `ctx.ref('foo.bar')` to access the value 'baz' in custom assertions.
 ### <a id="translation"> Translation </a>
 
 Bguard provides default translations for error messages, but you can customize them as needed. Each potential error has an `errorKey` and `errorMessage`.
@@ -669,7 +681,7 @@ import { atLeastOneSpecialChar } from 'bguard/string/atLeastOneSpecialChar';
 ```
         
 * _Description_ Asserts that a string value contains at least one special character.
-* _Param_ {string} [allowedSpecialChars=* '@!#%&()^~{}'] The string containing allowed special characters. Defaults to '*@!#%&()^~{}'.
+* _Param_ {string} [allowedSpecialChars=*] The string containing allowed special characters. Defaults to '*@$!#%&()^~{}'.
 * _Throws_ {ValidationError} if the received value does not contain at least one of the allowed special characters.
 * _Example_
 ```typescript
