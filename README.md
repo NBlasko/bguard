@@ -681,7 +681,7 @@ import { atLeastOneSpecialChar } from 'bguard/string/atLeastOneSpecialChar';
 ```
         
 * _Description_ Asserts that a string value contains at least one special character.
-* _Param_ {string} [allowedSpecialChars=* '@$!#%&()^~{}'] The string containing allowed special characters. Defaults to '*@$!#%&()^~{}'.
+* _Param_ {string} [allowedSpecialChars=*] The string containing allowed special characters. Defaults to '*@$!#%&()^~{}'.
 * _Throws_ {ValidationError} if the received value does not contain at least one of the allowed special characters.
 * _Example_
 ```typescript

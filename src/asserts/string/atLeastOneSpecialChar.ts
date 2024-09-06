@@ -6,7 +6,7 @@ const atLeastOneSpecialCharErrorKey = 's:atLeastOneSpecialChar';
 
 /**
  * @description Asserts that a string value contains at least one special character.
- * @param {string} [allowedSpecialChars=* '@$!#%&()^~{}'] The string containing allowed special characters. Defaults to '*@$!#%&()^~{}'.
+ * @param {string} [allowedSpecialChars=*] The string containing allowed special characters. Defaults to '*@$!#%&()^~{}'.
  * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
  * @throws {ValidationError} if the received value does not contain at least one of the allowed special characters.
  * @example
