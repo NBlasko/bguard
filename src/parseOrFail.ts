@@ -3,6 +3,7 @@ import type { CommonSchema } from './schemas/CommonSchema';
 import { ctxSymbol, innerCheck } from './helpers/core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
+import { ExceptionContext } from './ExceptionContext';
 interface ParseOptions {
   /**
    * Set language keyword to map error messages.
@@ -46,11 +47,14 @@ export function parseOrFail<T extends CommonSchema>(
   options?: ParseOptions,
 ): InferType<T> {
   try {
-    return innerCheck(schema, receivedValue, {
-      t: getTranslationByLocale(options?.lng),
-      pathToError: '',
-      meta: schema[ctxSymbol].meta,
-    }) as InferType<T>;
+    const ctx = new ExceptionContext(
+      receivedValue,
+      getTranslationByLocale(options?.lng),
+      '',
+      undefined,
+      schema[ctxSymbol].meta,
+    );
+    return innerCheck(schema, receivedValue, ctx) as InferType<T>;
   } catch (e) {
     if (e instanceof ValidationError) throw e;
     /* istanbul ignore next */

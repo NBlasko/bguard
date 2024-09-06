@@ -1,13 +1,13 @@
 import { string } from '../asserts/string';
-import { guardException, parse } from '..';
-import { ExceptionContext, RequiredValidation } from '../commonTypes';
+import { parse } from '..';
 import { clearLocales, setLocale, setToDefaultLocale } from '../translationMap';
+import { ExceptionContext, RequiredValidation } from '../ExceptionContext';
 
 describe('parse', () => {
   const customEqual =
     (expected: string): RequiredValidation =>
     (received: string, ctx: ExceptionContext) => {
-      if (expected !== received) guardException(expected, received, ctx, 'somethingEqual');
+      if (expected !== received) ctx.addIssue(expected, received, 'somethingEqual');
     };
 
   customEqual.key = 'somethingEqual';
@@ -36,7 +36,6 @@ describe('parse', () => {
     setLocale('testLanguage', { somethingEqual: 'Foo is equal' });
     const testSchema = string().custom(customEqual('hello1'), customEqual('hello2'));
     const [errors, value] = parse(testSchema, 'not hello', { lng: 'testLanguage', getAllErrors: true });
-
     expect(errors?.length).toBe(2);
 
     errors?.forEach((error, i) => {

@@ -1,10 +1,10 @@
 import { CommonSchema } from './CommonSchema';
-import { guardException } from '../exceptions';
-import { ExceptionContext, WithBGuardType } from '../commonTypes';
+import { WithBGuardType } from '../commonTypes';
 import { _setStrictType } from '../helpers/setStrictType';
+import { ExceptionContext } from '../ExceptionContext';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
-  if (received !== expected) guardException(expected, received, ctx, 'c:isBoolean');
+  if (received !== expected) ctx.addIssue(expected, received, 'c:isBoolean');
 };
 
 export class BooleanSchema extends CommonSchema {
@@ -34,6 +34,3 @@ export class BooleanSchema extends CommonSchema {
     return this.custom(isBoolean(false)) as WithBGuardType<this, false>;
   }
 }
-
-// export type WithBoolean<T extends BooleanSchema, Y = boolean> = T & { validation_boolean: Y };
-// export type ExtractFromBoolean<T> = T extends WithBoolean<BooleanSchema, infer Y> ? Y : never;

@@ -1,5 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const emailRegExp = /^[^@]+@[^@]+\.[^@]+$/;
@@ -18,7 +17,7 @@ const emailErrorKey = 's:email';
  * @translation - Error Translation Key = 's:email'
  */
 export const email = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
-  if (!emailRegExp.test(received)) guardException(emailRegExp, received, ctx, emailErrorMessage);
+  if (!emailRegExp.test(received)) ctx.addIssue(emailRegExp, received, emailErrorMessage);
 };
 
 email.key = emailErrorKey;

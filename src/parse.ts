@@ -3,7 +3,8 @@ import { ctxSymbol, innerCheck } from './helpers/core';
 import { getTranslationByLocale } from './translationMap';
 import { ValidationError } from './exceptions';
 import { CommonSchema } from './schemas/CommonSchema';
-import { ExceptionContext, ValidationErrorData } from './commonTypes';
+import { ValidationErrorData } from './commonTypes';
+import { ExceptionContext } from './ExceptionContext';
 
 interface ParseOptions {
   /**
@@ -67,17 +68,17 @@ export function parse<T extends CommonSchema>(
   options?: ParseOptions,
 ): [ValidationErrorData[], undefined] | [undefined, InferType<T>] {
   try {
-    const ctx: ExceptionContext = {
-      t: getTranslationByLocale(options?.lng),
-      pathToError: '',
-      getAllErrors: options?.getAllErrors,
-      errors: [],
-      meta: schema[ctxSymbol].meta,
-    };
+    const ctx = new ExceptionContext(
+      receivedValue,
+      getTranslationByLocale(options?.lng),
+      '',
+      options?.getAllErrors ? [] : undefined,
+      schema[ctxSymbol].meta,
+    );
 
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;
 
-    if (ctx.getAllErrors && ctx.errors.length) {
+    if (ctx.errors?.length) {
       return [ctx.errors, undefined];
     }
 

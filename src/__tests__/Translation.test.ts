@@ -1,13 +1,13 @@
-import { parseOrFail, guardException, BuildSchemaError, setToDefaultLocale, setLocale, clearLocales } from '../';
+import { parseOrFail, BuildSchemaError, setToDefaultLocale, setLocale, clearLocales } from '../';
+import { ExceptionContext, RequiredValidation } from '../ExceptionContext';
 import { object } from '../asserts/object';
 import { string } from '../asserts/string';
-import { ExceptionContext, RequiredValidation } from '../commonTypes';
 
 describe('Translation', () => {
   const customEqual =
     (expected: string): RequiredValidation =>
     (received: string, ctx: ExceptionContext) => {
-      if (expected !== received) guardException(expected, received, ctx, 'somethingEqual');
+      if (expected !== received) ctx.addIssue(expected, received, 'somethingEqual');
     };
 
   customEqual.key = 'somethingEqual';

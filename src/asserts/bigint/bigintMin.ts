@@ -1,6 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 
 const bigintMinErrorMessage = 'The received value is less than expected';
 const bigintMinErrorKey = 'bi:min';
@@ -21,7 +20,7 @@ const bigintMinErrorKey = 'bi:min';
 export const bigintMin =
   (expected: bigint): RequiredValidation =>
   (received: bigint, ctx: ExceptionContext) => {
-    if (expected > received) guardException(expected, received, ctx, bigintMinErrorKey);
+    if (expected > received) ctx.addIssue(expected, received, bigintMinErrorKey);
   };
 
 bigintMin.key = bigintMinErrorKey;

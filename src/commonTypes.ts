@@ -26,24 +26,6 @@ export interface MetaContext {
   description?: string;
 }
 
-export type ExceptionContext = {
-  pathToError: string;
-  meta?: MetaContext;
-
-  t: TranslationErrorMap;
-} & (
-  | {
-      getAllErrors?: false;
-    }
-  | {
-      getAllErrors: true;
-      errors: ValidationErrorData[];
-    }
-);
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RequiredValidation = (received: any, ctx: ExceptionContext) => void;
-
 export type BaseType = 'number' | 'string' | 'boolean' | 'undefined' | 'object' | 'function' | 'symbol' | 'bigint';
 
 export type WithBGuardType<T, Y> = T & { validation_bguard: Y };

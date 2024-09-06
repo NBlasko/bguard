@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const uuidV4ErrorMessage = 'The received value is not a valid UUID v4';
@@ -23,7 +22,7 @@ const uuidV4Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[
  */
 export const uuidV4 = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
   if (!uuidV4Pattern.test(received)) {
-    guardException('uuid v4', received, ctx, uuidV4ErrorKey);
+    ctx.addIssue('uuid v4', received, uuidV4ErrorKey);
   }
 };
 

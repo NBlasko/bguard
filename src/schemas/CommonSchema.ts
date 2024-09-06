@@ -1,5 +1,6 @@
+import type { RequiredValidation } from '../ExceptionContext';
 import { InferType } from '../InferType';
-import { MetaContext, BaseType, RequiredValidation, WithNull, WithUndefined, TransformCallback } from '../commonTypes';
+import { MetaContext, BaseType, WithNull, WithUndefined, TransformCallback } from '../commonTypes';
 import { BuildSchemaError } from '../exceptions';
 import { ctxSymbol } from '../helpers/core';
 import { parseOrFail } from '../parseOrFail';

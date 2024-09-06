@@ -1,5 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const digitRegExp = /\d/;
@@ -18,7 +17,7 @@ const atLeastOneDigitErrorKey = 's:atLeastOneDigit';
  * @translation Error Translation Key = 's:atLeastOneDigit'
  */
 export const atLeastOneDigit = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
-  if (!digitRegExp.test(received)) guardException('at least one digit', received, ctx, atLeastOneDigitErrorKey);
+  if (!digitRegExp.test(received)) ctx.addIssue('at least one digit', received, atLeastOneDigitErrorKey);
 };
 
 atLeastOneDigit.key = atLeastOneDigitErrorKey;

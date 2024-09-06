@@ -1,6 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 
 const timeErrorMessage = 'The received value is not a valid time';
 const timeErrorKey = 's:isValidTime';
@@ -40,12 +39,12 @@ export const isValidTime = (options: IsValidTimeOptions = {}): RequiredValidatio
 
     // Check if the string is a valid time
     if (!timeRegex.test(received)) {
-      guardException(received, timeErrorMessage, ctx, timeErrorKey);
+      ctx.addIssue(received, timeErrorMessage, timeErrorKey);
     }
 
     // Additional check for precision if it's specified and the time does not have fractional seconds
     if (precision !== undefined && !received.includes('.')) {
-      guardException(received, timeErrorMessage, ctx, timeErrorKey);
+      ctx.addIssue(received, timeErrorMessage, timeErrorKey);
     }
   };
 };

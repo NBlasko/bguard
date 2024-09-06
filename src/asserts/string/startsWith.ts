@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const startsWithErrorMessage = 'The received value does not start with the required substring';
@@ -21,7 +20,7 @@ export const startsWith =
   (substring: string): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
     if (!received.startsWith(substring)) {
-      guardException(`starts with '${substring}'`, received, ctx, startsWithErrorKey);
+      ctx.addIssue(`starts with '${substring}'`, received, startsWithErrorKey);
     }
   };
 

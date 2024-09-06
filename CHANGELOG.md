@@ -1,5 +1,9 @@
 # bguard
 
+## 0.5.0 Removing guardException and adding Ref
+ - For custom assertions, we use ctx.addIssue instead of guardException
+ - To access other properties in the received object we implemented ctx.ref(value: path)
+
 ## 0.4.1 Readme Table of contents update
 
 ## 0.4.0 New Features and Improvements

@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const endsWithErrorMessage = 'The received value does not end with the required substring';
@@ -21,7 +20,7 @@ export const endsWith =
   (substring: string): RequiredValidation =>
   (received: string, ctx: ExceptionContext) => {
     if (!received.endsWith(substring)) {
-      guardException(`ends with '${substring}'`, received, ctx, endsWithErrorKey);
+      ctx.addIssue(`ends with '${substring}'`, received, endsWithErrorKey);
     }
   };
 

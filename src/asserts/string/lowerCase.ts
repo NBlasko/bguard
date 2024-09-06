@@ -1,5 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const lowerCaseErrorMessage = 'The received value is not in lowercase';
@@ -17,7 +16,7 @@ const lowerCaseErrorKey = 's:lowerCase';
  * @translation Error Translation Key = 's:lowerCase'
  */
 export const lowerCase = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
-  if (received !== received.toLowerCase()) guardException('lower case', received, ctx, lowerCaseErrorKey);
+  if (received !== received.toLowerCase()) ctx.addIssue('lower case', received, lowerCaseErrorKey);
 };
 
 lowerCase.key = lowerCaseErrorKey;

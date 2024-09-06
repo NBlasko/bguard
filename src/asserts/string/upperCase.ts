@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const upperCaseErrorMessage = 'The received value is not in uppercase';
@@ -19,7 +18,7 @@ const upperCaseErrorKey = 's:upperCase';
  */
 export const upperCase = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
   if (received !== received.toUpperCase()) {
-    guardException('upper case', received, ctx, upperCaseErrorKey);
+    ctx.addIssue('upper case', received, upperCaseErrorKey);
   }
 };
 

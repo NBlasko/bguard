@@ -1,5 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
-import { guardException } from '../../exceptions';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const atLeastOneLowerCharErrorMessage = 'The received value does not contain at least one lowercase character';
@@ -19,7 +18,7 @@ const atLeastOneLowerCharErrorKey = 's:atLeastOneLowerChar';
 export const atLeastOneLowerChar = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
   const lowerCharRegExp = /[a-z]/;
   if (!lowerCharRegExp.test(received))
-    guardException('at least one lowercase character', received, ctx, atLeastOneLowerCharErrorKey);
+    ctx.addIssue('at least one lowercase character', received, atLeastOneLowerCharErrorKey);
 };
 
 atLeastOneLowerChar.key = atLeastOneLowerCharErrorKey;

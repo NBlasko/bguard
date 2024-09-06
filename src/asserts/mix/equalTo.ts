@@ -1,5 +1,4 @@
-import { guardException } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../commonTypes';
+import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 import { setToDefaultLocale } from '../../translationMap';
 
 const equalToErrorMessage = 'The received value is not equal to expected';
@@ -21,7 +20,7 @@ const equalToErrorKey = 'm:equalTo';
 export const equalTo =
   (expected: unknown): RequiredValidation =>
   (received: unknown, ctx: ExceptionContext) => {
-    if (expected !== received) guardException(expected, received, ctx, equalToErrorKey);
+    if (expected !== received) ctx.addIssue(expected, received, equalToErrorKey);
   };
 
 equalTo.key = equalToErrorKey;
