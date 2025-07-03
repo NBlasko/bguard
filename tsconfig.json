@@ -2,24 +2,36 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Node 20",
   "compilerOptions": {
-    "lib": ["es2023"],
+    "lib": [
+      "es2023"
+    ],
     "module": "node16",
     "target": "es2022",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node16",
     "sourceMap": true,
     "strictNullChecks": true,
     "noImplicitAny": true,
-    "types": ["jest", "node"],
+    "types": [
+      "jest",
+      "node"
+    ],
     "resolveJsonModule": true,
     "strictPropertyInitialization": false,
     "baseUrl": ".",
     "noUncheckedIndexedAccess": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "jest/**/*.ts", "lib/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*.ts",
+    "jest/**/*.ts",
+    "lib/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
