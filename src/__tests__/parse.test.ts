@@ -1,7 +1,7 @@
 import { string } from '../asserts/string';
-import { parse } from '..';
+import { ExceptionContext, parse } from '..';
 import { clearLocales, setLocale, setToDefaultLocale } from '../translationMap';
-import { ExceptionContext, RequiredValidation } from '../ExceptionContext';
+import { RequiredValidation } from '../helpers/core';
 
 describe('parse', () => {
   const customEqual =

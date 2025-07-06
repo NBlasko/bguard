@@ -1,5 +1,5 @@
+import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
 import { setToDefaultLocale } from '../../translationMap';
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
 
 const bigintMaxErrorMessage = 'The received value is greater than expected';
 const bigintMaxErrorKey = 'bi:max';

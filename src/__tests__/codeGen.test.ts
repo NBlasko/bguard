@@ -1,5 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { InferType } from '../InferType';
+import type { InferType } from '../InferType';
 import {
   testSchema1,
   testSchema2,

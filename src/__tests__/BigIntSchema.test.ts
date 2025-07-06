@@ -1,6 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { parseOrFail } from '../parseOrFail';
-import { BuildSchemaError, InferType } from '../';
+import { BuildSchemaError, InferType, parseOrFail } from '../';
 import { bigint } from '../asserts/bigint';
 import { bigintMin } from '../asserts/bigint/bigintMin';
 import { bigintMax } from '../asserts/bigint/bigintMax';

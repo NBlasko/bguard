@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
+import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
 
 const dateErrorMessage = 'The received value is not a valid date';
 const dateErrorKey = 's:isValidDate';

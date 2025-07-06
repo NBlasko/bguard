@@ -1,4 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
+import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
 import { setToDefaultLocale } from '../../translationMap';
 
 const equalToErrorMessage = 'The received value is not equal to expected';

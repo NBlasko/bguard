@@ -1,4 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
+import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
 import { setToDefaultLocale } from '../../translationMap';
 
 const maxKeysErrorMessage = 'The received number of keys is greater than expected';

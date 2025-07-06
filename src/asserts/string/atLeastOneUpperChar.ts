@@ -1,4 +1,4 @@
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
+import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
 import { setToDefaultLocale } from '../../translationMap';
 
 const atLeastOneUpperCharErrorMessage = 'The received value does not contain at least one uppercase character';

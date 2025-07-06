@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { expectEqualTypes } from '../../jest/setup';
-import { parseOrFail } from '../parseOrFail';
 import { InferType } from '../InferType';
 import { boolean } from '../asserts/boolean';
+import { parseOrFail } from '../helpers/core';
 
 describe('BooleanSchema', () => {
   it('should be a boolean', () => {

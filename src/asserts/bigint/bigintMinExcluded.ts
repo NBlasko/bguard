@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
+import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
 
 const bigintMinExcludedErrorMessage = 'The received value is less than or equal to expected';
 const bigintMinExcludedErrorKey = 'bi:minExcluded';

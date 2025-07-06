@@ -1,10 +1,8 @@
 export type { InferType } from './InferType';
-export { parse } from './parse';
-export { parseOrFail } from './parseOrFail';
+export { parseOrFail, parse, ExceptionContext } from './helpers/core';
 export { ValidationError, BuildSchemaError } from './exceptions';
 export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
 export { codeGen, codeGenWithName } from './codeGen';
-export { ExceptionContext } from './ExceptionContext';
 
 export { array } from './asserts/array/index';
 export { maxArrayLength } from './asserts/array/maxArrayLength';

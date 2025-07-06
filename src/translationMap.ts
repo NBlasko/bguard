@@ -1,6 +1,6 @@
 import { BuildSchemaError } from './exceptions';
-import { TranslationErrorMap } from './commonTypes';
-import type { RequiredValidation } from './ExceptionContext';
+import type { TranslationErrorMap } from './commonTypes';
+import type { RequiredValidation } from './helpers/core';
 
 // c: stands for common
 const defaultErrorMap: TranslationErrorMap = {
@@ -38,8 +38,8 @@ export function setToDefaultLocale({
 
 export function setLocale(lng: string, custom: Partial<TranslationErrorMap>) {
   if (lng === 'default') throw new BuildSchemaError('Invalid language');
-  if (!data[lng]) data[lng] = { ...defaultErrorMap };
-  const locale = data[lng]!;
+  data[lng] ??= { ...defaultErrorMap };
+  const locale = data[lng];
   Object.entries(custom).forEach(([messageKey, messageValue]) => {
     locale[messageKey] = messageValue!;
   });

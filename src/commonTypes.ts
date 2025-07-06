@@ -13,6 +13,24 @@ export interface TranslationErrorMap {
   [val: string]: string;
 }
 
+type TypeMapping = {
+  number: number;
+  string: string;
+  boolean: boolean;
+  undefined: undefined;
+  object: object;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  function: Function;
+  symbol: symbol;
+  bigint: bigint;
+};
+
+export type MapMixTypes<T extends BaseType[]> = T extends (infer U)[]
+  ? U extends keyof TypeMapping
+    ? TypeMapping[U]
+    : never
+  : never;
+
 export interface ValidationErrorData {
   message: string;
   expected: unknown;
