@@ -1,5 +1,5 @@
 import { ctxSymbol } from './helpers/constants';
-import { type CommonSchema, type ValidatorContext } from './helpers/core';
+import { type CommonSchema, type ValidatorContext } from './core';
 
 function generateBaseType(schemaData: ValidatorContext) {
   if (schemaData.date) return 'Date';

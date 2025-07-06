@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
+import type { ExceptionContext, RequiredValidation } from '../../core';
 
 const maxErrorMessage = 'The received value is greater than expected';
 const maxErrorKey = 'n:max';

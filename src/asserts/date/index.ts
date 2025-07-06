@@ -1,6 +1,6 @@
 import { WithBGuardType } from '../../commonTypes';
 import { ctxSymbol } from '../../helpers/constants';
-import { CommonSchema, ValidatorContext } from '../../helpers/core';
+import { CommonSchema, ValidatorContext } from '../../core';
 
 class DateSchema extends CommonSchema {
   protected _date = 1;

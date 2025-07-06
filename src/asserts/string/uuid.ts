@@ -1,4 +1,4 @@
-import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
+import type { ExceptionContext, RequiredValidation } from '../../core';
 import { setToDefaultLocale } from '../../translationMap';
 
 const uuidErrorMessage = 'The received value is not a valid UUID';

@@ -20,7 +20,7 @@ import { validUrl } from '../asserts/string/validUrl';
 import { isValidDateTime } from '../asserts/string/isValidDateTime';
 import { isValidDate } from '../asserts/string/isValidDate';
 import { isValidTime } from '../asserts/string/isValidTime';
-import { parseOrFail } from '../helpers/core';
+import { parseOrFail } from '../core';
 
 describe('Custom String Asserts', () => {
   it('should be all lower case', () => {

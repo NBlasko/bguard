@@ -1,6 +1,6 @@
 import { BuildSchemaError } from './exceptions';
 import type { TranslationErrorMap } from './commonTypes';
-import type { RequiredValidation } from './helpers/core';
+import type { RequiredValidation } from './core';
 
 // c: stands for common
 const defaultErrorMap: TranslationErrorMap = {

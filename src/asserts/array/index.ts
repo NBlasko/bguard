@@ -1,7 +1,7 @@
 import { type WithArray } from '../../commonTypes';
 import { BuildSchemaError } from '../../exceptions';
 import { ctxSymbol } from '../../helpers/constants';
-import { CommonSchema, type ValidatorContext } from '../../helpers/core';
+import { CommonSchema, type ValidatorContext } from '../../core';
 
 class ArraySchema extends CommonSchema {
   protected _array = 1;

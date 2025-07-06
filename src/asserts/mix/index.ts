@@ -1,5 +1,5 @@
 import { BaseType, MapMixTypes, WithBGuardType } from '../../commonTypes';
-import { CommonSchema } from '../../helpers/core';
+import { CommonSchema } from '../../core';
 
 /**
  * @description Creates a new schema for validating values that can match any one of the specified primitive types.

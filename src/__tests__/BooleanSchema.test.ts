@@ -2,7 +2,7 @@
 import { expectEqualTypes } from '../../jest/setup';
 import { InferType } from '../InferType';
 import { boolean } from '../asserts/boolean';
-import { parseOrFail } from '../helpers/core';
+import { parseOrFail } from '../core';
 
 describe('BooleanSchema', () => {
   it('should be a boolean', () => {

@@ -1,5 +1,5 @@
 import { WithBGuardType } from '../../commonTypes';
-import { CommonSchema, type ExceptionContext } from '../../helpers/core';
+import { CommonSchema, type ExceptionContext } from '../../core';
 import { _setStrictType } from '../../helpers/setStrictType';
 
 const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {

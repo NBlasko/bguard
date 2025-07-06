@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
+import type { ExceptionContext, RequiredValidation } from '../../core';
 
 const minErrorMessage = 'The received value is less than expected';
 const minErrorKey = 'n:min';

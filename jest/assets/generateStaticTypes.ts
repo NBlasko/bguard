@@ -64,7 +64,7 @@ import {
   testSchema59,
   testSchema60,
 } from './schemas';
-import { type CommonSchema } from '../../src/helpers/core';
+import { type CommonSchema } from '../../src/core';
 
 class GenerateType {
   constructor(private readonly isString: boolean) {}

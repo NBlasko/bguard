@@ -1,11 +1,10 @@
 import { WithBGuardType } from '../../commonTypes';
 import { BuildSchemaError } from '../../exceptions';
 import { ONLY_ONCE } from '../../helpers/constants';
-import { CommonSchema } from '../../helpers/core';
+import { CommonSchema } from '../../core';
 import { _setStrictType } from '../../helpers/setStrictType';
 import { equalTo } from '../mix/equalTo';
 import { oneOfValues } from '../mix/oneOfValues';
-
 
 class BigIntSchema extends CommonSchema {
   protected _bigint = 1;
@@ -50,8 +49,6 @@ class BigIntSchema extends CommonSchema {
     this.limit = true;
   }
 }
-
-
 
 /**
  * @description Creates a new schema for validating bigint values.

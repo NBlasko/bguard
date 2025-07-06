@@ -9,8 +9,7 @@ import { date } from '../asserts/date';
 import { array } from '../asserts/array';
 import { object } from '../asserts/object';
 import { minLength } from '../asserts/string/minLength';
-import { RequiredValidation } from '../helpers/core';
-
+import { RequiredValidation } from '../core';
 
 describe('CommonSchema', () => {
   it('should be a nullable string', () => {

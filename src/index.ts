@@ -1,5 +1,5 @@
 export type { InferType } from './InferType';
-export { parseOrFail, parse, ExceptionContext } from './helpers/core';
+export { parseOrFail, parse, ExceptionContext } from './core';
 export { ValidationError, BuildSchemaError } from './exceptions';
 export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
 export { codeGen, codeGenWithName } from './codeGen';

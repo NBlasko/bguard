@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
+import type { ExceptionContext, RequiredValidation } from '../../core';
 
 const positiveErrorMessage = 'The received value is not a positive number';
 const positiveErrorKey = 'n:positive';

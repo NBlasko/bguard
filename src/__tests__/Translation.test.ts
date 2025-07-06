@@ -2,7 +2,7 @@ import { parseOrFail, BuildSchemaError, setToDefaultLocale, setLocale, clearLoca
 
 import { object } from '../asserts/object';
 import { string } from '../asserts/string';
-import { RequiredValidation } from '../helpers/core';
+import { RequiredValidation } from '../core';
 
 describe('Translation', () => {
   const customEqual =

@@ -1,6 +1,6 @@
 import { setToDefaultLocale } from '../../translationMap';
 import { BuildSchemaError } from '../../exceptions';
-import type { ExceptionContext, RequiredValidation } from '../../helpers/core';
+import type { ExceptionContext, RequiredValidation } from '../../core';
 import { isValidDateInner } from '../../helpers/isValidDateInner';
 
 const dateMinErrorMessage = 'The received value is less than expected';
