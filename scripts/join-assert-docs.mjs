@@ -43,7 +43,7 @@ function rearrangeArray(arr, priorities) {
   return [...prioritizedElements.flat(), ...remainingElements];
 }
 
-function extractJsDocContent(fileContent) {
+function extractJsDocContent(fileContent, fileName, pageContext) {
   const jsDocRegex = /\/\*\*[\s\S]*?\*\//g;
   const jsDocMatches = fileContent.match(jsDocRegex);
 
@@ -59,6 +59,24 @@ function extractJsDocContent(fileContent) {
       });
 
       cleanedJsDoc = cleanedJsDoc.replace(/(^|\n)\s*\*/g, '\n').trim();
+
+      const foundMethod = cleanedJsDoc.match(/@method\s+(\w+)/);
+      if (foundMethod) {
+        const methodName = foundMethod[1];
+
+        const linkId = `assert_${fileName.toLowerCase()}_method_${methodName.toLowerCase()}`;
+        pageContext.value += `\n          * [${methodName}](#${linkId})`;
+        cleanedJsDoc = cleanedJsDoc
+          .replace(
+            foundMethod[0],
+            `
+          \n##### <a id="${linkId}"> ${methodName} </a>
+          \n
+          `,
+          )
+          .trim();
+      }
+
       cleanedJsDoc = cleanedJsDoc.replace(/@description\s*/, '* _Description_ ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @notice\s*/, '* > **Notice:** ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @example\s*/, '* _Example_\n').trim();
@@ -80,8 +98,8 @@ const run = async () => {
   let readmeStart = await fs.readFile(path.join('scripts', 'readmeStart.md'), { encoding: 'utf8' });
   const translationCommonMap = await extractCommonTranslation();
   readmeStart = readmeStart.replace(/@@TRANSLATION_COMMON_MAP@@/, translationCommonMap).trim();
-
-  let pageContext = '\n * [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) \n';
+  const pageContext = { value: '' };
+  pageContext.value = '\n * [Built-in Custom Assert Documentation](#builtin_custom_assert_documentation) \n';
   let textData = '\n### <a id="builtin_custom_assert_documentation"> Built-in Custom Assert Documentation </a> \n';
   const rawDirs = await fs.readdir(path.join('src/asserts'));
   const dirs = rearrangeArray(rawDirs, ['string', 'number']);
@@ -90,7 +108,7 @@ const run = async () => {
     const files = await fs.readdir(path.join('src/asserts', dir));
     const hasAsserts = files.findIndex((file) => file.endsWith('.ts') && file !== 'index.ts');
     if (hasAsserts === -1) continue;
-    pageContext += `\n     * [${dir}](#assertdir_${dir.toLowerCase()})`;
+    pageContext.value += `\n     * [${dir}](#assertdir_${dir.toLowerCase()})`;
     textData += `\n#### <a id="assertdir_${dir.toLowerCase()}"> ${dir} </a>`;
 
     // Prerequisites
@@ -101,16 +119,17 @@ const run = async () => {
     textData += `
    \n <b>Prerequisites</b>
    \n\`\`\`typescript\nimport { ${dir === 'mix' ? 'oneOfTypes' : dir} } from 'bguard/${dir}';\n\`\`\`
-   \n${extractJsDocContent(indexFileData)}
+   \n${extractJsDocContent(indexFileData, dir, pageContext)}
    `;
 
     for (const file of files) {
       if (file.endsWith('.ts') && file !== 'index.ts') {
         const fileData = await fs.readFile(path.join('src/asserts', dir, file), { encoding: 'utf8' });
         const fileName = path.parse(file).name;
-        pageContext += `\n          * [${fileName}](#assert_${fileName.toLowerCase()}_${dir.toLowerCase()})`;
+        const linkId = `assert_${fileName.toLowerCase()}_${dir.toLowerCase()}`;
+        pageContext.value += `\n          * [${fileName}](#${linkId})`;
         textData += `
-        \n##### <a id="assert_${fileName.toLowerCase()}_${dir.toLowerCase()}"> ${fileName} </a>
+        \n##### <a id="${linkId}"> ${fileName} </a>
         \n\`\`\`typescript\nimport { ${fileName} } from 'bguard/${dir}/${fileName}';\n\`\`\`
         \n${extractJsDocContent(fileData)}
         `;
@@ -119,7 +138,7 @@ const run = async () => {
   }
 
   const toc = generateTOC(readmeStart);
-  readmeStart = readmeStart.replace(/@@TABLE_OF_CONTENTS@@/, toc + pageContext).trim();
+  readmeStart = readmeStart.replace(/@@TABLE_OF_CONTENTS@@/, toc + pageContext.value).trim();
 
   textData += `\n### Contributing\nContributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.`;
 

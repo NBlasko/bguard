@@ -21,14 +21,14 @@ class ObjectSchema extends CommonSchema {
   }
 
   /**
-   * Allows unrecognized properties in the validated object.
+   * @method allowUnrecognized
+   * @description Allows unrecognized properties in the validated object.
    * When this method is called, the validation will not fail
    * if the received object contains properties not specified
    * in the validation schema.
-   *
    * @returns {this} The current ObjectSchema instance.
-   *
    * @example
+   * ```typescript
    *  const userSchema = object({
    *    name: string(),
    *    age: number(),
@@ -36,6 +36,7 @@ class ObjectSchema extends CommonSchema {
    *
    * parseOrFail(userSchema, ({ name: 'John', age: 30, extra: 'value' }););
    * //  No error thrown
+   * ```
    */
   public allowUnrecognized(): this {
     this[ctxSymbol].allowUnrecognizedObjectProps = true;
@@ -49,13 +50,14 @@ class ObjectSchema extends CommonSchema {
  * @param {T} shapeSchema - The schema that each property of the object must match.
  * @returns {WithObject<ObjectSchema, T>} A new instance of `ObjectSchema` for validating objects with properties matching the specified schema.
  * @example
+ * ```typescript
  * const schema = object({
  *   name: string(),
  *   age: number()
  * });
  * parseOrFail(schema, { name: 'John', age: 30 }); // Validates successfully
  * parseOrFail(schema, { name: 'John', age: '30' }); // Throws a validation error
- *
+ * ```
  * @instance Of ObjectSchema
  */
 export function object<T extends ObjectShapeSchemaType>(shapeSchema: T): WithObject<ObjectSchema, T> {
