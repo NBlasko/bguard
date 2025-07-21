@@ -1,5 +1,5 @@
-import { ctxSymbol } from './core';
-import type { CommonSchema } from '../schemas/CommonSchema';
+import { ctxSymbol } from './constants';
+import { type CommonSchema } from '../core';
 
 export function _setStrictType(that: CommonSchema, val: unknown) {
   that[ctxSymbol].strictType = true;

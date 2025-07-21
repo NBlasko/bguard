@@ -1,7 +1,8 @@
-import { parseOrFail, BuildSchemaError, setToDefaultLocale, setLocale, clearLocales } from '../';
-import { ExceptionContext, RequiredValidation } from '../ExceptionContext';
+import { parseOrFail, BuildSchemaError, setToDefaultLocale, setLocale, clearLocales, ExceptionContext } from '../';
+
 import { object } from '../asserts/object';
 import { string } from '../asserts/string';
+import { RequiredValidation } from '../core';
 
 describe('Translation', () => {
   const customEqual =

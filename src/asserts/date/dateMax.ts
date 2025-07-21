@@ -1,6 +1,6 @@
 import { setToDefaultLocale } from '../../translationMap';
 import { BuildSchemaError } from '../../exceptions';
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
+import type { ExceptionContext, RequiredValidation } from '../../core';
 import { isValidDateInner } from '../../helpers/isValidDateInner';
 
 const dateMaxErrorMessage = 'The received value is greater than expected';

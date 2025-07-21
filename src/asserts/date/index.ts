@@ -1,5 +1,6 @@
 import { WithBGuardType } from '../../commonTypes';
-import { DateSchema } from '../../schemas/DateSchema';
+import { ctxSymbol } from '../../helpers/constants';
+import { CommonSchema, ValidatorContext } from '../../core';
 
 /**
  * @description Creates a new schema for validating date values.
@@ -13,4 +14,13 @@ import { DateSchema } from '../../schemas/DateSchema';
  */
 export function date(): WithBGuardType<DateSchema, Date> {
   return new DateSchema({ type: ['object'], requiredValidations: [] }) as WithBGuardType<DateSchema, Date>;
+}
+
+class DateSchema extends CommonSchema {
+  protected _date = 1;
+
+  constructor(ctx: ValidatorContext) {
+    super(ctx);
+    this[ctxSymbol].date = true;
+  }
 }

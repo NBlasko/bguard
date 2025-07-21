@@ -25,7 +25,7 @@ export default async (): Promise<Config.InitialOptions> => ({
       'ts-jest',
       {
         tsconfig: {
-          importHelpers: true,
+          importHelpers: false,
         },
       },
     ],

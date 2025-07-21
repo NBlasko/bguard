@@ -1,5 +1,10 @@
 # bguard
 
+## 0.6.0 Documentation cleanup and export fixes
+ - Improved docs
+ - Fixed missing exports in index.ts
+ - Updated dev dependencies
+
 ## 0.5.0 Removing guardException and adding Ref
  - For custom assertions, we use ctx.addIssue instead of guardException
  - To access other properties in the received object we implemented ctx.ref(value: path)

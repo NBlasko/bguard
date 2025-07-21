@@ -1,7 +1,6 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { parseOrFail } from '../parseOrFail';
 import { regExp } from '../asserts/string/regExp';
-import { BuildSchemaError, InferType, ValidationError } from '../';
+import { BuildSchemaError, InferType, parseOrFail, ValidationError } from '../';
 import { string } from '../asserts/string';
 import { maxLength } from '../asserts/string/maxLength';
 

@@ -1,6 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { parseOrFail } from '../parseOrFail';
-import { BuildSchemaError, InferType, ValidationError } from '../';
+import { BuildSchemaError, InferType, parseOrFail, ValidationError } from '../';
 import { date } from '../asserts/date';
 import { dateMin } from '../asserts/date/dateMin';
 import { dateMax } from '../asserts/date/dateMax';

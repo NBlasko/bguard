@@ -1,5 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { InferType, parseOrFail, ValidationError } from '../';
+import { ExceptionContext, InferType, parseOrFail, ValidationError } from '../';
 import { string } from '../asserts/string';
 import { boolean } from '../asserts/boolean';
 import { number } from '../asserts/number';
@@ -9,7 +9,7 @@ import { date } from '../asserts/date';
 import { array } from '../asserts/array';
 import { object } from '../asserts/object';
 import { minLength } from '../asserts/string/minLength';
-import { ExceptionContext, RequiredValidation } from '../ExceptionContext';
+import { RequiredValidation } from '../core';
 
 describe('CommonSchema', () => {
   it('should be a nullable string', () => {

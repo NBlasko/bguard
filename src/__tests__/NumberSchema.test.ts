@@ -1,11 +1,10 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { parseOrFail } from '../parseOrFail';
 import { max } from '../asserts/number/max';
 import { maxExcluded } from '../asserts/number/maxExcluded';
 import { min } from '../asserts/number/min';
 import { minExcluded } from '../asserts/number/minExcluded';
 import { positive } from '../asserts/number/positive';
-import { BuildSchemaError, InferType } from '../';
+import { BuildSchemaError, InferType, parseOrFail } from '../';
 import { number } from '../asserts/number';
 import { negative } from '../asserts/number/negative';
 

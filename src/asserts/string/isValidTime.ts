@@ -1,5 +1,5 @@
 import { setToDefaultLocale } from '../../translationMap';
-import { ExceptionContext, RequiredValidation } from '../../ExceptionContext';
+import type { ExceptionContext, RequiredValidation } from '../../core';
 
 const timeErrorMessage = 'The received value is not a valid time';
 const timeErrorKey = 's:isValidTime';

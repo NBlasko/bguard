@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { codeGen } from '../../src/codeGen';
-import type { CommonSchema } from '../../src/schemas/CommonSchema';
+
 import {
   testSchema1,
   testSchema2,
@@ -64,6 +64,7 @@ import {
   testSchema59,
   testSchema60,
 } from './schemas';
+import { type CommonSchema } from '../../src/core';
 
 class GenerateType {
   constructor(private readonly isString: boolean) {}
