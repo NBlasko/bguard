@@ -363,6 +363,7 @@ export function parseOrFail<T extends CommonSchema>(
     );
     return innerCheck(schema, receivedValue, ctx) as InferType<T>;
   } catch (e) {
+    /* istanbul ignore next */
     if (e instanceof ValidationError) throw e;
     /* istanbul ignore next */
     throw new Error('Something unexpected happened');
@@ -447,6 +448,7 @@ export function parse<T extends CommonSchema>(
 
     return [undefined, parsedValue];
   } catch (e) {
+    /* istanbul ignore next */
     if (e instanceof ValidationError) {
       delete e.stack;
       return [[e], undefined];
