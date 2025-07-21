@@ -35,7 +35,7 @@ class ObjectSchema extends CommonSchema {
    *
    * parseOrFail(userSchema, ({ name: 'John', age: 30, extra: 'value' }););
    * //  No error thrown
-   * 
+   *
    * @public
    */
   public allowUnrecognized(): this {
@@ -56,7 +56,7 @@ class ObjectSchema extends CommonSchema {
  * });
  * parseOrFail(schema, { name: 'John', age: 30 }); // Validates successfully
  * parseOrFail(schema, { name: 'John', age: '30' }); // Throws a validation error
- * 
+ *
  * @instance Of ObjectSchema
  */
 export function object<T extends ObjectShapeSchemaType>(shapeSchema: T): WithObject<ObjectSchema, T> {

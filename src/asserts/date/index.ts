@@ -9,7 +9,7 @@ import { CommonSchema, ValidatorContext } from '../../core';
  * const schema = date();
  * parseOrFail(schema, true); // Validates successfully
  * parseOrFail(schema, 'true'); // Throws a validation error
- * 
+ *
  * @instance Of DateSchema
  */
 export function date(): WithBGuardType<DateSchema, Date> {

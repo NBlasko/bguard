@@ -11,7 +11,7 @@ import { CommonSchema } from '../../core';
  * parseOrFail(schema, 'hello'); // Validates successfully
  * parseOrFail(schema, 42); // Validates successfully
  * parseOrFail(schema, true); // Throws a validation error
- * 
+ *
  * @instance Of CommonSchema
  */
 export function oneOfTypes<T extends BaseType[]>(valueTypes: T): WithBGuardType<CommonSchema, MapMixTypes<T>> {

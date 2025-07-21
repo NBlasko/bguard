@@ -14,7 +14,7 @@ import { oneOfValues } from '../mix/oneOfValues';
  * parseOrFail(schema, 42n); // Validates successfully
  * parseOrFail(schema, 42); // Throws a validation error
  * parseOrFail(schema, '42'); // Throws a validation error
- * 
+ *
  * @instance Of BigIntSchema
  */
 export function bigint(): WithBGuardType<BigIntSchema, bigint> {
@@ -32,7 +32,7 @@ class BigIntSchema extends CommonSchema {
    * @returns The schema instance restricted to the specified value, with the literal value inferred as the TypeScript type
    * @example
    * bigint().equalTo(42n); // Infers the type 42n
-   * 
+   *
    * @public
    */
   public equalTo<Y extends bigint>(expectedValue: Y): WithBGuardType<this, Y> {
@@ -49,7 +49,7 @@ class BigIntSchema extends CommonSchema {
    * @returns The schema instance restricted to one of the specified values, with the union of those values inferred as the TypeScript type.
    * @example
    * bigint().oneOfValues([5n, 7n]); // Infers the type 5n | 7n
-   * 
+   *
    * @public
    */
   public oneOfValues<Y extends bigint>(expectedValue: Y[]): WithBGuardType<this, Y> {

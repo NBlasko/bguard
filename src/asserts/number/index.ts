@@ -13,7 +13,7 @@ import { oneOfValues } from '../mix/oneOfValues';
  * const schema = number();
  * parseOrFail(schema, 42); // Validates successfully
  * parseOrFail(schema, '42'); // Throws a validation error
- * 
+ *
  * @instance Of NumberSchema
  */
 export function number(): WithBGuardType<NumberSchema, number> {
@@ -31,7 +31,7 @@ class NumberSchema extends CommonSchema {
    * @returns The schema instance restricted to the specified value, with the literal value inferred as the TypeScript type
    * @example
    * number().equalTo(42); // Infers the type 42
-   * 
+   *
    * @public
    */
   public equalTo<Y extends number>(expectedValue: Y): WithBGuardType<this, Y> {
@@ -48,7 +48,7 @@ class NumberSchema extends CommonSchema {
    * @returns The schema instance restricted to one of the specified values, with the union of those values inferred as the TypeScript type.
    * @example
    * number().oneOfValues([5, 7]); // Infers the type 5 | 7
-   * 
+   *
    * @public
    */
   public oneOfValues<Y extends number>(expectedValue: Y[]): WithBGuardType<this, Y> {

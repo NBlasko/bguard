@@ -13,7 +13,7 @@ const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionConte
  * const schema = boolean();
  * parseOrFail(schema, true); // Validates successfully
  * parseOrFail(schema, 'true'); // Throws a validation error
- * 
+ *
  * @instance Of BooleanSchema
  */
 export function boolean(): WithBGuardType<BooleanSchema, boolean> {
@@ -29,7 +29,7 @@ class BooleanSchema extends CommonSchema {
    * @returns The schema instance restricted to the value true, with the true value inferred as the TypeScript type
    * @example
    * boolean().onlyTrue(); // Infers the type true
-   * 
+   *
    * @public
    */
   public onlyTrue(): WithBGuardType<this, true> {
@@ -43,7 +43,7 @@ class BooleanSchema extends CommonSchema {
    * @returns The schema instance restricted to the value false, with the false value inferred as the TypeScript type
    * @example
    * boolean().onlyFalse(); // Infers the type false
-   * 
+   *
    * @public
    */
   public onlyFalse(): WithBGuardType<this, false> {

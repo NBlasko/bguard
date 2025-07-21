@@ -13,7 +13,7 @@ import { oneOfValues } from '../mix/oneOfValues';
  * const schema = string();
  * parseOrFail(schema, 'hello'); // Validates successfully
  * parseOrFail(schema, 123); // Throws a validation error
- * 
+ *
  * @instance Of StringSchema
  */
 export function string(): WithBGuardType<StringSchema, string> {
@@ -31,7 +31,7 @@ class StringSchema extends CommonSchema {
    * @returns The schema instance restricted to the specified value, with the literal value inferred as the TypeScript type
    * @example
    * string().equalTo('hello'); // Infers the type 'hello'
-   * 
+   *
    * @public
    */
   public equalTo<Y extends string>(expectedValue: Y): WithBGuardType<this, Y> {
