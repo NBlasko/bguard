@@ -17,7 +17,6 @@ export function date(): WithBGuardType<DateSchema, Date> {
   return new DateSchema({ type: ['object'], requiredValidations: [] }) as WithBGuardType<DateSchema, Date>;
 }
 
-
 class DateSchema extends CommonSchema {
   protected _date = 1;
 
@@ -26,4 +25,3 @@ class DateSchema extends CommonSchema {
     this[ctxSymbol].date = true;
   }
 }
-
