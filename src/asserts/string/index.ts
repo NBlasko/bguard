@@ -10,11 +10,10 @@ import { oneOfValues } from '../mix/oneOfValues';
  * @description Creates a new schema for validating string values.
  * @returns {WithBGuardType<StringSchema, string>} A new instance of `StringSchema` for validating strings.
  * @example
- * ```typescript
  * const schema = string();
  * parseOrFail(schema, 'hello'); // Validates successfully
  * parseOrFail(schema, 123); // Throws a validation error
- * ```
+ * 
  * @instance Of StringSchema
  */
 export function string(): WithBGuardType<StringSchema, string> {
@@ -31,9 +30,9 @@ class StringSchema extends CommonSchema {
    * @param expectedValue - The value that the schema must exactly match.
    * @returns The schema instance restricted to the specified value, with the literal value inferred as the TypeScript type
    * @example
-   * ```typescript
    * string().equalTo('hello'); // Infers the type 'hello'
-   * ```
+   * 
+   * @public
    */
   public equalTo<Y extends string>(expectedValue: Y): WithBGuardType<this, Y> {
     this.limitCheck();
@@ -48,9 +47,9 @@ class StringSchema extends CommonSchema {
    * @param expectedValues - An array of values that the schema can match.
    * @returns The schema instance restricted to one of the specified values, with the union of those values inferred as the TypeScript type.
    * @example
-   * ```typescript
    * string().oneOfValues(['foo', 'bar']); // Infers the type 'foo' | 'bar'
-   * ```
+   *
+   * @public
    */
   public oneOfValues<Y extends string>(expectedValue: Y[]): WithBGuardType<this, Y> {
     this.limitCheck();

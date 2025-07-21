@@ -9,11 +9,10 @@ import { CommonSchema, type ValidatorContext } from '../../core';
  * @param {T} arraySchema - The schema that each element of the array must match.
  * @returns {WithArray<ArraySchema, T>} A new instance of `ArraySchema` for validating arrays of elements that match the specified schema.
  * @example
- * ```typescript
  * const schema = array(string());
  * parseOrFail(schema, ['hello', 'world']); // Validates successfully
  * parseOrFail(schema, ['hello', 123]); // Throws a validation error
- * ```
+ *
  * @instance Of ArraySchema
  */
 export function array<T extends CommonSchema>(arraySchema: T): WithArray<ArraySchema, T> {

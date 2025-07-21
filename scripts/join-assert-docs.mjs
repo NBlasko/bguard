@@ -54,11 +54,6 @@ function extractJsDocContent(fileContent, fileName, pageContext) {
   const cleanedJsDocContent = jsDocMatches
     .map((jsDoc) => {
       let cleanedJsDoc = jsDoc.replace(/^\/\*\*|\*\/$/g, '').trim();
-      cleanedJsDoc = cleanedJsDoc.replace(/(@example[\s\S]*?)(\n\s*\* @)/g, (match, exampleContent, nextTag) => {
-        return `@example\n\`\`\`typescript\n${exampleContent.replace(/^@example\s*/, '')}\`\`\`\n${nextTag}`;
-      });
-
-      cleanedJsDoc = cleanedJsDoc.replace(/(^|\n)\s*\*/g, '\n').trim();
 
       const foundMethod = cleanedJsDoc.match(/@method\s+(\w+)/);
       if (foundMethod) {
@@ -66,16 +61,14 @@ function extractJsDocContent(fileContent, fileName, pageContext) {
 
         const linkId = `assert_${fileName.toLowerCase()}_method_${methodName.toLowerCase()}`;
         pageContext.value += `\n          * [${methodName}](#${linkId})`;
-        cleanedJsDoc = cleanedJsDoc
-          .replace(
-            foundMethod[0],
-            `
-          \n##### <a id="${linkId}"> ${methodName} </a>
-          \n
-          `,
-          )
-          .trim();
+        cleanedJsDoc = cleanedJsDoc.replace(foundMethod[0], `\n##### <a id="${linkId}"> ${methodName} </a>\n`).trim();
       }
+
+      cleanedJsDoc = cleanedJsDoc.replace(/(@example[\s\S]*?)(\n\s*\* @)/g, (match, exampleContent, nextTag) => {
+        return `@example\n\`\`\`typescript\n${exampleContent.replace(/^@example\s*/, '')}\`\`\`\n${nextTag}`;
+      });
+
+      cleanedJsDoc = cleanedJsDoc.replace(/(^|\n)\s*\*/g, '\n').trim();
 
       cleanedJsDoc = cleanedJsDoc.replace(/@description\s*/, '* _Description_ ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @notice\s*/, '* > **Notice:** ').trim();
@@ -85,6 +78,7 @@ function extractJsDocContent(fileContent, fileName, pageContext) {
       cleanedJsDoc = cleanedJsDoc.replace(/ @translation\s*/, '* _See_ ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/ @throws\s*/, '* _Throws_ ').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/@instance.+/, '').trim();
+      cleanedJsDoc = cleanedJsDoc.replace(/@public/, '').trim();
       cleanedJsDoc = cleanedJsDoc.replace(/@template.+/, '').trim();
 
       return cleanedJsDoc;

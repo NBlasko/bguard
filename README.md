@@ -644,33 +644,23 @@ import { string } from 'bguard/string';
  const schema = string();
  parseOrFail(schema, 'hello'); // Validates successfully
  parseOrFail(schema, 123); // Throws a validation error
-```
+ ```
 
 ##### <a id="assert_string_method_equalto"> equalTo </a>
-          
-
-          
  * _Description_ Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
-
 * _Param_ expectedValue - The value that the schema must exactly match.
-
 * _Example_
 ```typescript
  string().equalTo('hello'); // Infers the type 'hello'
  ```
 
 ##### <a id="assert_string_method_oneofvalues"> oneOfValues </a>
-          
-
-          
  * _Description_ Restricts the schema to match one of the specified values and infers the union of those values as the TypeScript type.
-
 * _Param_ expectedValues - An array of values that the schema can match.
-
 * _Example_
 ```typescript
  string().oneOfValues(['foo', 'bar']); // Infers the type 'foo' | 'bar'
- ```
+```
    
         
 ##### <a id="assert_atleastonedigit_string"> atLeastOneDigit </a>
@@ -1117,29 +1107,19 @@ import { number } from 'bguard/number';
  const schema = number();
  parseOrFail(schema, 42); // Validates successfully
  parseOrFail(schema, '42'); // Throws a validation error
-```
+ ```
 
 ##### <a id="assert_number_method_equalto"> equalTo </a>
-          
-
-          
- Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
-
+ * _Description_ Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
 * _Param_ expectedValue - The value that the schema must exactly match.
-
 * _Example_
 ```typescript
  number().equalTo(42); // Infers the type 42
  ```
 
 ##### <a id="assert_number_method_oneofvalues"> oneOfValues </a>
-          
-
-          
- Restricts the schema to match one of the specified values and infers the union of those values as the TypeScript type.
-
+ * _Description_ Restricts the schema to match one of the specified values and infers the union of those values as the TypeScript type.
 * _Param_ expectedValues - An array of values that the schema can match.
-
 * _Example_
 ```typescript
  number().oneOfValues([5, 7]); // Infers the type 5 | 7
@@ -1321,36 +1301,26 @@ import { minArrayLength } from 'bguard/array/minArrayLength';
 import { bigint } from 'bguard/bigint';
 ```
    
-* _Description_ Creates a new schema for validating bigint values.
+* _Description_ - Creates a new schema for validating bigint values.
 * _Example_
 ```typescript
  const schema = bigint();
  parseOrFail(schema, 42n); // Validates successfully
  parseOrFail(schema, 42); // Throws a validation error
  parseOrFail(schema, '42'); // Throws a validation error
-```
+ ```
 
 ##### <a id="assert_bigint_method_equalto"> equalTo </a>
-          
-
-          
- Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
-
+ * _Description_ Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
 * _Param_ expectedValue - The value that the schema must exactly match.
-
 * _Example_
 ```typescript
  bigint().equalTo(42n); // Infers the type 42n
  ```
 
 ##### <a id="assert_bigint_method_oneofvalues"> oneOfValues </a>
-          
-
-          
- Restricts the schema to match one of the specified values and infers the union of those values as the TypeScript type.
-
+ * _Description_ Restricts the schema to match one of the specified values and infers the union of those values as the TypeScript type.
 * _Param_ expectedValues - An array of values that the schema can match.
-
 * _Example_
 ```typescript
  bigint().oneOfValues([5n, 7n]); // Infers the type 5n | 7n
@@ -1446,7 +1416,7 @@ import { date } from 'bguard/date';
  const schema = date();
  parseOrFail(schema, true); // Validates successfully
  parseOrFail(schema, 'true'); // Throws a validation error
-```
+ ```
    
         
 ##### <a id="assert_datemax_date"> dateMax </a>
@@ -1495,7 +1465,6 @@ import { oneOfTypes } from 'bguard/mix';
 ```
    
 * _Description_ Creates a new schema for validating values that can match any one of the specified primitive types.
-
  
 * _Param_ {T} valueTypes - An array of primitive types that the value can match.
 * _Example_
@@ -1504,7 +1473,7 @@ import { oneOfTypes } from 'bguard/mix';
  parseOrFail(schema, 'hello'); // Validates successfully
  parseOrFail(schema, 42); // Validates successfully
  parseOrFail(schema, true); // Throws a validation error
-```
+ ```
    
         
 ##### <a id="assert_equalto_mix"> equalTo </a>
@@ -1554,15 +1523,10 @@ import { object } from 'bguard/object';
 ```
    
 ##### <a id="assert_object_method_allowunrecognized"> allowUnrecognized </a>
-          
-
-          
- Allows unrecognized properties in the validated object.
+ * _Description_ Allows unrecognized properties in the validated object.
  When this method is called, the validation will not fail
  if the received object contains properties not specified
  in the validation schema.
-
-
 * _Example_
 ```typescript
   const userSchema = object({
@@ -1585,7 +1549,7 @@ import { object } from 'bguard/object';
  });
  parseOrFail(schema, { name: 'John', age: 30 }); // Validates successfully
  parseOrFail(schema, { name: 'John', age: '30' }); // Throws a validation error
-```
+ ```
    
         
 ##### <a id="assert_maxkeys_object"> maxKeys </a>
