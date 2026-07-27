@@ -29,6 +29,20 @@ taken apart again reliably when a key may itself contain a dot. `code` is the fa
 key, for example `'s:minLength'`, which unlike `message` does not change with the locale, so it is
 what to branch on. Both appear on `ValidationError` too.
 
+**Async validation.** `customAsync` registers a check that has to wait — a uniqueness lookup, an HTTP
+call — and `parseAsync` / `parseOrFailAsync` mirror the synchronous entry points.
+
+The structure is validated synchronously and the async validations are collected as they are reached,
+then awaited all together, so several slow checks across one schema cost one round of waiting rather
+than one each. That is possible because asserts only add issues and never change the value, so what the
+synchronous pass produced is already final. Their issues therefore come after the synchronous ones,
+which is why `parseOrFailAsync` cannot stop at the first error the way `parseOrFail` does.
+
+A synchronous `parse` of a schema carrying an async validation throws a `BuildSchemaError` naming the
+async entry points rather than skipping it. `~standard.validate` returns a promise for a schema that
+needs awaiting and stays synchronous otherwise — the spec allows either, chosen per call, so a consumer
+that never awaits keeps working for every other schema.
+
 **Coercion, and separate input and output types.** `InferType` has always been the type a schema
 *produces*. `InferInput` is the type it *accepts*, and the two now differ wherever a schema converts or
 supplies something:
@@ -256,6 +270,9 @@ false, so it previously satisfied `number()` and passed straight through `min`, 
    `eslint --print-config`: 27 active rules before and after, none lost or changed.
  - `npm run prettier` covers `jest/` and `scripts/`, not only `src/`, and the static type assets are
    formatted by their generator so no separate pass is needed.
+ - `parseOrFail` no longer accepts `getAllErrors`. Two `ParseOptions` interfaces had been declared,
+   which TypeScript merged, so the flag typechecked on a function that throws at the first error by
+   definition and ignored it entirely.
  - `npm run check:docs` typechecks the README's self-contained examples, and runs as part of
    `check:package` in CI. Three examples did not compile at three separate points in this release, none
    of it visible from reading the Markdown.

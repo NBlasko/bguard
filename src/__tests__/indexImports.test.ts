@@ -6,6 +6,8 @@ describe('Library exports', () => {
     const expectedExports = [
       'parseOrFail',
       'parse',
+      'parseAsync',
+      'parseOrFailAsync',
       'ExceptionContext',
       'ValidationError',
       'BuildSchemaError',

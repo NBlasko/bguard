@@ -13,7 +13,12 @@ export interface StandardSchemaV1<Input = unknown, Output = Input> {
 export interface StandardSchemaProps<Input = unknown, Output = Input> {
   readonly version: 1;
   readonly vendor: string;
-  readonly validate: (value: unknown) => StandardSchemaResult<Output>;
+  /**
+   * The spec allows either a result or a promise of one, chosen per call. bguard returns a promise only
+   * when the schema carries async validations, so a consumer that never awaits keeps working for every
+   * other schema.
+   */
+  readonly validate: (value: unknown) => StandardSchemaResult<Output> | Promise<StandardSchemaResult<Output>>;
   /** Type-only: carries the input and output types and is never present at runtime. */
   readonly types?: StandardSchemaTypes<Input, Output> | undefined;
 }

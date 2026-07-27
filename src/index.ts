@@ -5,7 +5,7 @@ export type {
   StandardSchemaResult,
   StandardSchemaIssue,
 } from './standardSchema';
-export { parseOrFail, parse, ExceptionContext } from './core';
+export { parseOrFail, parse, parseOrFailAsync, parseAsync, ExceptionContext } from './core';
 export { ValidationError, BuildSchemaError } from './exceptions';
 export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
 export { codeGen, codeGenWithName } from './codeGen';

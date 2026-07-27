@@ -11,10 +11,19 @@ import { tuple } from '../asserts/tuple';
 import { union } from '../asserts/union';
 import { email } from '../asserts/string/email';
 
-const issuesOf = <T>(result: ReturnType<StandardSchemaV1<T, T>['~standard']['validate']>) =>
-  (result as StandardSchemaFailure).issues;
-const valueOf = <T>(result: ReturnType<StandardSchemaV1<T, T>['~standard']['validate']>) =>
-  (result as StandardSchemaSuccess<T>).value;
+type AnyResult = ReturnType<StandardSchemaV1['~standard']['validate']>;
+
+/**
+ * A schema with no async validations must validate synchronously, so these narrow rather than await.
+ * The spec allows either, and returning a promise where none is needed would break every consumer that
+ * does not await.
+ */
+const syncResult = (result: AnyResult) => {
+  expect(result).not.toBeInstanceOf(Promise);
+  return result as Exclude<AnyResult, Promise<unknown>>;
+};
+const issuesOf = (result: AnyResult) => (syncResult(result) as StandardSchemaFailure).issues;
+const valueOf = <T>(result: AnyResult) => (syncResult(result) as StandardSchemaSuccess<T>).value;
 
 /**
  * Standard Schema is the contract that lets a validator be used by libraries that know nothing about
@@ -60,7 +69,7 @@ describe('Standard Schema', () => {
 
   describe('successful validation', () => {
     it('returns the parsed value and no issues', () => {
-      const result = object({ a: string() })['~standard'].validate({ a: 'x' });
+      const result = syncResult(object({ a: string() })['~standard'].validate({ a: 'x' }));
 
       expect(result.issues).toBeUndefined();
       expect(valueOf(result)).toEqual({ a: 'x' });
@@ -74,7 +83,7 @@ describe('Standard Schema', () => {
     });
 
     it('discriminates on issues being absent, as the spec requires', () => {
-      const result = string()['~standard'].validate('x');
+      const result = syncResult(string()['~standard'].validate('x'));
 
       // A consumer branches on `issues`, so it must not be present at all on success.
       expect('issues' in result).toBe(false);
@@ -155,7 +164,7 @@ describe('Standard Schema', () => {
       }
 
       expect(validateWith(string(), 'x')).toEqual({ value: 'x' });
-      expect(validateWith(string(), 1).issues).toHaveLength(1);
+      expect(issuesOf(validateWith(string(), 1))).toHaveLength(1);
     });
   });
 

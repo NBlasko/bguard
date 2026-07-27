@@ -34,6 +34,7 @@ Table of contents
  * [Formatting Errors](#h3_formatting_errors)
  * [Coercion](#h3_coercion)
  * [InferInput and InferOutput](#h3_infer_input)
+ * [Async Validation](#h3_async)
  * [Literals](#h3_literals)
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
@@ -771,6 +772,47 @@ available as a name for symmetry and is the same type as `InferType`.
 
 Both are reported through Standard Schema, so a consumer asks for what the schema takes rather than
 what it returns.
+
+### <a id="h3_async"> Async Validation </a>
+
+For a check that has to wait — a uniqueness lookup, an HTTP call — use `customAsync` and one of the
+async entry points.
+
+```typeScript
+import { object, string, parseAsync } from 'bguard';
+import type { ExceptionContext } from 'bguard/core';
+
+declare function isNameTaken(name: string): Promise<boolean>;
+
+const signupSchema = object({
+  name: string().customAsync(async (received: string, ctx: ExceptionContext) => {
+    if (await isNameTaken(received)) ctx.addIssue('an unused name', received, 'u:taken');
+  }),
+});
+
+async function handleSignup(received: unknown) {
+  const [errors, value] = await parseAsync(signupSchema, received, { getAllErrors: true });
+
+  if (errors) return errors;
+  return value;
+}
+```
+
+`parseAsync` and `parseOrFailAsync` mirror `parse` and `parseOrFail`. The structure is validated
+synchronously first and the async validations are collected as they are reached, then awaited **all
+together** — so several slow checks across one schema cost one round of waiting rather than one each.
+
+A synchronous `parse` of a schema carrying an async validation throws a `BuildSchemaError` naming the
+async entry points, rather than skipping the validation. A validation that never runs is worse than a
+clear instruction.
+
+Standard Schema handles this on its own: `~standard.validate` returns a promise for a schema that needs
+awaiting and stays synchronous for one that does not. The spec allows either, chosen per call, so a
+consumer that never awaits keeps working for every other schema.
+
+> **Notice:** Because the async validations are awaited after the walk, their issues come after the
+> synchronous ones. `parseOrFailAsync` therefore cannot stop at the first error the way `parseOrFail`
+> does; it throws the first one found once everything has been awaited.
 
 ### <a id="h3_literals"> Literals </a>
 

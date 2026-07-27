@@ -19,7 +19,7 @@ import { type InferInput, type InferType } from './InferType';
 import { BuildSchemaError, ValidationError } from './exceptions';
 import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
-import type { StandardSchemaProps } from './standardSchema';
+import type { StandardSchemaProps, StandardSchemaResult } from './standardSchema';
 
 const replacePlaceholdersRegex = /{{(.*?)}}/g;
 
@@ -39,7 +39,41 @@ export class ExceptionContext {
     /** The same location as `pathToError`, as keys. A string path cannot be taken apart again
      * reliably, because a key may itself contain a dot or a bracket. */
     public readonly path: readonly PropertyKey[] = [],
+    /** Where async validations are collected. Absent during a synchronous parse, which is how one
+     * is detected and reported rather than silently skipped. */
+    public readonly pending?: PendingValidation[],
   ) {}
+
+  /**
+   * The same location, reporting into a different errors list.
+   *
+   * A union tries each member against a throwaway list so a member that does not match is not fatal.
+   * An async validation reached inside the winning member is awaited long after that decision, so it
+   * has to be re-pointed at the real list or its issues would be collected where nobody reads them.
+   */
+  withErrors(errors?: ValidationErrorData[]) {
+    return new ExceptionContext(
+      this.initialReceived,
+      this.t,
+      this.pathToError,
+      errors,
+      this.meta,
+      this.path,
+      this.pending,
+    );
+  }
+
+  /**
+   * Records async validations to be awaited once the walk is over.
+   *
+   * Throws during a synchronous parse rather than dropping them: a validation that never runs is worse
+   * than a clear instruction to use parseAsync.
+   */
+  enqueueAsync(validations: AsyncRequiredValidation[], received: unknown) {
+    if (!this.pending) throw new BuildSchemaError('Schema has an async validation. Use parseAsync or parseOrFailAsync');
+
+    this.pending.push({ validations, received, ctx: this });
+  }
 
   /**
    * Descends into a property or an index, deriving both forms of the location from the same key so
@@ -51,10 +85,15 @@ export class ExceptionContext {
         ? `${this.pathToError}[${pathSegment}]`
         : `${this.pathToError}.${String(pathSegment)}`;
 
-    return new ExceptionContext(this.initialReceived, this.t, childPathToError, this.errors, childMeta, [
-      ...this.path,
-      pathSegment,
-    ]);
+    return new ExceptionContext(
+      this.initialReceived,
+      this.t,
+      childPathToError,
+      this.errors,
+      childMeta,
+      [...this.path, pathSegment],
+      this.pending,
+    );
   }
 
   public ref(path: string): unknown {
@@ -108,6 +147,22 @@ export class ExceptionContext {
 export type RequiredValidation<T = any> = (received: T, ctx: ExceptionContext) => void;
 
 /**
+ * A validation that has to wait for something — a database lookup, an HTTP call.
+ *
+ * Registered with `customAsync` and run by `parseAsync`. Asserts only add issues, they never change the
+ * value, so the value the synchronous walk produced is already final by the time these run.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AsyncRequiredValidation<T = any> = (received: T, ctx: ExceptionContext) => Promise<void>;
+
+/** An async validation that has been reached, waiting to be awaited once the walk is over. */
+interface PendingValidation {
+  validations: AsyncRequiredValidation[];
+  received: unknown;
+  ctx: ExceptionContext;
+}
+
+/**
  * The runtime value a schema hands to its asserts. Nullish is stripped, because `innerCheck`
  * returns before running asserts when the value is `null` or `undefined`.
  */
@@ -123,6 +178,18 @@ export type AssertInput<T> =
           : T extends WithRecord<unknown, unknown, unknown>
             ? Record<string, unknown>
             : unknown;
+
+/**
+ * Runs a schema's own assertions. The async ones are only enqueued: they are awaited after the walk,
+ * so a slow check never holds up the structural validation around it.
+ */
+function runValidations(schemaData: ValidatorContext, receivedValue: unknown, exCtx: ExceptionContext) {
+  schemaData.requiredValidations.forEach((requiredValidation) => {
+    requiredValidation(receivedValue, exCtx);
+  });
+
+  if (schemaData.asyncValidations?.length) exCtx.enqueueAsync(schemaData.asyncValidations, receivedValue);
+}
 
 function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext): unknown {
   const schemaData = schema[ctxSymbol];
@@ -180,9 +247,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   if (schemaData.tuple) {
     if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, 'c:array');
 
-    schemaData.requiredValidations.forEach((requiredValidation) => {
-      requiredValidation(receivedValue, exCtx);
-    });
+    runValidations(schemaData, receivedValue, exCtx);
 
     if (receivedValue.length !== schemaData.tuple.length) {
       // Reported and then abandoned: walking the declared positions as well would add a "required"
@@ -210,13 +275,14 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   if (schemaData.union) {
     // The union's own asserts see the value whichever member ends up matching, so they are declared
     // over `unknown` and run before any member is tried.
-    schemaData.requiredValidations.forEach((requiredValidation) => {
-      requiredValidation(receivedValue, exCtx);
-    });
+    runValidations(schemaData, receivedValue, exCtx);
 
     const attemptErrors: ValidationErrorData[] = [];
     for (const memberSchema of schemaData.union) {
       const errorsBefore = attemptErrors.length;
+      // Async validations reached inside a member are collected separately and only kept if that member
+      // wins. Sharing the outer list would let a rejected member's validations run and report issues.
+      const attemptPending: PendingValidation[] = [];
       // Each member is tried against a context that collects instead of throwing, so a member that
       // does not match is not fatal. Only a member that produces nothing wins.
       const attemptCtx = new ExceptionContext(
@@ -225,10 +291,19 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         exCtx.pathToError,
         attemptErrors,
         schemaData.meta,
+        // Carried over, so an async validation inside the winning member keeps the right location.
+        exCtx.path,
+        exCtx.pending && attemptPending,
       );
 
       const parsedMember = innerCheck(memberSchema, receivedValue, attemptCtx);
-      if (attemptErrors.length === errorsBefore) return parsedMember;
+      if (attemptErrors.length === errorsBefore) {
+        for (const entry of attemptPending) {
+          exCtx.pending?.push({ ...entry, ctx: entry.ctx.withErrors(exCtx.errors) });
+        }
+
+        return parsedMember;
+      }
     }
 
     exCtx.addIssue('One of the union members', receivedValue, 'c:union');
@@ -246,9 +321,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
       return receivedValue;
     }
 
-    schemaData.requiredValidations.forEach((requiredValidation) => {
-      requiredValidation(receivedValue, exCtx);
-    });
+    runValidations(schemaData, receivedValue, exCtx);
 
     const { key: keySchema, value: valueSchema } = schemaData.record;
     const parsedRecord: Record<string, unknown> = {};
@@ -267,9 +340,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   if (schemaData.array) {
     if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, 'c:array');
 
-    schemaData.requiredValidations.forEach((requiredValidation) => {
-      requiredValidation(receivedValue, exCtx);
-    });
+    runValidations(schemaData, receivedValue, exCtx);
 
     const schema = schemaData.array;
     const parsedReceivedValue: unknown[] = [];
@@ -303,9 +374,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
       return receivedValue;
     }
 
-    schemaData.requiredValidations.forEach((requiredValidation) => {
-      requiredValidation(receivedValue, exCtx);
-    });
+    runValidations(schemaData, receivedValue, exCtx);
 
     const shapeSchema = schemaData.object;
     const parsedReceivedValue: Record<string, unknown> = {};
@@ -365,9 +434,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     return parsedReceivedValue;
   }
 
-  schemaData.requiredValidations.forEach((requiredValidation) => {
-    requiredValidation(receivedValue, exCtx);
-  });
+  runValidations(schemaData, receivedValue, exCtx);
 
   return receivedValue;
 }
@@ -392,6 +459,7 @@ export interface ValidatorContext {
   isNullable?: boolean;
   isOptional?: boolean;
   requiredValidations: RequiredValidation[];
+  asyncValidations?: AsyncRequiredValidation[];
   array?: CommonSchema;
   object?: ObjectShapeSchemaType;
   union?: CommonSchema[];
@@ -423,6 +491,7 @@ function cloneValidatorContext(ctx: ValidatorContext): ValidatorContext {
     requiredValidations: [...ctx.requiredValidations],
   };
 
+  if (ctx.asyncValidations) next.asyncValidations = [...ctx.asyncValidations];
   if (ctx.object) next.object = { ...ctx.object };
   if (ctx.union) next.union = [...ctx.union];
   if (ctx.record) next.record = { ...ctx.record };
@@ -455,11 +524,12 @@ export class CommonSchema {
       vendor: 'bguard',
       // An arrow function, so `this` is the schema however the property is destructured or passed on.
       validate: (value: unknown) => {
-        const [errors, parsedValue] = parse(this, value, { getAllErrors: true });
+        // The spec allows either a result or a promise of one, decided per call. A schema with async
+        // validations returns a promise; everything else stays synchronous, so a consumer that never
+        // awaits keeps working.
+        if (hasAsyncValidation(this)) return parseAsync(this, value, { getAllErrors: true }).then(toStandardResult);
 
-        if (errors) return { issues: errors.map((error) => ({ message: error.message, path: error.path })) };
-
-        return { value: parsedValue };
+        return toStandardResult(parse(this, value, { getAllErrors: true }));
       },
     };
   }
@@ -489,6 +559,27 @@ export class CommonSchema {
     this.defaultValueCheck();
     const next = this.clone();
     next[ctxSymbol].requiredValidations.push(...validators);
+    return next;
+  }
+
+  /**
+   * Adds validations that have to wait for something, such as a database lookup.
+   *
+   * These run only under `parseAsync` or `parseOrFailAsync`; a synchronous parse reports a
+   * `BuildSchemaError` rather than skipping them. They are awaited after the structural walk is
+   * complete, all together, so several slow checks across a schema cost one round of waiting.
+   *
+   * @param validators - One or more async validation functions.
+   * @returns {this} A new schema instance with the added validations.
+   * @example
+   * const schema = string().customAsync(async (received, ctx) => {
+   *   if (await isTaken(received)) ctx.addIssue('an unused name', received, 'name is taken');
+   * });
+   */
+  public customAsync(...validators: AsyncRequiredValidation<AssertInput<this>>[]): this {
+    this.defaultValueCheck();
+    const next = this.clone();
+    next[ctxSymbol].asyncValidations = [...(next[ctxSymbol].asyncValidations ?? []), ...validators];
     return next;
   }
 
@@ -616,15 +707,6 @@ export class CommonSchema {
   }
 }
 
-interface ParseOptions {
-  /**
-   * Set language keyword to map error messages.
-   * @default 'default'
-   * @example 'sr' or 'Serbia' or any string to identify language
-   */
-  lng?: string;
-}
-
 /**
  * Parses and validates a value against the provided schema, returning a type-safe result.
  *
@@ -686,11 +768,16 @@ interface ParseOptions {
    * @example 'sr' or 'Serbia' or any string to identify language
    */
   lng?: string;
+}
 
+interface ParseAllOptions extends ParseOptions {
   /**
    * If true, collects all validation errors and returns them.
    * If false or undefined, returns the first validation error it can find and stops looking,
    * which provides a small runtime optimization.
+   *
+   * Declared only where it is honoured. `parseOrFail` throws on the first error by definition, and it
+   * used to accept this flag and ignore it.
    * @default undefined
    */
   getAllErrors?: boolean;
@@ -738,7 +825,7 @@ interface ParseOptions {
 export function parse<T extends CommonSchema>(
   schema: T,
   receivedValue: unknown,
-  options?: ParseOptions,
+  options?: ParseAllOptions,
 ): [ValidationErrorData[], null] | [null, InferType<T>] {
   try {
     const ctx = new ExceptionContext(
@@ -765,19 +852,145 @@ export function parse<T extends CommonSchema>(
     if (e instanceof BuildSchemaError) throw e;
 
     // Anything else came from a custom assert, which can throw whatever it likes.
-    return [
-      [
-        {
-          message: 'Something unexpected happened',
-          expected: '',
-          received: '',
-          pathToError: '',
-          path: [],
-          code: '',
-          meta: undefined,
-        },
-      ],
-      null,
-    ];
+    return [[unexpectedError()], null];
   }
+}
+
+/**
+ * Awaits the collected async validations and merges whatever they report.
+ *
+ * They are awaited together rather than in sequence, so several slow checks across one schema cost one
+ * round of waiting. Each keeps the context it was reached with, so an issue lands on the right path.
+ */
+/** Shapes a parse result the way Standard Schema expects it. */
+function toStandardResult<T>(result: [ValidationErrorData[], null] | [null, T]): StandardSchemaResult<T> {
+  const [errors, parsedValue] = result;
+
+  if (errors) return { issues: errors.map((error) => ({ message: error.message, path: error.path })) };
+
+  return { value: parsedValue as T };
+}
+
+/**
+ * Whether anything in the schema needs awaiting, which decides whether `~standard.validate` hands back
+ * a promise. Walks the whole tree, since an async validation may sit at any depth.
+ *
+ * A lazy schema is only followed once it has been resolved. Following it here would force the thunk
+ * merely because someone asked for the interface, and could recurse forever on a self-referential
+ * schema — so a schema whose async validation hides behind an unresolved lazy is validated
+ * synchronously and reports the BuildSchemaError that explains it.
+ */
+function hasAsyncValidation(schema: CommonSchema, seen = new Set<CommonSchema>()): boolean {
+  if (seen.has(schema)) return false;
+  seen.add(schema);
+
+  const schemaData = schema[ctxSymbol];
+  if (schemaData.asyncValidations?.length) return true;
+
+  const children: CommonSchema[] = [
+    ...(schemaData.object ? Object.values(schemaData.object) : []),
+    ...(schemaData.union ?? []),
+    ...(schemaData.tuple ?? []),
+    ...(schemaData.array ? [schemaData.array] : []),
+    ...(schemaData.record ? [schemaData.record.key, schemaData.record.value] : []),
+    ...(schemaData.lazy?.resolved ? [schemaData.lazy.resolved] : []),
+  ];
+
+  return children.some((child) => hasAsyncValidation(child, seen));
+}
+
+/** What a custom assert throwing something unrecognised is reported as, shared by both parse forms. */
+function unexpectedError(): ValidationErrorData {
+  return {
+    message: 'Something unexpected happened',
+    expected: '',
+    received: '',
+    pathToError: '',
+    path: [],
+    code: '',
+    meta: undefined,
+  };
+}
+
+async function settlePending(pending: PendingValidation[]) {
+  await Promise.all(
+    pending.flatMap(({ validations, received, ctx }) => validations.map((validation) => validation(received, ctx))),
+  );
+}
+
+/**
+ * The asynchronous counterpart of {@link parse}, for schemas carrying `customAsync` validations.
+ *
+ * The structure is validated synchronously first and the async validations run afterwards, all
+ * together. That means their issues come after the synchronous ones in the returned array, and that an
+ * async validation is never reached for a value the synchronous pass already rejected structurally.
+ *
+ * @example
+ * const [errors, value] = await parseAsync(schema, received, { getAllErrors: true });
+ */
+export async function parseAsync<T extends CommonSchema>(
+  schema: T,
+  receivedValue: unknown,
+  options?: ParseAllOptions,
+): Promise<[ValidationErrorData[], null] | [null, InferType<T>]> {
+  const errors: ValidationErrorData[] = [];
+  const pending: PendingValidation[] = [];
+
+  try {
+    const ctx = new ExceptionContext(
+      receivedValue,
+      getTranslationByLocale(options?.lng),
+      '',
+      // Always collecting: a throw partway through would leave the pending validations unawaited.
+      errors,
+      schema[ctxSymbol].meta,
+      [],
+      pending,
+    );
+
+    const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;
+    await settlePending(pending);
+
+    if (errors.length) {
+      if (!options?.getAllErrors) return [[errors[0] as ValidationErrorData], null];
+      return [errors, null];
+    }
+
+    return [null, parsedValue];
+  } catch (e) {
+    if (e instanceof BuildSchemaError) throw e;
+
+    // Anything else came from a custom assert, which can throw whatever it likes.
+    return [[unexpectedError()], null];
+  }
+}
+
+/**
+ * The asynchronous counterpart of {@link parseOrFail}.
+ *
+ * Unlike the synchronous version it cannot stop at the first error, because the async validations have
+ * to be awaited before anything can be reported. It throws the first error found, in the same order
+ * `parseAsync` reports them.
+ */
+export async function parseOrFailAsync<T extends CommonSchema>(
+  schema: T,
+  receivedValue: unknown,
+  options?: ParseOptions,
+): Promise<InferType<T>> {
+  const [errors, parsedValue] = await parseAsync(schema, receivedValue, options);
+
+  if (errors) {
+    const [first] = errors;
+    throw new ValidationError(
+      first!.expected,
+      first!.received,
+      first!.pathToError,
+      first!.message,
+      first!.meta,
+      first!.path,
+      first!.code,
+    );
+  }
+
+  return parsedValue as InferType<T>;
 }
