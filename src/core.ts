@@ -58,6 +58,7 @@ export class ExceptionContext {
         received,
         pathToError: this.pathToError,
         message,
+        meta: this.meta,
       });
 
       return;
@@ -134,7 +135,12 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     const pathToError = exCtx.pathToError;
     const parsedReceivedValue: unknown[] = [];
     receivedValue.forEach((elem, i) => {
-      const parsedElement = innerCheck(schema, elem, exCtx.createChild(`${pathToError}[${i}]`, schemaData.meta));
+      const parsedElement = innerCheck(
+        schema,
+        elem,
+        // The element's own metadata wins; the array's is inherited when it has none.
+        exCtx.createChild(`${pathToError}[${i}]`, schema[ctxSymbol].meta ?? schemaData.meta),
+      );
       parsedReceivedValue.push(parsedElement);
     });
 
@@ -170,7 +176,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
       const parsedReceivedObjectValuePropery = innerCheck(
         valueOfSchema,
         receivedObjectValuePropery,
-        exCtx.createChild(`${pathToError}.${keyOfSchema}`, schemaData.meta),
+        exCtx.createChild(`${pathToError}.${keyOfSchema}`, valueOfSchema[ctxSymbol].meta ?? schemaData.meta),
       );
 
       parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
