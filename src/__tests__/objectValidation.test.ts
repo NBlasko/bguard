@@ -2,6 +2,7 @@ import { parse, parseOrFail } from '../';
 import { number } from '../asserts/number';
 import { object } from '../asserts/object';
 import { string } from '../asserts/string';
+import { partial as partialOf } from '../asserts/object/partial';
 
 const messagesOf = (result: ReturnType<typeof parse>) => (result[0] ?? []).map((e) => e.message);
 
@@ -101,5 +102,46 @@ describe('object validation', () => {
 
       expect(() => parseOrFail(schema, { a: 'not a number' })).toThrow('Invalid type of data');
     });
+  });
+});
+
+describe('which properties the output carries', () => {
+  // An absent optional property used to come back as a present key holding undefined. Object.keys and
+  // `in` both reported a field nobody sent, and JSON.stringify hid it by dropping such keys — which is
+  // why it went unnoticed. It matters most for `partial`, whose whole purpose is answering "which
+  // fields did the caller send?".
+  it('omits an optional property that was absent', () => {
+    const parsed = parseOrFail(object({ a: string().optional(), b: string() }), { b: 'x' });
+
+    expect(Object.keys(parsed)).toEqual(['b']);
+    expect('a' in parsed).toBe(false);
+  });
+
+  it('keeps a property the input held, even as undefined', () => {
+    // The caller did send it, so dropping it would be just as unfaithful.
+    const parsed = parseOrFail(object({ a: string().optional() }), { a: undefined });
+
+    expect(Object.keys(parsed)).toEqual(['a']);
+    expect(parsed.a).toBeUndefined();
+  });
+
+  it('carries a defaulted property that was absent, since it now has a value', () => {
+    const parsed = parseOrFail(object({ a: number().default(7), b: string() }), { b: 'x' });
+
+    expect(Object.keys(parsed).sort()).toEqual(['a', 'b']);
+    expect(parsed.a).toBe(7);
+  });
+
+  it('lets a partial schema report exactly the fields that were sent', () => {
+    const patchSchema = partialOf(object({ id: string(), name: string(), secret: string() }));
+
+    expect(Object.keys(parseOrFail(patchSchema, {}))).toEqual([]);
+    expect(Object.keys(parseOrFail(patchSchema, { name: 'a' }))).toEqual(['name']);
+  });
+
+  it('still carries every property of a fully supplied object', () => {
+    const parsed = parseOrFail(object({ a: string(), b: string().optional() }), { a: 'x', b: 'y' });
+
+    expect(Object.keys(parsed).sort()).toEqual(['a', 'b']);
   });
 });

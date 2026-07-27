@@ -350,7 +350,16 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         exCtx.createChild(keyOfSchema, valueSchemaData.meta ?? schemaData.meta),
       );
 
-      parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
+      // Only carried over when there is something to carry. Assigning unconditionally gave an absent
+      // optional property a present key holding undefined, so `Object.keys` and `in` reported a field
+      // nobody sent — invisible through JSON.stringify, which drops such keys. A property the input
+      // did hold is kept even when its value is undefined, and one with a default has a value by now.
+      if (
+        parsedReceivedObjectValuePropery !== undefined ||
+        Object.prototype.hasOwnProperty.call(receivedObject, keyOfSchema)
+      ) {
+        parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
+      }
     }
 
     return parsedReceivedValue;
