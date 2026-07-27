@@ -17,6 +17,7 @@ import { type InferType } from './InferType';
 import { BuildSchemaError, ValidationError } from './exceptions';
 import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
+import type { StandardSchemaProps } from './standardSchema';
 
 const replacePlaceholdersRegex = /{{(.*?)}}/g;
 
@@ -33,10 +34,25 @@ export class ExceptionContext {
     public readonly pathToError: string,
     public readonly errors?: ValidationErrorData[],
     public readonly meta?: MetaContext,
+    /** The same location as `pathToError`, as keys. A string path cannot be taken apart again
+     * reliably, because a key may itself contain a dot or a bracket. */
+    public readonly path: readonly PropertyKey[] = [],
   ) {}
 
-  createChild(childPathToError: string, childMeta?: MetaContext) {
-    return new ExceptionContext(this.initialReceived, this.t, childPathToError, this.errors, childMeta);
+  /**
+   * Descends into a property or an index, deriving both forms of the location from the same key so
+   * they cannot disagree.
+   */
+  createChild(pathSegment: PropertyKey, childMeta?: MetaContext) {
+    const childPathToError =
+      typeof pathSegment === 'number'
+        ? `${this.pathToError}[${pathSegment}]`
+        : `${this.pathToError}.${String(pathSegment)}`;
+
+    return new ExceptionContext(this.initialReceived, this.t, childPathToError, this.errors, childMeta, [
+      ...this.path,
+      pathSegment,
+    ]);
   }
 
   public ref(path: string): unknown {
@@ -62,6 +78,8 @@ export class ExceptionContext {
         expected,
         received,
         pathToError: this.pathToError,
+        path: this.path,
+        code: messageKey,
         message,
         meta: this.meta,
       });
@@ -69,7 +87,7 @@ export class ExceptionContext {
       return;
     }
 
-    throw new ValidationError(expected, received, this.pathToError, message, this.meta);
+    throw new ValidationError(expected, received, this.pathToError, message, this.meta, this.path, messageKey);
   }
 }
 
@@ -105,7 +123,6 @@ export type AssertInput<T> =
             : unknown;
 
 function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext): unknown {
-  const commonTmap = exCtx.t;
   const schemaData = schema[ctxSymbol];
 
   // Nothing to transform when the value is absent. Running the list anyway turned `undefined` into
@@ -119,7 +136,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
   if (receivedValue === undefined) {
     if (schemaData.defaultValue === undefined) {
-      if (!schemaData.isOptional) exCtx.addIssue('Required', receivedValue, commonTmap['c:optional']);
+      if (!schemaData.isOptional) exCtx.addIssue('Required', receivedValue, 'c:optional');
       return receivedValue;
     }
 
@@ -130,22 +147,21 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   }
 
   if (receivedValue === null) {
-    if (!schemaData.isNullable) exCtx.addIssue('Not null', receivedValue, commonTmap['c:nullable']);
+    if (!schemaData.isNullable) exCtx.addIssue('Not null', receivedValue, 'c:nullable');
     return receivedValue;
   }
 
   if (schemaData.date) {
-    if (!isValidDateInner(receivedValue)) exCtx.addIssue('Date', receivedValue, commonTmap['c:date']);
+    if (!isValidDateInner(receivedValue)) exCtx.addIssue('Date', receivedValue, 'c:date');
   }
 
   const typeOfVal = typeof receivedValue;
 
   if (schemaData.type.length) {
-    if (!schemaData.type.includes(typeOfVal)) exCtx.addIssue(schemaData.type, typeOfVal, commonTmap['c:invalidType']);
+    if (!schemaData.type.includes(typeOfVal)) exCtx.addIssue(schemaData.type, typeOfVal, 'c:invalidType');
     // NaN is a number by typeof, and every comparison against it is false, so it slipped past
     // min, max, positive and negative alike.
-    else if (typeOfVal === 'number' && Number.isNaN(receivedValue))
-      exCtx.addIssue('number', receivedValue, commonTmap['c:nan']);
+    else if (typeOfVal === 'number' && Number.isNaN(receivedValue)) exCtx.addIssue('number', receivedValue, 'c:nan');
   }
 
   if (schemaData.lazy) {
@@ -160,7 +176,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   }
 
   if (schemaData.tuple) {
-    if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, commonTmap['c:array']);
+    if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, 'c:array');
 
     schemaData.requiredValidations.forEach((requiredValidation) => {
       requiredValidation(receivedValue, exCtx);
@@ -169,11 +185,10 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     if (receivedValue.length !== schemaData.tuple.length) {
       // Reported and then abandoned: walking the declared positions as well would add a "required"
       // error for every position the value does not reach, which says nothing further.
-      exCtx.addIssue(schemaData.tuple.length, receivedValue.length, commonTmap['c:tupleLength']);
+      exCtx.addIssue(schemaData.tuple.length, receivedValue.length, 'c:tupleLength');
       return receivedValue;
     }
 
-    const tuplePathToError = exCtx.pathToError;
     const parsedTuple: unknown[] = [];
 
     for (let i = 0; i < schemaData.tuple.length; i++) {
@@ -182,7 +197,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         innerCheck(
           positionSchema,
           receivedValue[i],
-          exCtx.createChild(`${tuplePathToError}[${i}]`, positionSchema[ctxSymbol].meta ?? schemaData.meta),
+          exCtx.createChild(i, positionSchema[ctxSymbol].meta ?? schemaData.meta),
         ),
       );
     }
@@ -214,16 +229,16 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
       if (attemptErrors.length === errorsBefore) return parsedMember;
     }
 
-    exCtx.addIssue('One of the union members', receivedValue, commonTmap['c:union']);
+    exCtx.addIssue('One of the union members', receivedValue, 'c:union');
     return receivedValue;
   }
 
   if (schemaData.record) {
     if (typeOfVal !== 'object' || Array.isArray(receivedValue)) {
       if (Array.isArray(receivedValue)) {
-        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectTypeAsArray']);
+        exCtx.addIssue('Object', receivedValue, 'c:objectTypeAsArray');
       } else {
-        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectType']);
+        exCtx.addIssue('Object', receivedValue, 'c:objectType');
       }
 
       return receivedValue;
@@ -234,11 +249,10 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     });
 
     const { key: keySchema, value: valueSchema } = schemaData.record;
-    const recordPath = exCtx.pathToError;
     const parsedRecord: Record<string, unknown> = {};
 
     for (const [receivedKey, receivedRecordValue] of Object.entries(receivedValue as Record<string, unknown>)) {
-      const childCtx = exCtx.createChild(`${recordPath}.${receivedKey}`, schemaData.meta);
+      const childCtx = exCtx.createChild(receivedKey, schemaData.meta);
 
       // Keys are validated too, which is what makes a restricted key type meaningful.
       innerCheck(keySchema, receivedKey, childCtx);
@@ -249,14 +263,13 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   }
 
   if (schemaData.array) {
-    if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, commonTmap['c:array']);
+    if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, 'c:array');
 
     schemaData.requiredValidations.forEach((requiredValidation) => {
       requiredValidation(receivedValue, exCtx);
     });
 
     const schema = schemaData.array;
-    const pathToError = exCtx.pathToError;
     const parsedReceivedValue: unknown[] = [];
     // Indexed rather than forEach, which skips holes: a sparse array used to come back shorter than
     // it went in, with no error to say so. A hole now reaches innerCheck as undefined and is
@@ -266,7 +279,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         schema,
         receivedValue[i],
         // The element's own metadata wins; the array's is inherited when it has none.
-        exCtx.createChild(`${pathToError}[${i}]`, schema[ctxSymbol].meta ?? schemaData.meta),
+        exCtx.createChild(i, schema[ctxSymbol].meta ?? schemaData.meta),
       );
       parsedReceivedValue.push(parsedElement);
     }
@@ -280,9 +293,9 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
       // shape of a non-object went on to invent one "unrecognized property" per string index and
       // one "missing property" per declared key, so a single wrong type produced seven errors.
       if (Array.isArray(receivedValue)) {
-        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectTypeAsArray']);
+        exCtx.addIssue('Object', receivedValue, 'c:objectTypeAsArray');
       } else {
-        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectType']);
+        exCtx.addIssue('Object', receivedValue, 'c:objectType');
       }
 
       return receivedValue;
@@ -304,11 +317,10 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         // and then dropped them from the output. Spelled out rather than via Object.hasOwn, which
         // would add a runtime floor the package does not otherwise require.
         if (!Object.prototype.hasOwnProperty.call(shapeSchema, keyPerReceivedValue))
-          exCtx.addIssue('Unrecognized property', keyPerReceivedValue, commonTmap['c:unrecognizedProperty']);
+          exCtx.addIssue('Unrecognized property', keyPerReceivedValue, 'c:unrecognizedProperty');
       }
     }
 
-    const pathToError = exCtx.pathToError;
     for (const [keyOfSchema, valueOfSchema] of Object.entries(shapeSchema)) {
       const valueSchemaData = valueOfSchema[ctxSymbol];
       const receivedObjectValuePropery = receivedObject[keyOfSchema];
@@ -319,7 +331,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         // check used to run first and reject it, so default() could never apply to a property.
         valueSchemaData.defaultValue === undefined
       ) {
-        exCtx.addIssue('Required', receivedObjectValuePropery, commonTmap['c:requiredProperty']);
+        exCtx.addIssue('Required', receivedObjectValuePropery, 'c:requiredProperty');
         // Stop here, or innerCheck reports the same missing value again as 'c:optional'.
         continue;
       }
@@ -327,7 +339,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
       const parsedReceivedObjectValuePropery = innerCheck(
         valueOfSchema,
         receivedObjectValuePropery,
-        exCtx.createChild(`${pathToError}.${keyOfSchema}`, valueSchemaData.meta ?? schemaData.meta),
+        exCtx.createChild(keyOfSchema, valueSchemaData.meta ?? schemaData.meta),
       );
 
       parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
@@ -409,6 +421,29 @@ export class CommonSchema {
   [ctxSymbol]: ValidatorContext;
   constructor(ctx: ValidatorContext) {
     this[ctxSymbol] = ctx;
+  }
+
+  /**
+   * The Standard Schema v1 interface, which lets a bguard schema be used by any library that accepts
+   * a validator without either side knowing about the other.
+   *
+   * A getter rather than a stored property, so it costs nothing until something asks for it and is
+   * not copied by `clone`. `types` is declared but deliberately never assigned: the spec defines it
+   * as type-only. bguard's input and output types coincide, so both sides of it are `InferType`.
+   */
+  public get '~standard'(): StandardSchemaProps<InferType<this>, InferType<this>> {
+    return {
+      version: 1,
+      vendor: 'bguard',
+      // An arrow function, so `this` is the schema however the property is destructured or passed on.
+      validate: (value: unknown) => {
+        const [errors, parsedValue] = parse(this, value, { getAllErrors: true });
+
+        if (errors) return { issues: errors.map((error) => ({ message: error.message, path: error.path })) };
+
+        return { value: parsedValue };
+      },
+    };
   }
 
   /**
@@ -714,6 +749,8 @@ export function parse<T extends CommonSchema>(
           expected: '',
           received: '',
           pathToError: '',
+          path: [],
+          code: '',
           meta: undefined,
         },
       ],

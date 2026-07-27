@@ -1,4 +1,10 @@
 export type { InferType } from './InferType';
+export type {
+  StandardSchemaV1,
+  StandardSchemaProps,
+  StandardSchemaResult,
+  StandardSchemaIssue,
+} from './standardSchema';
 export { parseOrFail, parse, ExceptionContext } from './core';
 export { ValidationError, BuildSchemaError } from './exceptions';
 export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
@@ -39,6 +45,10 @@ export { object } from './asserts/object/index';
 export { record } from './asserts/record/index';
 export { intersection } from './asserts/intersection/index';
 export { maxKeys } from './asserts/object/maxKeys';
+export { pick } from './asserts/object/pick';
+export { omit } from './asserts/object/omit';
+export { partial } from './asserts/object/partial';
+export { extend } from './asserts/object/extend';
 
 export { string } from './asserts/string/index';
 export { atLeastOneDigit } from './asserts/string/atLeastOneDigit';

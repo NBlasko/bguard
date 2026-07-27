@@ -57,6 +57,10 @@ describe('Library exports', () => {
       // object
       'object',
       'maxKeys',
+      'pick',
+      'omit',
+      'partial',
+      'extend',
 
       // string
       'string',

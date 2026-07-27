@@ -185,7 +185,15 @@ describe('an assert that throws something unexpected', () => {
     const [errors, value] = parse(throwing(), { a: 'x' });
 
     expect(errors).toEqual([
-      { message: 'Something unexpected happened', expected: '', received: '', pathToError: '', meta: undefined },
+      {
+        message: 'Something unexpected happened',
+        expected: '',
+        received: '',
+        pathToError: '',
+        path: [],
+        code: '',
+        meta: undefined,
+      },
     ]);
     expect(value).toBeNull();
   });

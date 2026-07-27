@@ -38,7 +38,12 @@ export interface ValidationErrorData {
   message: string;
   expected: unknown;
   received: unknown;
+  /** Dotted and bracketed, for display. */
   pathToError: string;
+  /** The same location as keys, for programmatic use. */
+  path: readonly PropertyKey[];
+  /** The translation key of this failure, stable across locales. */
+  code: string;
   meta?: MetaContext;
 }
 

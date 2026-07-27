@@ -28,6 +28,9 @@ Table of contents
     * [tuple(schemas)](#h4_tuple)
     * [intersection(schemas)](#h4_intersection)
     * [lazy(typeName, getSchema)](#h4_lazy)
+ * [Standard Schema](#h3_standard_schema)
+ * [Error Shape](#h3_error_shape)
+ * [Deriving Object Schemas](#h3_object_utilities)
  * [Literals](#h3_literals)
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
@@ -90,7 +93,11 @@ Table of contents
           * [oneOfValues](#assert_oneofvalues_mix)
      * [object](#assertdir_object)
           * [allowUnrecognized](#assert_object_method_allowunrecognized)
+          * [extend](#assert_extend_object)
           * [maxKeys](#assert_maxkeys_object)
+          * [omit](#assert_omit_object)
+          * [partial](#assert_partial_object)
+          * [pick](#assert_pick_object)
 
 ### <a id="h3_features"> Features </a>
 
@@ -607,6 +614,63 @@ generation would descend into the schema again and never finish, which is why it
 
 > **Notice:** Recursive *schemas* are supported; cyclic *values* are not. Validation follows the data,
 > so a value containing a cycle recurses until the call stack is exhausted.
+
+### <a id="h3_standard_schema"> Standard Schema </a>
+
+Every bguard schema implements [Standard Schema](https://github.com/standard-schema/standard-schema) v1,
+so it can be handed to any library that accepts a validator — tRPC, TanStack Form and Router, Hono,
+oRPC, React Hook Form — without either side knowing about the other.
+
+```typeScript
+import { object, string, number } from 'bguard';
+
+const schema = object({ name: string(), age: number() });
+
+const result = schema['~standard'].validate({ name: 'a', age: 3 });
+// { value: { name: 'a', age: 3 } }
+
+const failed = schema['~standard'].validate({ name: 'a', age: 'x' });
+// { issues: [{ message: 'Invalid type of data', path: ['age'] }] }
+```
+
+`validate` collects every issue rather than stopping at the first, since a consumer rendering a form
+needs them all at once. Issue paths are arrays of keys, with numbers for array and tuple positions.
+
+### <a id="h3_error_shape"> Error Shape </a>
+
+Each validation error carries:
+
+| Field | Meaning |
+| --- | --- |
+| `message` | The translated, human-readable message. |
+| `code` | The translation key of the failure, for example `'s:minLength'`. Stable across locales, so this is what to branch on. |
+| `pathToError` | The location as a string, for display: `'.users[1].mail'`. |
+| `path` | The same location as keys: `['users', 1, 'mail']`. A string path cannot be taken apart again reliably, because a key may itself contain a dot. |
+| `expected` / `received` | What the assertion wanted and what it got. |
+| `meta` | The `id()` and `description()` of the schema that failed, if it has any. |
+
+### <a id="h3_object_utilities"> Deriving Object Schemas </a>
+
+Schemas are immutable, so these return a new schema and leave the source alone.
+
+```typeScript
+import { pick } from 'bguard/object/pick';
+import { omit } from 'bguard/object/omit';
+import { partial } from 'bguard/object/partial';
+import { extend } from 'bguard/object/extend';
+
+const userSchema = object({ id: string(), name: string(), secret: string() });
+
+pick(userSchema, ['id', 'name']);   // { id: string; name: string }
+omit(userSchema, ['secret']);       // { id: string; name: string }
+partial(userSchema);                // { id?: string; name?: string; secret?: string }
+extend(userSchema, { age: number() });  // adds age
+```
+
+`extend` replaces a property that is already declared, which is the difference from `intersection`:
+`intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
+explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
+assertions, `id` and `description`.
 
 ### <a id="h3_literals"> Literals </a>
 
@@ -1745,6 +1809,30 @@ import { object } from 'bguard/object';
 ```
    
         
+##### <a id="assert_extend_object"> extend </a>
+        
+```typescript
+import { extend } from 'bguard/object/extend';
+```
+        
+* _Description_ Creates a new object schema with extra properties added.
+
+ A property already declared is replaced by the one given here, which is what distinguishes `extend`
+ from `intersection`: `intersection` rejects a duplicate key because it has no basis for choosing,
+ while `extend` is an explicit instruction to override.
+
+ 
+ @template U
+* _Param_ {WithObject<CommonSchema, T>} schema - The object schema to build on.
+ @param {U} shapeSchema - The properties to add or replace.
+* _Example_
+```typescript
+ const baseSchema = object({ id: string() });
+ const timestamped = extend(baseSchema, { createdAt: string() });
+ parseOrFail(timestamped, { id: '1', createdAt: 'now' }); // Validates successfully
+```
+        
+        
 ##### <a id="assert_maxkeys_object"> maxKeys </a>
         
 ```typescript
@@ -1770,6 +1858,80 @@ import { maxKeys } from 'bguard/object/maxKeys';
  parseOrFail(schema, { name: 'John', email: 'john@example.com', address: '123 Main St' });
 ```
 * _See_ Error Translation Key = 'o:maxKeys'
+        
+        
+##### <a id="assert_omit_object"> omit </a>
+        
+```typescript
+import { omit } from 'bguard/object/omit';
+```
+        
+* _Description_ Creates a new object schema without the named properties.
+
+ The original is untouched.
+
+ 
+ @template K
+* _Param_ {WithObject<CommonSchema, T>} schema - The object schema to narrow.
+ @param {readonly K[]} keys - The properties to drop.
+* _Example_
+```typescript
+ const userSchema = object({ id: string(), name: string(), secret: string() });
+ const publicSchema = omit(userSchema, ['secret']);
+ parseOrFail(publicSchema, { id: '1', name: 'a' }); // Validates successfully
+```
+        
+        
+##### <a id="assert_partial_object"> partial </a>
+        
+```typescript
+import { partial } from 'bguard/object/partial';
+```
+        
+Named rather than written inline in both the signature and the cast: the two spellings of the same
+ mapped type are not provably identical to the compiler once `~standard` puts a deferred
+ `InferType<this>` inside them.
+
+* _Description_ Creates a new object schema in which every property is optional.
+
+ Each property schema is made optional in its own right, so the original schema and the property
+ schemas it holds are unchanged.
+
+ 
+* _Param_ {WithObject<CommonSchema, T>} schema - The object schema to relax.
+* _Example_
+```typescript
+ const userSchema = object({ id: string(), name: string() });
+ const patchSchema = partial(userSchema);
+ parseOrFail(patchSchema, {}); // Validates successfully
+```
+        
+        
+##### <a id="assert_pick_object"> pick </a>
+        
+```typescript
+import { pick } from 'bguard/object/pick';
+```
+        
+* _Description_ Creates a new object schema keeping only the named properties.
+
+ The original is untouched, and the properties keep the schemas they had, including their assertions
+ and metadata.
+
+ 
+ @template K
+* _Param_ {WithObject<CommonSchema, T>} schema - The object schema to narrow.
+ @param {readonly K[]} keys - The properties to keep.
+* _Example_
+```typescript
+ const userSchema = object({ id: string(), name: string(), secret: string() });
+ const publicSchema = pick(userSchema, ['id', 'name']);
+ parseOrFail(publicSchema, { id: '1', name: 'a' }); // Validates successfully
+```
+
+Reads the shape of a schema that must be an object schema. Shared by the object utilities.
+
+Builds a new object schema from a shape, carrying over the source's own settings.
         
 ### Contributing
 Contributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.

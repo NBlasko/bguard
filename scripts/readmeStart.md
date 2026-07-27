@@ -524,6 +524,63 @@ generation would descend into the schema again and never finish, which is why it
 > **Notice:** Recursive *schemas* are supported; cyclic *values* are not. Validation follows the data,
 > so a value containing a cycle recurses until the call stack is exhausted.
 
+### <a id="h3_standard_schema"> Standard Schema </a>
+
+Every bguard schema implements [Standard Schema](https://github.com/standard-schema/standard-schema) v1,
+so it can be handed to any library that accepts a validator — tRPC, TanStack Form and Router, Hono,
+oRPC, React Hook Form — without either side knowing about the other.
+
+```typeScript
+import { object, string, number } from 'bguard';
+
+const schema = object({ name: string(), age: number() });
+
+const result = schema['~standard'].validate({ name: 'a', age: 3 });
+// { value: { name: 'a', age: 3 } }
+
+const failed = schema['~standard'].validate({ name: 'a', age: 'x' });
+// { issues: [{ message: 'Invalid type of data', path: ['age'] }] }
+```
+
+`validate` collects every issue rather than stopping at the first, since a consumer rendering a form
+needs them all at once. Issue paths are arrays of keys, with numbers for array and tuple positions.
+
+### <a id="h3_error_shape"> Error Shape </a>
+
+Each validation error carries:
+
+| Field | Meaning |
+| --- | --- |
+| `message` | The translated, human-readable message. |
+| `code` | The translation key of the failure, for example `'s:minLength'`. Stable across locales, so this is what to branch on. |
+| `pathToError` | The location as a string, for display: `'.users[1].mail'`. |
+| `path` | The same location as keys: `['users', 1, 'mail']`. A string path cannot be taken apart again reliably, because a key may itself contain a dot. |
+| `expected` / `received` | What the assertion wanted and what it got. |
+| `meta` | The `id()` and `description()` of the schema that failed, if it has any. |
+
+### <a id="h3_object_utilities"> Deriving Object Schemas </a>
+
+Schemas are immutable, so these return a new schema and leave the source alone.
+
+```typeScript
+import { pick } from 'bguard/object/pick';
+import { omit } from 'bguard/object/omit';
+import { partial } from 'bguard/object/partial';
+import { extend } from 'bguard/object/extend';
+
+const userSchema = object({ id: string(), name: string(), secret: string() });
+
+pick(userSchema, ['id', 'name']);   // { id: string; name: string }
+omit(userSchema, ['secret']);       // { id: string; name: string }
+partial(userSchema);                // { id?: string; name?: string; secret?: string }
+extend(userSchema, { age: number() });  // adds age
+```
+
+`extend` replaces a property that is already declared, which is the difference from `intersection`:
+`intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
+explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
+assertions, `id` and `description`.
+
 ### <a id="h3_literals"> Literals </a>
 
 - <b>String Literals</b>:

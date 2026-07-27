@@ -4,6 +4,48 @@
 
 ### Added
 
+**Standard Schema v1.** Every schema now implements the
+[Standard Schema](https://github.com/standard-schema/standard-schema) interface, so it can be handed
+to any library that accepts a validator — tRPC, TanStack Form and Router, Hono, oRPC, React Hook Form
+— without either side knowing about the other:
+
+```ts
+const schema = object({ name: string(), age: number() });
+
+schema['~standard'].validate({ name: 'a', age: 3 });
+// { value: { name: 'a', age: 3 } }
+schema['~standard'].validate({ name: 'a', age: 'x' });
+// { issues: [{ message: 'Invalid type of data', path: ['age'] }] }
+```
+
+`validate` collects every issue rather than stopping at the first, since a consumer rendering a form
+needs them all at once. The spec's types are vendored rather than taken as a dependency, which is what
+it intends; conformance is verified by typechecking against the published
+`@standard-schema/spec@1.1.0`.
+
+**Errors carry `path` and `code`.** `path` is the location as keys — `['users', 1, 'mail']` — beside
+the existing `pathToError` string. Both are derived from the same key, because a string path cannot be
+taken apart again reliably when a key may itself contain a dot. `code` is the failure's translation
+key, for example `'s:minLength'`, which unlike `message` does not change with the locale, so it is
+what to branch on. Both appear on `ValidationError` too.
+
+**Deriving object schemas: `pick`, `omit`, `partial` and `extend`.** Available as
+`bguard/object/pick` and so on. Each returns a new schema and leaves the source and its property
+schemas alone, which is only sound because schemas became immutable in this release:
+
+```ts
+const userSchema = object({ id: string(), name: string(), secret: string() });
+
+pick(userSchema, ['id', 'name']);      // { id: string; name: string }
+omit(userSchema, ['secret']);          // { id: string; name: string }
+partial(userSchema);                   // { id?: string; name?: string; secret?: string }
+extend(userSchema, { age: number() }); // adds age
+```
+
+`extend` replaces a property already declared — the difference from `intersection`, which rejects a
+duplicate key because it has no basis for choosing. All four carry over the source's
+`allowUnrecognized`, object assertions, `id` and `description`.
+
 **`union([...schemas])`** accepts a value matching any one of several schemas. Members are tried in
 order and the first that validates cleanly wins, so its parsed value is the result. Unlike
 `oneOfTypes`, which only compares `typeof`, each member is a full schema, so members carry their own
