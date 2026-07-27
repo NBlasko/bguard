@@ -9,6 +9,7 @@ import {
   WithBGuardType,
   WithNull,
   WithObject,
+  WithRecord,
   WithUndefined,
 } from './commonTypes';
 import { type InferType } from './InferType';
@@ -96,7 +97,9 @@ export type AssertInput<T> =
       ? unknown[]
       : T extends WithObject<unknown, unknown>
         ? Record<string, unknown>
-        : unknown;
+        : T extends WithRecord<unknown, unknown, unknown>
+          ? Record<string, unknown>
+          : unknown;
 
 function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext): unknown {
   const commonTmap = exCtx.t;
@@ -140,6 +143,64 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     // min, max, positive and negative alike.
     else if (typeOfVal === 'number' && Number.isNaN(receivedValue))
       exCtx.addIssue('number', receivedValue, commonTmap['c:nan']);
+  }
+
+  if (schemaData.union) {
+    // The union's own asserts see the value whichever member ends up matching, so they are declared
+    // over `unknown` and run before any member is tried.
+    schemaData.requiredValidations.forEach((requiredValidation) => {
+      requiredValidation(receivedValue, exCtx);
+    });
+
+    const attemptErrors: ValidationErrorData[] = [];
+    for (const memberSchema of schemaData.union) {
+      const errorsBefore = attemptErrors.length;
+      // Each member is tried against a context that collects instead of throwing, so a member that
+      // does not match is not fatal. Only a member that produces nothing wins.
+      const attemptCtx = new ExceptionContext(
+        exCtx.initialReceived,
+        exCtx.t,
+        exCtx.pathToError,
+        attemptErrors,
+        schemaData.meta,
+      );
+
+      const parsedMember = innerCheck(memberSchema, receivedValue, attemptCtx);
+      if (attemptErrors.length === errorsBefore) return parsedMember;
+    }
+
+    exCtx.addIssue('One of the union members', receivedValue, commonTmap['c:union']);
+    return receivedValue;
+  }
+
+  if (schemaData.record) {
+    if (typeOfVal !== 'object' || Array.isArray(receivedValue)) {
+      if (Array.isArray(receivedValue)) {
+        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectTypeAsArray']);
+      } else {
+        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectType']);
+      }
+
+      return receivedValue;
+    }
+
+    schemaData.requiredValidations.forEach((requiredValidation) => {
+      requiredValidation(receivedValue, exCtx);
+    });
+
+    const { key: keySchema, value: valueSchema } = schemaData.record;
+    const recordPath = exCtx.pathToError;
+    const parsedRecord: Record<string, unknown> = {};
+
+    for (const [receivedKey, receivedRecordValue] of Object.entries(receivedValue as Record<string, unknown>)) {
+      const childCtx = exCtx.createChild(`${recordPath}.${receivedKey}`, schemaData.meta);
+
+      // Keys are validated too, which is what makes a restricted key type meaningful.
+      innerCheck(keySchema, receivedKey, childCtx);
+      parsedRecord[receivedKey] = innerCheck(valueSchema, receivedRecordValue, childCtx);
+    }
+
+    return parsedRecord;
   }
 
   if (schemaData.array) {
@@ -239,6 +300,11 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
 export type ObjectShapeSchemaType = Record<string, CommonSchema>;
 
+export interface RecordSchemaType {
+  key: CommonSchema;
+  value: CommonSchema;
+}
+
 export interface ValidatorContext {
   type: BaseType[];
   isNullable?: boolean;
@@ -246,6 +312,8 @@ export interface ValidatorContext {
   requiredValidations: RequiredValidation[];
   array?: CommonSchema;
   object?: ObjectShapeSchemaType;
+  union?: CommonSchema[];
+  record?: RecordSchemaType;
   allowUnrecognizedObjectProps?: boolean;
   strictType?: boolean;
   strictTypeValue?: unknown;
@@ -272,6 +340,8 @@ function cloneValidatorContext(ctx: ValidatorContext): ValidatorContext {
   };
 
   if (ctx.object) next.object = { ...ctx.object };
+  if (ctx.union) next.union = [...ctx.union];
+  if (ctx.record) next.record = { ...ctx.record };
   if (ctx.transformListBefore) next.transformListBefore = [...ctx.transformListBefore];
   if (ctx.meta) next.meta = { ...ctx.meta };
 
@@ -550,7 +620,7 @@ export function parse<T extends CommonSchema>(
   schema: T,
   receivedValue: unknown,
   options?: ParseOptions,
-): [ValidationErrorData[], undefined] | [undefined, InferType<T>] {
+): [ValidationErrorData[], null] | [null, InferType<T>] {
   try {
     const ctx = new ExceptionContext(
       receivedValue,
@@ -563,15 +633,15 @@ export function parse<T extends CommonSchema>(
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;
 
     if (ctx.errors?.length) {
-      return [ctx.errors, undefined];
+      return [ctx.errors, null];
     }
 
-    return [undefined, parsedValue];
+    return [null, parsedValue];
   } catch (e) {
     /* istanbul ignore next */
     if (e instanceof ValidationError) {
       delete e.stack;
-      return [[e], undefined];
+      return [[e], null];
     }
     /* istanbul ignore next */
     return [
@@ -584,7 +654,7 @@ export function parse<T extends CommonSchema>(
           meta: undefined,
         },
       ],
-      undefined,
+      null,
     ];
   }
 }

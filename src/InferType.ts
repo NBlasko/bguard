@@ -1,11 +1,14 @@
 import {
   ExtractFromArray,
   ExtractFromBGuardType,
+  ExtractFromUnion,
   WithArray,
   WithBGuardType,
   WithNull,
   WithUndefined,
   WithObject,
+  WithRecord,
+  WithUnion,
 } from './commonTypes';
 
 type ResolveNullish<T, Y> =
@@ -31,6 +34,14 @@ export type InferType<T> =
     T extends WithObject<unknown, unknown>
     ? ResolveNullish<T, ExtractFromObject<T>>
 
+    : // union
+    T extends WithUnion<unknown, readonly unknown[]>
+    ? ResolveNullish<T, InferType<ExtractFromUnion<T>[number]>>
+
+    : // record
+    T extends WithRecord<unknown, unknown, unknown>
+    ? ResolveNullish<T, ExtractFromRecord<T>>
+
     : unknown;
 
 type Merge<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
@@ -42,4 +53,17 @@ type ExtractFromObject<T> =
           [K in keyof X as X[K] extends WithUndefined<unknown> ? K : never]?: InferType<X[K]>;
         }
       >
+    : unknown;
+
+/**
+ * A record whose keys are unconstrained is an index signature, so every lookup is already
+ * `V | undefined`. A record with a restricted key type is `Partial`, because validation checks the
+ * keys that are present without requiring the whole set — claiming `Record<'a' | 'b', V>` would say
+ * both keys are always there.
+ */
+type ExtractFromRecord<T> =
+  T extends WithRecord<unknown, infer K, infer V>
+    ? string extends InferType<K>
+      ? Record<string, InferType<V>>
+      : Partial<Record<InferType<K> & PropertyKey, InferType<V>>>
     : unknown;

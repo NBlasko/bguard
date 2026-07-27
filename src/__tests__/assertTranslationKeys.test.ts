@@ -181,14 +181,14 @@ describe('built-in assert translation keys', () => {
 
     const [errors] = parse(schema(assert), invalid, { lng: `lng-${key}` });
 
-    expect(errors).toBeDefined();
+    expect(Array.isArray(errors)).toBe(true);
     expect(errors![0]!.message).toBe(translated);
   });
 
   it.each(cases)('$name reports the received value, not the message text', ({ assert, schema, invalid }) => {
     const [errors] = parse(schema(assert), invalid);
 
-    expect(errors).toBeDefined();
+    expect(Array.isArray(errors)).toBe(true);
     // A swapped argument order would put the message text into `received`.
     expect(errors![0]!.received).not.toBe(errors![0]!.message);
     expect(errors![0]!.message).not.toBe('');

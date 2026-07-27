@@ -32,7 +32,7 @@ describe('parse', () => {
     expect(error?.received).toBe('not hello');
     expect(error?.pathToError).toBe('');
     expect(error?.message).toBe('Foo is equal');
-    expect(value).toBe(undefined);
+    expect(value).toBeNull();
   });
 
   it('should return an array of errors with length more than 1', () => {
@@ -48,14 +48,14 @@ describe('parse', () => {
       expect(error.message).toBe('Foo is equal');
     });
 
-    expect(value).toBe(undefined);
+    expect(value).toBeNull();
   });
 
   it('should return a valid result', () => {
     setLocale('testLanguage', { somethingEqual: 'Foo is equal' });
     const testSchema = string().custom(customEqual('helloo'));
     const [errors, value] = parse(testSchema, 'helloo', { lng: 'testLanguage', getAllErrors: true });
-    expect(errors).toBe(undefined);
+    expect(errors).toBeNull();
     expect(value).toBe('helloo');
   });
 });

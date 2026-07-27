@@ -1,3 +1,4 @@
+import { hasErrors } from '../../jest/setup';
 import { parse, parseOrFail, codeGen } from '../';
 import { array } from '../asserts/array';
 import { number } from '../asserts/number';
@@ -96,12 +97,12 @@ describe('NaN', () => {
     ['negative', negative()],
   ])('is rejected before the %s assert can silently accept it', (_name, assert) => {
     // Every comparison against NaN is false, so each of these asserts passed it through.
-    expect(parse(number().custom(assert), NaN)[0]).toBeDefined();
+    expect(hasErrors(parse(number().custom(assert), NaN))).toBe(true);
   });
 
   it('leaves Infinity alone, which compares correctly', () => {
     expect(parseOrFail(number().custom(min(5)), Infinity)).toBe(Infinity);
-    expect(parse(number().custom(max(5)), Infinity)[0]).toBeDefined();
+    expect(hasErrors(parse(number().custom(max(5)), Infinity))).toBe(true);
     expect(parseOrFail(number().custom(negative()), -Infinity)).toBe(-Infinity);
   });
 
@@ -135,7 +136,7 @@ describe('ctx.ref', () => {
     });
 
     expect(parseOrFail(schema, { password: 'p', confirm: 'p' })).toEqual({ password: 'p', confirm: 'p' });
-    expect(parse(schema, { password: 'p', confirm: 'q' })[0]).toBeDefined();
+    expect(hasErrors(parse(schema, { password: 'p', confirm: 'q' }))).toBe(true);
   });
 });
 
@@ -149,6 +150,12 @@ describe('codeGen string literals', () => {
     // codeGen output is meant to be written to a source file, so an unescaped quote produced
     // TypeScript that does not parse.
     expect(codeGen(string().equalTo(value))).toBe(expected);
+  });
+
+  it('escapes a carriage return and the Unicode line separators', () => {
+    expect(codeGen(string().equalTo('a\rb'))).toBe(`'a\\rb';`);
+    expect(codeGen(string().equalTo('a\u2028b'))).toBe(`'a\\u2028b';`);
+    expect(codeGen(string().equalTo('a\u2029b'))).toBe(`'a\\u2029b';`);
   });
 
   it('escapes every member of a union', () => {

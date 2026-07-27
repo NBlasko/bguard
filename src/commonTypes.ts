@@ -11,6 +11,7 @@ export interface TranslationErrorMap {
   'c:isBoolean': string;
   'c:date': string;
   'c:nan': string;
+  'c:union': string;
   [val: string]: string;
 }
 
@@ -54,5 +55,12 @@ export type WithUndefined<T> = T & { validation_undefined: true };
 export type WithArray<T, Y> = T & { validation_array: Y };
 export type ExtractFromArray<T> = T extends WithArray<unknown, infer X> ? X : never;
 export type WithObject<T, Y> = T & { validation_object: Y };
+
+/** Y is the tuple of member schemas, so InferType can distribute over it. */
+export type WithUnion<T, Y> = T & { validation_union: Y };
+export type ExtractFromUnion<T> = T extends WithUnion<unknown, infer X extends readonly unknown[]> ? X : never;
+
+/** K and V are the key and value schemas of a record. */
+export type WithRecord<T, K, V> = T & { validation_record_key: K; validation_record_value: V };
 
 export type TransformCallback<In = unknown, Out = unknown> = (val: In) => Out;

@@ -22,6 +22,9 @@ Table of contents
     * [optional()](#h4_chaining_optional)
     * [id(value: string)](#h4_chaining_id)
     * [description(value: string)](#h4_chaining_description)
+ * [Unions and Records](#h3_union_and_record)
+    * [union(schemas)](#h4_union)
+    * [record(keySchema, valueSchema)](#h4_record)
  * [Literals](#h3_literals)
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
@@ -331,7 +334,27 @@ Options:
 
 Explanation
 
-- **`parse` Method**: This method returns a tuple where the first element is an array of validation errors (if any), and the second element is the successfully parsed value (or `undefined` if errors exist). It allows collecting all errors by setting the `getAllErrors` flag.
+- **`parse` Method**: Returns a tuple of `[errors, value]`. Exactly one of the two is present and the other is `null`:
+
+  - on success: `[null, parsedValue]`
+  - on failure: `[errors, null]`
+
+  So the first element is what you branch on:
+
+```typeScript
+const [errors, parsedValue] = parse(schema, receivedValue);
+
+if (errors) {
+  // errors is ValidationErrorData[], parsedValue is null
+  return errors;
+}
+
+// parsedValue is typed as InferType<typeof schema> here
+```
+
+  Do not test the second element to decide whether validation passed: a schema may legitimately parse
+  to `null`, for example `string().nullable()`. Set `getAllErrors` to collect every error instead of
+  stopping at the first.
 
 - **`parseOrFail` Method**: This method throws a `ValidationError` when the first validation rule fails, making it suitable for scenarios where early termination of validation is desired.
 
@@ -468,6 +491,54 @@ parseOrFail(stringOrNullSchema, 'test');
 // Parsing '' will be transformed to null and will pass due to .nullable().
 parseOrFail(stringOrNullSchema, '');
 ```
+
+### <a id="h3_union_and_record"> Unions and Records </a>
+
+#### <a id="h4_union"> union(schemas) </a>
+
+Accepts a value matching any one of several schemas. Members are tried in order and the first that
+validates cleanly wins, so its parsed value is the result.
+
+Unlike `oneOfTypes`, which only compares `typeof`, each member is a full schema. Members carry their
+own assertions and structure, which is what makes discriminating by shape possible.
+
+```typeScript
+import { union } from 'bguard/union';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
+
+const shapeSchema = union([
+  object({ kind: string().equalTo('circle'), radius: number() }),
+  object({ kind: string().equalTo('square'), side: number() }),
+]);
+
+// InferType: { kind: 'circle'; radius: number } | { kind: 'square'; side: number }
+```
+
+> **Notice:** A member whose `transformBeforeValidation` coerces the value will match everything, so
+> nothing after it is ever reached. Order members from most to least specific.
+
+#### <a id="h4_record"> record(keySchema, valueSchema) </a>
+
+Validates an object whose keys are not known in advance. Every key is checked against `keySchema` and
+every value against `valueSchema`.
+
+```typeScript
+import { record } from 'bguard/record';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
+
+const countsSchema = record(string(), number());
+// InferType: Record<string, number>
+
+const labelsSchema = record(string().oneOfValues(['en', 'sr']), string());
+// InferType: Partial<Record<'en' | 'sr', string>>
+```
+
+A restricted key type infers as `Partial`, because validation checks the keys that are present rather
+than requiring the whole set. Claiming `Record<'en' | 'sr', string>` would say both keys are always
+there, which validation does not guarantee.
 
 ### <a id="h3_literals"> Literals </a>
 
@@ -624,6 +695,7 @@ We have two sets of translations: common errors and specific assertions.
 'c:isBoolean': 'The received value is not {{e}}',
 'c:date': 'The received value is not a valid instance of Date',
 'c:nan': 'The received number is not a valid number',
+'c:union': 'The received value does not match any of the expected types',
 ```
 
 <b>Custom Assertion Translations</b>:

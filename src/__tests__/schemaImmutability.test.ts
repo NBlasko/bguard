@@ -1,3 +1,4 @@
+import { hasErrors } from '../../jest/setup';
 import { parse, parseOrFail, BuildSchemaError } from '../';
 import { array } from '../asserts/array';
 import { boolean } from '../asserts/boolean';
@@ -27,7 +28,7 @@ describe('schema immutability', () => {
 
     // `b` is required, so omitting it must fail. Before schemas were immutable, `.optional()` on
     // the shared instance made `b` optional as well and this parsed cleanly.
-    expect(errors).toBeDefined();
+    expect(Array.isArray(errors)).toBe(true);
     expect(errors).toHaveLength(1);
     expect(errors![0]!.message).toBe('Missing required property in the object');
 
@@ -40,7 +41,7 @@ describe('schema immutability', () => {
     const restricted = base.custom(minLength(5));
 
     expect(parseOrFail(base, 'ab')).toBe('ab');
-    expect(parse(restricted, 'ab')[0]).toBeDefined();
+    expect(hasErrors(parse(restricted, 'ab'))).toBe(true);
     expect(parseOrFail(restricted, 'abcdef')).toBe('abcdef');
   });
 
@@ -48,7 +49,7 @@ describe('schema immutability', () => {
     const base = number();
     const nullable = base.nullable();
 
-    expect(parse(base, null)[0]).toBeDefined();
+    expect(hasErrors(parse(base, null))).toBe(true);
     expect(parseOrFail(nullable, null)).toBeNull();
   });
 
@@ -56,7 +57,7 @@ describe('schema immutability', () => {
     const base = number();
     const withDefault = base.default(7);
 
-    expect(parse(base, undefined)[0]).toBeDefined();
+    expect(hasErrors(parse(base, undefined))).toBe(true);
     expect(parseOrFail(withDefault, undefined)).toBe(7);
   });
 
@@ -88,7 +89,7 @@ describe('schema immutability', () => {
     const base = string();
     const transformed = base.transformBeforeValidation((val: unknown) => `${val}`);
 
-    expect(parse(base, 42)[0]).toBeDefined();
+    expect(hasErrors(parse(base, 42))).toBe(true);
     expect(parseOrFail(transformed, 42)).toBe('42');
   });
 
@@ -96,7 +97,7 @@ describe('schema immutability', () => {
     const base = object({ a: string() });
     const loose = base.allowUnrecognized();
 
-    expect(parse(base, { a: 'x', extra: 1 })[0]).toBeDefined();
+    expect(hasErrors(parse(base, { a: 'x', extra: 1 }))).toBe(true);
     expect(parseOrFail(loose, { a: 'x', extra: 1 })).toEqual({ a: 'x' });
   });
 
@@ -105,7 +106,7 @@ describe('schema immutability', () => {
     const literal = base.equalTo('yes');
 
     expect(parseOrFail(base, 'anything')).toBe('anything');
-    expect(parse(literal, 'no')[0]).toBeDefined();
+    expect(hasErrors(parse(literal, 'no'))).toBe(true);
     expect(parseOrFail(literal, 'yes')).toBe('yes');
 
     // The flag lives on the derived schema, so the chain is still restricted to one call...
@@ -119,7 +120,7 @@ describe('schema immutability', () => {
     const restricted = base.oneOfValues([1, 2]);
 
     expect(parseOrFail(base, 99)).toBe(99);
-    expect(parse(restricted, 99)[0]).toBeDefined();
+    expect(hasErrors(parse(restricted, 99))).toBe(true);
     expect(parseOrFail(restricted, 2)).toBe(2);
   });
 
@@ -128,7 +129,7 @@ describe('schema immutability', () => {
     const onlyTrue = base.onlyTrue();
 
     expect(parseOrFail(base, false)).toBe(false);
-    expect(parse(onlyTrue, false)[0]).toBeDefined();
+    expect(hasErrors(parse(onlyTrue, false))).toBe(true);
     expect(parseOrFail(onlyTrue, true)).toBe(true);
   });
 
@@ -156,7 +157,7 @@ describe('schema immutability', () => {
     const restricted = array(element.custom(min(10)));
 
     expect(parseOrFail(base, [1, 2])).toEqual([1, 2]);
-    expect(parse(restricted, [1, 2])[0]).toBeDefined();
+    expect(hasErrors(parse(restricted, [1, 2]))).toBe(true);
     expect(parseOrFail(restricted, [10, 20])).toEqual([10, 20]);
   });
 
@@ -169,16 +170,16 @@ describe('schema immutability', () => {
     const withMinNullable = withMin.nullable();
 
     expect(parseOrFail(base, '')).toBe('');
-    expect(parse(withMin, 'ab')[0]).toBeDefined();
+    expect(hasErrors(parse(withMin, 'ab'))).toBe(true);
 
-    expect(parse(withMin, undefined)[0]).toBeDefined();
+    expect(hasErrors(parse(withMin, undefined))).toBe(true);
     expect(parseOrFail(withMinOptional, undefined)).toBeUndefined();
 
-    expect(parse(withMin, null)[0]).toBeDefined();
+    expect(hasErrors(parse(withMin, null))).toBe(true);
     expect(parseOrFail(withMinNullable, null)).toBeNull();
 
     // The two branches did not pick up each other's refinement.
-    expect(parse(withMinOptional, null)[0]).toBeDefined();
-    expect(parse(withMinNullable, undefined)[0]).toBeDefined();
+    expect(hasErrors(parse(withMinOptional, null))).toBe(true);
+    expect(hasErrors(parse(withMinNullable, undefined))).toBe(true);
   });
 });

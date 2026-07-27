@@ -178,6 +178,14 @@
       "import": "./lib/asserts/object/index.mjs",
       "require": "./lib/asserts/object/index.js"
     },
+    "./record": {
+      "types": {
+        "import": "./lib/asserts/record/index.d.mts",
+        "require": "./lib/asserts/record/index.d.ts"
+      },
+      "import": "./lib/asserts/record/index.mjs",
+      "require": "./lib/asserts/record/index.js"
+    },
     "./object/*": {
       "types": {
         "import": "./lib/asserts/object/*.d.mts",
@@ -193,6 +201,14 @@
       },
       "import": "./lib/asserts/mix/index.mjs",
       "require": "./lib/asserts/mix/index.js"
+    },
+    "./union": {
+      "types": {
+        "import": "./lib/asserts/union/index.d.mts",
+        "require": "./lib/asserts/union/index.d.ts"
+      },
+      "import": "./lib/asserts/union/index.mjs",
+      "require": "./lib/asserts/union/index.js"
     },
     "./mix/*": {
       "types": {

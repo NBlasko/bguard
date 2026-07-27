@@ -37,6 +37,8 @@ describe('Library exports', () => {
 
       // mix
       'oneOfTypes',
+      'union',
+      'record',
       'equalTo',
       'oneOfValues',
 

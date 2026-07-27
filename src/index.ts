@@ -21,6 +21,7 @@ export { dateMax } from './asserts/date/dateMax';
 export { dateMin } from './asserts/date/dateMin';
 
 export { oneOfTypes } from './asserts/mix/index';
+export { union } from './asserts/union/index';
 export { equalTo } from './asserts/mix/equalTo';
 export { oneOfValues } from './asserts/mix/oneOfValues';
 
@@ -33,6 +34,7 @@ export { positive } from './asserts/number/positive';
 export { negative } from './asserts/number/negative';
 
 export { object } from './asserts/object/index';
+export { record } from './asserts/record/index';
 export { maxKeys } from './asserts/object/maxKeys';
 
 export { string } from './asserts/string/index';

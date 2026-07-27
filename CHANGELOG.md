@@ -2,7 +2,48 @@
 
 ## 0.7.0 Immutable schemas, type-safe asserts, working metadata and locales
 
+### Added
+
+**`union([...schemas])`** accepts a value matching any one of several schemas. Members are tried in
+order and the first that validates cleanly wins, so its parsed value is the result. Unlike
+`oneOfTypes`, which only compares `typeof`, each member is a full schema, so members carry their own
+assertions and structure — which makes discriminating by shape possible:
+
+```ts
+const shape = union([
+  object({ kind: string().equalTo('circle'), radius: number() }),
+  object({ kind: string().equalTo('square'), side: number() }),
+]);
+// InferType: { kind: 'circle'; radius: number } | { kind: 'square'; side: number }
+// codeGen:   { kind: 'circle'; radius: number; } | { kind: 'square'; side: number; }
+```
+
+Note that a member with a coercing `transformBeforeValidation` matches every value, so nothing after
+it is reached. Order members from most to least specific.
+
+**`record(keySchema, valueSchema)`** validates an object whose keys are not known in advance. Every
+key is checked against `keySchema` and every value against `valueSchema`:
+
+```ts
+const counts = record(string(), number());              // Record<string, number>
+const labels = record(string().oneOfValues(['en', 'sr']), string());
+// Partial<Record<'en' | 'sr', string>>
+```
+
+A restricted key type infers as `Partial`, because validation checks the keys that are present rather
+than requiring the whole set — claiming `Record<'en' | 'sr', string>` would say both are always
+there. `codeGen` emits the same shape.
+
+Both are exported from the root and as their own subpaths, `bguard/union` and `bguard/record`, and
+both work everywhere a schema does: nested in each other, in arrays, as object properties, and with
+`nullable`, `optional`, `default` and `custom`.
+
 ### Breaking
+
+**`parse` marks an absent slot with `null`.** It returns `[null, value]` on success and
+`[errors, null]` on failure; previously both used `undefined`. Branch on the first element:
+a schema may legitimately parse to `null`, so the second element cannot tell you whether validation
+passed.
 
 **Refining a schema returns a new schema** instead of changing the one it was called on. This
 affects `custom`, `nullable`, `optional`, `default`, `transformBeforeValidation`, `id`,

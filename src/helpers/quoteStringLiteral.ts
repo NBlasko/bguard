@@ -17,5 +17,6 @@ const escapes: Record<string, string> = {
 };
 
 export function _quoteStringLiteral(value: string): string {
-  return `'${value.replace(/[\\'\n\r\t\u2028\u2029]/g, (char) => escapes[char] ?? char)}'`;
+  // The character class lists exactly the keys of `escapes`, so the lookup always resolves.
+  return `'${value.replace(/[\\'\n\r\t\u2028\u2029]/g, (char) => escapes[char] as string)}'`;
 }
