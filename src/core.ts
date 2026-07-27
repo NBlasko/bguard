@@ -5,7 +5,10 @@ import {
   TransformCallback,
   TranslationErrorMap,
   ValidationErrorData,
+  WithArray,
+  WithBGuardType,
   WithNull,
+  WithObject,
   WithUndefined,
 } from './commonTypes';
 import { type InferType } from './InferType';
@@ -64,8 +67,32 @@ export class ExceptionContext {
   }
 }
 
+/**
+ * A validation function run against an already type-checked value.
+ *
+ * `T` is the value the assert knows how to inspect, and it is what stops a string assert from
+ * being attached to a number schema: `custom` asks for `RequiredValidation<AssertInput<this>>`,
+ * and function parameters are compared contravariantly under `strictFunctionTypes`.
+ *
+ * An assert that genuinely accepts anything should declare `RequiredValidation<unknown>`, which
+ * stays assignable to every schema. The default of `any` is deliberate, so that custom asserts
+ * written against the previous signature keep compiling.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RequiredValidation = (received: any, ctx: ExceptionContext) => void;
+export type RequiredValidation<T = any> = (received: T, ctx: ExceptionContext) => void;
+
+/**
+ * The runtime value a schema hands to its asserts. Nullish is stripped, because `innerCheck`
+ * returns before running asserts when the value is `null` or `undefined`.
+ */
+export type AssertInput<T> =
+  T extends WithBGuardType<unknown, infer Y>
+    ? NonNullable<Y>
+    : T extends WithArray<unknown, unknown>
+      ? unknown[]
+      : T extends WithObject<unknown, unknown>
+        ? Record<string, unknown>
+        : unknown;
 
 function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext): unknown {
   const commonTmap = exCtx.t;
@@ -188,7 +215,7 @@ export class CommonSchema {
    * @param validators - One or more custom validation functions.
    * @returns {this} The schema instance with the added custom validation.
    */
-  public custom(...validators: RequiredValidation[]): this {
+  public custom(...validators: RequiredValidation<AssertInput<this>>[]): this {
     this.defaultValueCheck();
     this[ctxSymbol].requiredValidations.push(...validators);
     return this;

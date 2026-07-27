@@ -37,7 +37,7 @@ const defaultOptions: DateTimeOptions = {
  *
  * @translation Error Translation Key = 's:isValidDateTime'
  */
-export const isValidDateTime = (options: DateTimeOptions = defaultOptions): RequiredValidation => {
+export const isValidDateTime = (options: DateTimeOptions = defaultOptions): RequiredValidation<string> => {
   return (received: string, ctx: ExceptionContext) => {
     const { offset, precision } = options;
 
@@ -48,7 +48,7 @@ export const isValidDateTime = (options: DateTimeOptions = defaultOptions): Requ
     );
 
     if (!dateTimeRegex.test(received)) {
-      ctx.addIssue(received, dateTimeErrorMessage, dateTimeErrorKey);
+      ctx.addIssue('valid date time', received, dateTimeErrorKey);
     }
   };
 };

@@ -18,7 +18,7 @@ const dateMaxErrorKey = 'dt:max';
  *
  * @translation Error Translation Key = 'dt:max'
  */
-export const dateMax = (expected: Date | string): RequiredValidation => {
+export const dateMax = (expected: Date | string): RequiredValidation<Date> => {
   const transformedExpected = typeof expected === 'string' ? new Date(expected) : expected;
   if (!isValidDateInner(transformedExpected)) throw new BuildSchemaError('Invalid date in Date assertion');
   return (received: Date, ctx: ExceptionContext) => {

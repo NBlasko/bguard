@@ -18,9 +18,9 @@ const maxArrayLengthErrorKey = 'a:maxArrayLength';
  * @translation Error Translation Key = 'a:maxArrayLength'
  */
 export const maxArrayLength =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<unknown[]> =>
   (received: unknown[], ctx: ExceptionContext) => {
-    if (received.length > expected) ctx.addIssue(expected, received, maxArrayLengthErrorMessage);
+    if (received.length > expected) ctx.addIssue(expected, received, maxArrayLengthErrorKey);
   };
 
 maxArrayLength.key = maxArrayLengthErrorKey;

@@ -16,7 +16,7 @@ const atLeastOneDigitErrorKey = 's:atLeastOneDigit';
  *
  * @translation Error Translation Key = 's:atLeastOneDigit'
  */
-export const atLeastOneDigit = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
+export const atLeastOneDigit = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
   if (!digitRegExp.test(received)) ctx.addIssue('at least one digit', received, atLeastOneDigitErrorKey);
 };
 

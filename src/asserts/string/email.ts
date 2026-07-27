@@ -16,8 +16,8 @@ const emailErrorKey = 's:email';
  *
  * @translation - Error Translation Key = 's:email'
  */
-export const email = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
-  if (!emailRegExp.test(received)) ctx.addIssue(emailRegExp, received, emailErrorMessage);
+export const email = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
+  if (!emailRegExp.test(received)) ctx.addIssue(emailRegExp, received, emailErrorKey);
 };
 
 email.key = emailErrorKey;

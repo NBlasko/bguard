@@ -19,10 +19,10 @@ const dateRegexPattern = /^(19|20)\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
  *
  * @translation Error Translation Key = 's:isValidDate'
  */
-export const isValidDate = (): RequiredValidation => {
+export const isValidDate = (): RequiredValidation<string> => {
   return (received: string, ctx: ExceptionContext) => {
     if (!dateRegexPattern.test(received)) {
-      ctx.addIssue(received, dateErrorMessage, dateErrorKey);
+      ctx.addIssue('valid date', received, dateErrorKey);
     }
   };
 };

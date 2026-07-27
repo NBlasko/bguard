@@ -17,7 +17,7 @@ const startsWithErrorKey = 's:startsWith';
  * @translation Error Translation Key = 's:startsWith'
  */
 export const startsWith =
-  (substring: string): RequiredValidation =>
+  (substring: string): RequiredValidation<string> =>
   (received: string, ctx: ExceptionContext) => {
     if (!received.startsWith(substring)) {
       ctx.addIssue(`starts with '${substring}'`, received, startsWithErrorKey);

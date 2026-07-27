@@ -1,10 +1,15 @@
 import { WithBGuardType } from '../../commonTypes';
-import { CommonSchema, type ExceptionContext } from '../../core';
+import { CommonSchema, type ExceptionContext, type RequiredValidation } from '../../core';
 import { _setStrictType } from '../../helpers/setStrictType';
 
-const isBoolean = (expected: boolean) => (received: boolean, ctx: ExceptionContext) => {
-  if (received !== expected) ctx.addIssue(expected, received, 'c:isBoolean');
-};
+// Declared over `unknown` rather than `boolean`: it is applied from inside the class, where `this`
+// is still polymorphic, so the schema's own value type cannot be resolved yet. The comparison is
+// identity-based, so widening the parameter costs nothing.
+const isBoolean =
+  (expected: boolean): RequiredValidation<unknown> =>
+  (received: unknown, ctx: ExceptionContext) => {
+    if (received !== expected) ctx.addIssue(expected, received, 'c:isBoolean');
+  };
 
 /**
  * @description Creates a new schema for validating boolean values.

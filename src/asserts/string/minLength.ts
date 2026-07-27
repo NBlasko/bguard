@@ -17,9 +17,9 @@ const minLengthErrorKey = 's:minLength';
  * @translation Error Translation Key = 's:minLength'
  */
 export const minLength =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<string> =>
   (received: string, ctx: ExceptionContext) => {
-    if (received.length < expected) ctx.addIssue(expected, received, minLengthErrorMessage);
+    if (received.length < expected) ctx.addIssue(expected, received, minLengthErrorKey);
   };
 
 minLength.key = minLengthErrorKey;

@@ -18,9 +18,9 @@ const minArrayLengthErrorKey = 'a:minArrayLength';
  * @translation Error Translation Key = 'a:minArrayLength'
  */
 export const minArrayLength =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<unknown[]> =>
   (received: unknown[], ctx: ExceptionContext) => {
-    if (received.length < expected) ctx.addIssue(expected, received, minArrayLengthErrorMessage);
+    if (received.length < expected) ctx.addIssue(expected, received, minArrayLengthErrorKey);
   };
 
 minArrayLength.key = minArrayLengthErrorKey;

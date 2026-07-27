@@ -18,7 +18,7 @@ const minErrorKey = 'n:min';
  * @translation Error Translation Key = 'n:min'
  */
 export const min =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<number> =>
   (received: number, ctx: ExceptionContext) => {
     if (expected > received) ctx.addIssue(expected, received, minErrorKey);
   };

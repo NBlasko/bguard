@@ -17,9 +17,9 @@ const regExpErrorKey = 's:regExp';
  * @translation Error Translation Key = 's:regExp'
  */
 export const regExp =
-  (expected: RegExp): RequiredValidation =>
+  (expected: RegExp): RequiredValidation<string> =>
   (received: string, ctx: ExceptionContext) => {
-    if (!expected.test(received)) ctx.addIssue(expected, received, regExpErrorMessage);
+    if (!expected.test(received)) ctx.addIssue(expected, received, regExpErrorKey);
   };
 
 regExp.key = regExpErrorKey;

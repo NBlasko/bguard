@@ -15,7 +15,7 @@ const lowerCaseErrorKey = 's:lowerCase';
  *
  * @translation Error Translation Key = 's:lowerCase'
  */
-export const lowerCase = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
+export const lowerCase = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
   if (received !== received.toLowerCase()) ctx.addIssue('lower case', received, lowerCaseErrorKey);
 };
 

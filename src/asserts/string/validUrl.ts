@@ -21,7 +21,7 @@ const urlRegex = /^(http:\/\/|https:\/\/)([a-zA-Z0-9\-.]+)(:\d+)?(\/[^\s]*)?$/;
  * @translation Error Translation Key = 's:url'
  */
 export const validUrl =
-  (protocol?: string): RequiredValidation =>
+  (protocol?: string): RequiredValidation<string> =>
   (received: string, ctx: ExceptionContext) => {
     let regex = urlRegex;
     if (protocol) {

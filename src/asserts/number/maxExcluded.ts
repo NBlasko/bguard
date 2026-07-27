@@ -18,7 +18,7 @@ const maxExcludedErrorKey = 'n:maxExcluded';
  * @translation Error Translation Key = 'n:maxExcluded'
  */
 export const maxExcluded =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<number> =>
   (received: number, ctx: ExceptionContext) => {
     if (expected <= received) ctx.addIssue(expected, received, maxExcludedErrorKey);
   };

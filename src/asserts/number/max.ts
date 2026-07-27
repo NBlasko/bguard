@@ -18,7 +18,7 @@ const maxErrorKey = 'n:max';
  * @translation Error Translation Key = 'n:max'
  */
 export const max =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<number> =>
   (received: number, ctx: ExceptionContext) => {
     if (expected < received) ctx.addIssue(expected, received, maxErrorKey);
   };

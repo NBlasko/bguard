@@ -17,9 +17,9 @@ const maxLengthErrorKey = 's:maxLength';
  * @translation Error Translation Key = 's:maxLength'
  */
 export const maxLength =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<string> =>
   (received: string, ctx: ExceptionContext) => {
-    if (received.length > expected) ctx.addIssue(expected, received, maxLengthErrorMessage);
+    if (received.length > expected) ctx.addIssue(expected, received, maxLengthErrorKey);
   };
 
 maxLength.key = maxLengthErrorKey;

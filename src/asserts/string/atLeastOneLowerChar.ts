@@ -15,7 +15,7 @@ const atLeastOneLowerCharErrorKey = 's:atLeastOneLowerChar';
  *
  * @translation Error Translation Key = 's:atLeastOneLowerChar'
  */
-export const atLeastOneLowerChar = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
+export const atLeastOneLowerChar = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
   const lowerCharRegExp = /[a-z]/;
   if (!lowerCharRegExp.test(received))
     ctx.addIssue('at least one lowercase character', received, atLeastOneLowerCharErrorKey);

@@ -18,7 +18,7 @@ const equalToErrorKey = 'm:equalTo';
  * @translation Error Translation Key = 'm:equalTo'
  */
 export const equalTo =
-  (expected: unknown): RequiredValidation =>
+  (expected: unknown): RequiredValidation<unknown> =>
   (received: unknown, ctx: ExceptionContext) => {
     if (expected !== received) ctx.addIssue(expected, received, equalToErrorKey);
   };

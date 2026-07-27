@@ -26,6 +26,14 @@ export default async (): Promise<Config.InitialOptions> => ({
       {
         tsconfig: {
           importHelpers: false,
+          // The root tsconfig sets isolatedModules, which ts-jest reads as "transpile only".
+          // That silently disables type checking for the whole suite, and the type-level
+          // assertions in jest/setup.ts are compile-time only — they assert nothing at runtime.
+          // Keep this off so expectEqualTypes and @ts-expect-error are actually enforced.
+          isolatedModules: false,
+          strict: true,
+          strictFunctionTypes: true,
+          noUncheckedIndexedAccess: true,
         },
       },
     ],

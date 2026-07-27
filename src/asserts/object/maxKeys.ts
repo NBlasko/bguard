@@ -26,7 +26,7 @@ const maxKeysErrorKey = 'o:maxKeys';
  * @translation Error Translation Key = 'o:maxKeys'
  */
 export const maxKeys =
-  (expected: number): RequiredValidation =>
+  (expected: number): RequiredValidation<Record<string, unknown>> =>
   (receivedObject: Record<string, unknown>, ctx: ExceptionContext) => {
     const keysCount = Object.keys(receivedObject).length;
     if (keysCount > expected) {

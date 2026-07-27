@@ -16,7 +16,7 @@ const negativeErrorKey = 'n:negative';
  *
  * @translation - Error Translation Key = 'n:negative'
  */
-export const negative = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
+export const negative = (): RequiredValidation<number> => (received: number, ctx: ExceptionContext) => {
   if (received >= 0) ctx.addIssue('negative', received, negativeErrorKey);
 };
 

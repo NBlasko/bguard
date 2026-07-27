@@ -18,7 +18,7 @@ const uuidV1Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[89ab][0-9a-f]{3}-[
  *
  * @translation Error Translation Key = 's:uuidV1'
  */
-export const uuidV1 = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
+export const uuidV1 = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
   if (!uuidV1Pattern.test(received)) {
     ctx.addIssue('uuid v1', received, uuidV1ErrorKey);
   }
