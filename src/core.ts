@@ -148,8 +148,18 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   }
 
   if (schemaData.object) {
-    if (typeOfVal !== 'object') exCtx.addIssue('Object', receivedValue, commonTmap['c:objectType']);
-    if (Array.isArray(receivedValue)) exCtx.addIssue('Object', receivedValue, commonTmap['c:objectTypeAsArray']);
+    if (typeOfVal !== 'object' || Array.isArray(receivedValue)) {
+      // Reported and then abandoned. When errors are collected rather than thrown, walking the
+      // shape of a non-object went on to invent one "unrecognized property" per string index and
+      // one "missing property" per declared key, so a single wrong type produced seven errors.
+      if (Array.isArray(receivedValue)) {
+        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectTypeAsArray']);
+      } else {
+        exCtx.addIssue('Object', receivedValue, commonTmap['c:objectType']);
+      }
+
+      return receivedValue;
+    }
 
     schemaData.requiredValidations.forEach((requiredValidation) => {
       requiredValidation(receivedValue, exCtx);
@@ -160,23 +170,35 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
     if (!schemaData.allowUnrecognizedObjectProps) {
       for (const keyPerReceivedValue of Object.keys(receivedValue)) {
-        if (shapeSchema[keyPerReceivedValue] === undefined)
+        // An own-property check, not an undefined check: `constructor`, `toString` and `__proto__`
+        // all resolve on Object.prototype, so a plain lookup accepted them as declared properties
+        // and then dropped them from the output. Spelled out rather than via Object.hasOwn, which
+        // would add a runtime floor the package does not otherwise require.
+        if (!Object.prototype.hasOwnProperty.call(shapeSchema, keyPerReceivedValue))
           exCtx.addIssue('Unrecognized property', keyPerReceivedValue, commonTmap['c:unrecognizedProperty']);
       }
     }
 
     const pathToError = exCtx.pathToError;
     for (const [keyOfSchema, valueOfSchema] of Object.entries(shapeSchema)) {
+      const valueSchemaData = valueOfSchema[ctxSymbol];
       const receivedObjectValuePropery = (receivedValue as Record<string, unknown>)[keyOfSchema];
-      if (receivedObjectValuePropery === undefined) {
-        if (!valueOfSchema[ctxSymbol].isOptional)
-          exCtx.addIssue('Required', receivedObjectValuePropery, commonTmap['c:requiredProperty']);
+      if (
+        receivedObjectValuePropery === undefined &&
+        !valueSchemaData.isOptional &&
+        // A property with a default is not missing: innerCheck substitutes the value below. The
+        // check used to run first and reject it, so default() could never apply to a property.
+        valueSchemaData.defaultValue === undefined
+      ) {
+        exCtx.addIssue('Required', receivedObjectValuePropery, commonTmap['c:requiredProperty']);
+        // Stop here, or innerCheck reports the same missing value again as 'c:optional'.
+        continue;
       }
 
       const parsedReceivedObjectValuePropery = innerCheck(
         valueOfSchema,
         receivedObjectValuePropery,
-        exCtx.createChild(`${pathToError}.${keyOfSchema}`, valueOfSchema[ctxSymbol].meta ?? schemaData.meta),
+        exCtx.createChild(`${pathToError}.${keyOfSchema}`, valueSchemaData.meta ?? schemaData.meta),
       );
 
       parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
