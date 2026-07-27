@@ -24,7 +24,10 @@ function innerGenerator(schema: CommonSchema, isProperty: boolean, indent = INDE
   }
 
   if (schemaData.array) {
-    const innerArrayCode = innerGenerator(schemaData.array, false, indent + INDENT_DEFAULT);
+    // `indent` is passed through unchanged: an array does not introduce a visual nesting level,
+    // so its element type sits at the same depth as the property that holds the array. Adding a
+    // level here indented the element's members one step too far and its closing brace two.
+    const innerArrayCode = innerGenerator(schemaData.array, false, indent);
     code = code + (innerArrayCode.includes('|') ? `(${innerArrayCode})[]` : `${innerArrayCode}[]`);
   }
 

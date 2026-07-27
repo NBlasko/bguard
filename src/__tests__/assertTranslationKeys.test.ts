@@ -1,4 +1,4 @@
-import { parse, clearLocales, setLocale } from '../';
+import { parse, setLocale } from '../';
 import { CommonSchema, RequiredValidation } from '../core';
 
 import { array } from '../asserts/array';

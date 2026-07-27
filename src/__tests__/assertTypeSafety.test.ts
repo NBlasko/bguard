@@ -35,7 +35,7 @@ describe('type-level assertions are enforced by the compiler', () => {
     // @ts-expect-error canary: InferType is string, so Equal<string, number> is false here
     expectEqualTypes<InferType<typeof schema>, number>(true);
 
-    expect(true).toBe(true);
+    expect(parseOrFail(schema, 'x')).toBe('x');
   });
 
   it('rejects an obvious type error', () => {

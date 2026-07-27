@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import prettier from 'prettier';
 import { codeGen } from '../../src/codeGen';
 
 import {
@@ -76,11 +77,25 @@ class GenerateType {
     return `export type ${typeName} = ` + codeGen(schema) + '\n\n';
   }
 
+  /**
+   * codeGen emits correctly indented TypeScript, but not byte-identical to Prettier: Prettier
+   * breaks a union that contains a multi-line member across several lines, which would mean
+   * reimplementing its layout algorithm here. Running Prettier's own API over the output instead
+   * keeps these assets clean without a separate formatting step, and leaves codeGen itself
+   * dependency-free for library consumers.
+   *
+   * Only the type declarations are formatted. The string assets embed codeGen's raw output inside
+   * a template literal on purpose — that is the value under test, so reformatting it would defeat
+   * the comparison in codeGen.test.ts.
+   */
   async writeFiles(data: string) {
     if (this.isString) {
       return await fs.writeFile(path.join('jest/assets', 'staticTypesAsString.ts'), data);
     }
-    await fs.writeFile(path.join('jest/assets', 'staticTypes.ts'), data);
+
+    const config = await prettier.resolveConfig(path.join('jest/assets', 'staticTypes.ts'));
+    const formatted = await prettier.format(data, { ...config, parser: 'typescript' });
+    await fs.writeFile(path.join('jest/assets', 'staticTypes.ts'), formatted);
   }
 
   async run() {

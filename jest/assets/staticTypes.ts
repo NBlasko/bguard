@@ -2,11 +2,14 @@ export type TestSchema1 = {
   email?: string | undefined;
   age: number;
   address: string | null;
-  classes: ({
-      name: string;
-      mandatory: boolean;
-      rooms: number[];
-    } | undefined)[];
+  classes: (
+    | {
+        name: string;
+        mandatory: boolean;
+        rooms: number[];
+      }
+    | undefined
+  )[];
   verified?: boolean | undefined;
 };
 
@@ -127,4 +130,3 @@ export type TestSchema58 = 9007199254740991n | null | undefined;
 export type TestSchema59 = 9007199254740991n | null;
 
 export type TestSchema60 = 9007199254740991n | undefined;
-
