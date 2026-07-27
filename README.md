@@ -304,7 +304,7 @@ The `parseOrFail` method validates the data and throws an error on the first val
 **Syntax:**
 
 ```typeScript
-import { parseOrFail } from 'bguard';
+import { parseOrFail, ValidationError } from 'bguard';
 // import other dependencies
 
 try {
@@ -312,8 +312,12 @@ try {
   const validatedData = parseOrFail(studentSchema, validStudentData);
   // If the data is valid, validatedData will contain the parsed value with inferred TypeScript types
 } catch (error) {
-  // If the data does not conform to the schema, an error will be thrown
-  console.error(error.message); // Logs the first validation error message, if any
+  // If the data does not conform to the schema, a ValidationError will be thrown
+  if (error instanceof ValidationError) {
+    console.error(error.message); // The first validation error message
+    console.error(error.pathToError); // Where in the received value it happened
+    console.error(error.meta?.id); // The id() of the schema that failed, if it has one
+  }
 }
 ```
 
@@ -386,6 +390,20 @@ Sets a default value if the received value is `undefined`. The default value mus
 
 
 > **Notice:** Additionally, `default()` must be the last method in the chain because it validates during schema build time that the default value is compatible with the rest of the schema. For example, if the schema is `number()`, the default value cannot be a `string`.
+
+
+A default also applies to a property of an object schema, so the property may be omitted from the
+received value:
+
+```typeScript
+const schema = object({ page: number().default(1), query: string() });
+
+parseOrFail(schema, { query: 'shoes' }); // { page: 1, query: 'shoes' }
+parseOrFail(schema, { page: 3, query: 'shoes' }); // { page: 3, query: 'shoes' }
+```
+
+Each parse receives its own copy of an object or array default, so mutating one result cannot affect
+a later one.
 
 _Example_:
 
@@ -473,6 +491,7 @@ All built-in asserts are documented in the [Built-in Custom Assert Documentation
 Example
 
 ```typeScript
+import { number } from 'bguard/number';
 import { min } from 'bguard/number/min';
 import { max } from 'bguard/number/max';
 
@@ -1493,6 +1512,10 @@ import { dateMin } from 'bguard/date/dateMin';
 import { oneOfTypes } from 'bguard/mix';
 ```
    
+Listing `'undefined'` infers `| undefined`, so the schema has to accept a missing value as well,
+ and an object property holding it has to be optional. Both follow from the `WithUndefined` brand
+ plus `isOptional` on the context.
+
 * _Description_ Creates a new schema for validating values that can match any one of the specified primitive types.
  
 * _Param_ {T} valueTypes - An array of primitive types that the value can match.
