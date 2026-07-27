@@ -1,6 +1,8 @@
 import { WithBGuardType } from '../../commonTypes';
 import { CommonSchema, type ExceptionContext, type RequiredValidation } from '../../core';
 import { _setStrictType } from '../../helpers/setStrictType';
+import { BuildSchemaError } from '../../exceptions';
+import { ONLY_ONCE } from '../../helpers/constants';
 
 // Declared over `unknown` rather than `boolean`: it is applied from inside the class, where `this`
 // is still polymorphic, so the schema's own value type cannot be resolved yet. The comparison is
@@ -27,6 +29,15 @@ export function boolean(): WithBGuardType<BooleanSchema, boolean> {
 
 class BooleanSchema extends CommonSchema {
   protected _boolean = 1;
+  private limit: boolean | undefined;
+
+  /**
+   * Reads the once-only flag without setting it, matching the string, number and bigint schemas.
+   * Without it, onlyTrue().onlyFalse() built a schema that rejects both true and false.
+   */
+  private limitGuard() {
+    if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
+  }
 
   /**
    * @method onlyTrue
@@ -38,7 +49,9 @@ class BooleanSchema extends CommonSchema {
    * @public
    */
   public onlyTrue(): WithBGuardType<this, true> {
+    this.limitGuard();
     const next = this.custom(isBoolean(true));
+    next.limit = true;
     _setStrictType(next, true);
     return next as WithBGuardType<this, true>;
   }
@@ -53,7 +66,9 @@ class BooleanSchema extends CommonSchema {
    * @public
    */
   public onlyFalse(): WithBGuardType<this, false> {
+    this.limitGuard();
     const next = this.custom(isBoolean(false));
+    next.limit = true;
     _setStrictType(next, false);
     return next as WithBGuardType<this, false>;
   }

@@ -9,8 +9,13 @@ function generateBaseType(schemaData: ValidatorContext) {
     return schemaData.strictTypeValue;
   }
   if (!schemaData.type.length) return '';
-  const joined = schemaData.type.join(' | ');
-  return joined;
+
+  // `undefined` in the type list also sets isOptional, which appends `| undefined` further down,
+  // so including it here as well would emit it twice.
+  const named = schemaData.type.filter((type) => type !== 'undefined');
+  if (!named.length) return '';
+
+  return named.join(' | ');
 }
 
 const INDENT_DEFAULT = `  `;
