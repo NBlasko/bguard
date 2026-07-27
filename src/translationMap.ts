@@ -18,8 +18,23 @@ const defaultErrorMap: TranslationErrorMap = {
   //@@end
 };
 
+/**
+ * Messages registered by asserts through `setToDefaultLocale`, kept apart from the locale data.
+ *
+ * Every assert registers its default message once, when its module is first imported. Those
+ * registrations can never happen again, so they have to survive `clearLocales`, and they have to
+ * seed every locale created by `setLocale` — otherwise a locale that translates one key reports
+ * every other key as its raw name.
+ */
+const registeredDefaults: Record<string, string> = {};
+
+/** The messages a fresh locale starts from: the common ones plus everything asserts registered. */
+function baseMessages(): Record<string, string> {
+  return { ...defaultErrorMap, ...registeredDefaults };
+}
+
 let data: Record<string, Record<string, string>> = {
-  default: { ...defaultErrorMap },
+  default: baseMessages(),
 };
 
 export function setToDefaultLocale({
@@ -31,23 +46,33 @@ export function setToDefaultLocale({
   key: string;
   message: string;
 }) {
-  const defaultLocale = data.default!;
-  if (defaultLocale[key]) throw new BuildSchemaError('Duplicate default message key');
-  defaultLocale[key] = message;
+  if (registeredDefaults[key] ?? defaultErrorMap[key]) throw new BuildSchemaError('Duplicate default message key');
+  registeredDefaults[key] = message;
+
+  // Keep locales that already exist in step, so registration order does not matter.
+  Object.values(data).forEach((locale) => {
+    locale[key] ??= message;
+  });
 }
 
 export function setLocale(lng: string, custom: Partial<TranslationErrorMap>) {
   if (lng === 'default') throw new BuildSchemaError('Invalid language');
-  data[lng] ??= { ...defaultErrorMap };
+  data[lng] ??= baseMessages();
   const locale = data[lng];
   Object.entries(custom).forEach(([messageKey, messageValue]) => {
     locale[messageKey] = messageValue!;
   });
 }
 
+/**
+ * Drops every locale and returns the default one to its registered messages.
+ *
+ * Assert registrations are deliberately kept: they describe the schemas, not a translation, and
+ * clearing them would leave every built-in assert reporting its key instead of a message.
+ */
 export function clearLocales() {
   data = {
-    default: { ...defaultErrorMap },
+    default: baseMessages(),
   };
 }
 

@@ -13,9 +13,12 @@ describe('parse', () => {
   customEqual.key = 'somethingEqual';
   customEqual.message = 'Something Equal';
 
+  // Registered once: setToDefaultLocale rejects a duplicate key, and registrations now survive
+  // clearLocales so that built-in assert messages are not lost with the locales.
+  setToDefaultLocale(customEqual);
+
   beforeEach(() => {
     clearLocales();
-    setToDefaultLocale(customEqual);
   });
 
   it('should return an array of errors with length 1', () => {
