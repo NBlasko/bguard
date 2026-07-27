@@ -256,6 +256,12 @@ false, so it previously satisfied `number()` and passed straight through `min`, 
    `eslint --print-config`: 27 active rules before and after, none lost or changed.
  - `npm run prettier` covers `jest/` and `scripts/`, not only `src/`, and the static type assets are
    formatted by their generator so no separate pass is needed.
+ - `npm run check:docs` typechecks the README's self-contained examples, and runs as part of
+   `check:package` in CI. Three examples did not compile at three separate points in this release, none
+   of it visible from reading the Markdown.
+ - Removed the empty `src/asserts/function` and `src/asserts/symbol` directories, left behind once
+   their export entries were dropped. Git does not track empty directories, so they only ever confused
+   a local checkout.
 
 ## 0.6.1 Fix broken subpath exports and ESM type resolution
  - Fixed the catch-all `"./*"` export, which pointed at the package root instead of `lib/`. Subpaths such as `bguard/core`, `bguard/InferType`, `bguard/translationMap` and `bguard/exceptions` previously failed to resolve in both CJS and ESM.

@@ -466,6 +466,9 @@ to every element, the inferred type keeps the positions distinct.
 
 ```typeScript
 import { tuple } from 'bguard/tuple';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
+import { boolean } from 'bguard/boolean';
 
 const pointSchema = tuple([number(), number()]);
 // InferType: [number, number]
@@ -484,6 +487,8 @@ built, so the result is an ordinary object schema — a key declared by any memb
 
 ```typeScript
 import { intersection } from 'bguard/intersection';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
 
 const withId = object({ id: string() });
 const withTimestamps = object({ createdAt: string(), updatedAt: string() });
@@ -503,6 +508,10 @@ Defers building a schema until it is first used, which is what allows a schema t
 
 ```typeScript
 import { lazy } from 'bguard/lazy';
+import { object } from 'bguard/object';
+import { array } from 'bguard/array';
+import { string } from 'bguard/string';
+import type { CommonSchema } from 'bguard/core';
 
 interface Category {
   name: string;
@@ -567,6 +576,10 @@ import { pick } from 'bguard/object/pick';
 import { omit } from 'bguard/object/omit';
 import { partial } from 'bguard/object/partial';
 import { extend } from 'bguard/object/extend';
+import { required } from 'bguard/object/required';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
 
 const userSchema = object({ id: string(), name: string(), secret: string() });
 
@@ -587,7 +600,10 @@ assertions, `id` and `description`.
 Two helpers turn the errors array into the shapes a form usually wants. Both work off `path`.
 
 ```typeScript
-import { flattenErrors, treeifyErrors } from 'bguard';
+import { flattenErrors, treeifyErrors, parse, object, string } from 'bguard';
+
+const userSchema = object({ email: string(), address: object({ street: string() }) });
+const received: unknown = { email: 1 };
 
 const [errors] = parse(userSchema, received, { getAllErrors: true });
 
@@ -610,6 +626,8 @@ For input that does not arrive already typed — query strings, form data, envir
 
 ```typeScript
 import { coerce } from 'bguard/coerce';
+import { object } from 'bguard/object';
+import { parseOrFail } from 'bguard';
 
 const querySchema = object({
   page: coerce.number().default(1),
@@ -640,6 +658,11 @@ string `'null'` or the number `0`.
 *accepts*. The two differ wherever a schema converts or supplies something:
 
 ```typeScript
+import { coerce } from 'bguard/coerce';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
+import type { InferType, InferInput } from 'bguard/InferType';
+
 const schema = object({ page: coerce.number().default(1), q: string() });
 
 type Output = InferType<typeof schema>;   // { page: number; q: string }

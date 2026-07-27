@@ -53,9 +53,10 @@
     "change:publish": "changeset publish",
     "arethetypeswrong": "attw --pack . --ignore-rules no-resolution",
     "check:exports": "node scripts/check-exports.mjs",
-    "check:package": "npm run check:exports && npm run arethetypeswrong",
+    "check:package": "npm run check:exports && npm run check:docs && npm run arethetypeswrong",
     "docs:join-assert": "node scripts/join-assert-docs.mjs",
-    "test:before": "ts-node jest/assets/generateStaticTypes"
+    "test:before": "ts-node jest/assets/generateStaticTypes",
+    "check:docs": "node scripts/check-docs.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
