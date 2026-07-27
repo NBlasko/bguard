@@ -12,6 +12,7 @@ export interface TranslationErrorMap {
   'c:date': string;
   'c:nan': string;
   'c:union': string;
+  'c:tupleLength': string;
   [val: string]: string;
 }
 
@@ -62,5 +63,14 @@ export type ExtractFromUnion<T> = T extends WithUnion<unknown, infer X extends r
 
 /** K and V are the key and value schemas of a record. */
 export type WithRecord<T, K, V> = T & { validation_record_key: K; validation_record_value: V };
+
+/** The shape of an object schema, and the intersection of several such shapes. */
+export type ExtractShape<T> = T extends WithObject<unknown, infer S> ? S : never;
+export type IntersectShapes<T extends readonly unknown[]> = T extends readonly [infer First, ...infer Rest]
+  ? ExtractShape<First> & IntersectShapes<Rest>
+  : unknown;
+
+/** Y is the tuple of positional schemas, so InferType can map over it and keep the tuple shape. */
+export type WithTuple<T, Y> = T & { validation_tuple: Y };
 
 export type TransformCallback<In = unknown, Out = unknown> = (val: In) => Out;

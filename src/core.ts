@@ -10,6 +10,7 @@ import {
   WithNull,
   WithObject,
   WithRecord,
+  WithTuple,
   WithUndefined,
 } from './commonTypes';
 import { type InferType } from './InferType';
@@ -95,11 +96,13 @@ export type AssertInput<T> =
     ? NonNullable<Y>
     : T extends WithArray<unknown, unknown>
       ? unknown[]
-      : T extends WithObject<unknown, unknown>
-        ? Record<string, unknown>
-        : T extends WithRecord<unknown, unknown, unknown>
+      : T extends WithTuple<unknown, unknown>
+        ? unknown[]
+        : T extends WithObject<unknown, unknown>
           ? Record<string, unknown>
-          : unknown;
+          : T extends WithRecord<unknown, unknown, unknown>
+            ? Record<string, unknown>
+            : unknown;
 
 function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: ExceptionContext): unknown {
   const commonTmap = exCtx.t;
@@ -143,6 +146,48 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     // min, max, positive and negative alike.
     else if (typeOfVal === 'number' && Number.isNaN(receivedValue))
       exCtx.addIssue('number', receivedValue, commonTmap['c:nan']);
+  }
+
+  if (schemaData.lazy) {
+    // Resolved on first use rather than at construction, which is what lets a schema refer to
+    // itself. The result is cached on the context so the thunk runs once.
+    schemaData.lazy.resolved ??= schemaData.lazy.getSchema();
+
+    if (!(schemaData.lazy.resolved instanceof CommonSchema))
+      throw new BuildSchemaError('Invalid schema returned from lazy method');
+
+    return innerCheck(schemaData.lazy.resolved, receivedValue, exCtx);
+  }
+
+  if (schemaData.tuple) {
+    if (!Array.isArray(receivedValue)) return exCtx.addIssue('Array', receivedValue, commonTmap['c:array']);
+
+    schemaData.requiredValidations.forEach((requiredValidation) => {
+      requiredValidation(receivedValue, exCtx);
+    });
+
+    if (receivedValue.length !== schemaData.tuple.length) {
+      // Reported and then abandoned: walking the declared positions as well would add a "required"
+      // error for every position the value does not reach, which says nothing further.
+      exCtx.addIssue(schemaData.tuple.length, receivedValue.length, commonTmap['c:tupleLength']);
+      return receivedValue;
+    }
+
+    const tuplePathToError = exCtx.pathToError;
+    const parsedTuple: unknown[] = [];
+
+    for (let i = 0; i < schemaData.tuple.length; i++) {
+      const positionSchema = schemaData.tuple[i] as CommonSchema;
+      parsedTuple.push(
+        innerCheck(
+          positionSchema,
+          receivedValue[i],
+          exCtx.createChild(`${tuplePathToError}[${i}]`, positionSchema[ctxSymbol].meta ?? schemaData.meta),
+        ),
+      );
+    }
+
+    return parsedTuple;
   }
 
   if (schemaData.union) {
@@ -305,6 +350,14 @@ export interface RecordSchemaType {
   value: CommonSchema;
 }
 
+export interface LazySchemaType {
+  /** The name codeGen emits at the recursion point, instead of descending forever. */
+  typeName: string;
+  getSchema: () => CommonSchema;
+  /** Filled on first use, so the thunk runs once however many values are validated. */
+  resolved?: CommonSchema;
+}
+
 export interface ValidatorContext {
   type: BaseType[];
   isNullable?: boolean;
@@ -314,6 +367,8 @@ export interface ValidatorContext {
   object?: ObjectShapeSchemaType;
   union?: CommonSchema[];
   record?: RecordSchemaType;
+  tuple?: CommonSchema[];
+  lazy?: LazySchemaType;
   allowUnrecognizedObjectProps?: boolean;
   strictType?: boolean;
   strictTypeValue?: unknown;
@@ -342,6 +397,8 @@ function cloneValidatorContext(ctx: ValidatorContext): ValidatorContext {
   if (ctx.object) next.object = { ...ctx.object };
   if (ctx.union) next.union = [...ctx.union];
   if (ctx.record) next.record = { ...ctx.record };
+  if (ctx.tuple) next.tuple = [...ctx.tuple];
+  if (ctx.lazy) next.lazy = { ...ctx.lazy };
   if (ctx.transformListBefore) next.transformListBefore = [...ctx.transformListBefore];
   if (ctx.meta) next.meta = { ...ctx.meta };
 
@@ -553,9 +610,13 @@ export function parseOrFail<T extends CommonSchema>(
     );
     return innerCheck(schema, receivedValue, ctx) as InferType<T>;
   } catch (e) {
-    /* istanbul ignore next */
     if (e instanceof ValidationError) throw e;
-    /* istanbul ignore next */
+    // A BuildSchemaError means the schema itself is wrong, which is a programming error rather than
+    // a validation failure. Some are only discoverable during validation, such as a lazy getter
+    // returning something that is not a schema, and disguising them loses the reason entirely.
+    if (e instanceof BuildSchemaError) throw e;
+
+    // Anything else came from a custom assert, which can throw whatever it likes.
     throw new Error('Something unexpected happened');
   }
 }
@@ -638,12 +699,14 @@ export function parse<T extends CommonSchema>(
 
     return [null, parsedValue];
   } catch (e) {
-    /* istanbul ignore next */
     if (e instanceof ValidationError) {
       delete e.stack;
       return [[e], null];
     }
-    /* istanbul ignore next */
+
+    if (e instanceof BuildSchemaError) throw e;
+
+    // Anything else came from a custom assert, which can throw whatever it likes.
     return [
       [
         {

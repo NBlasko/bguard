@@ -166,3 +166,27 @@ describe('codeGen string literals', () => {
     expect(codeGen(string().equalTo('plain'))).toBe(`'plain';`);
   });
 });
+
+describe('an assert that throws something unexpected', () => {
+  // Reachable: a custom assert is arbitrary user code. These paths used to be marked
+  // `istanbul ignore`, which kept them out of the coverage figure rather than out of reach.
+  const throwing = () =>
+    object({
+      a: string().custom(() => {
+        throw new TypeError('boom');
+      }),
+    });
+
+  it('surfaces a generic error from parseOrFail', () => {
+    expect(() => parseOrFail(throwing(), { a: 'x' })).toThrow('Something unexpected happened');
+  });
+
+  it('reports it as a single error from parse', () => {
+    const [errors, value] = parse(throwing(), { a: 'x' });
+
+    expect(errors).toEqual([
+      { message: 'Something unexpected happened', expected: '', received: '', pathToError: '', meta: undefined },
+    ]);
+    expect(value).toBeNull();
+  });
+});

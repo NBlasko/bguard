@@ -39,6 +39,9 @@ describe('Library exports', () => {
       'oneOfTypes',
       'union',
       'record',
+      'tuple',
+      'lazy',
+      'intersection',
       'equalTo',
       'oneOfValues',
 

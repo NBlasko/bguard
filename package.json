@@ -186,6 +186,14 @@
       "import": "./lib/asserts/record/index.mjs",
       "require": "./lib/asserts/record/index.js"
     },
+    "./intersection": {
+      "types": {
+        "import": "./lib/asserts/intersection/index.d.mts",
+        "require": "./lib/asserts/intersection/index.d.ts"
+      },
+      "import": "./lib/asserts/intersection/index.mjs",
+      "require": "./lib/asserts/intersection/index.js"
+    },
     "./object/*": {
       "types": {
         "import": "./lib/asserts/object/*.d.mts",
@@ -209,6 +217,22 @@
       },
       "import": "./lib/asserts/union/index.mjs",
       "require": "./lib/asserts/union/index.js"
+    },
+    "./tuple": {
+      "types": {
+        "import": "./lib/asserts/tuple/index.d.mts",
+        "require": "./lib/asserts/tuple/index.d.ts"
+      },
+      "import": "./lib/asserts/tuple/index.mjs",
+      "require": "./lib/asserts/tuple/index.js"
+    },
+    "./lazy": {
+      "types": {
+        "import": "./lib/asserts/lazy/index.d.mts",
+        "require": "./lib/asserts/lazy/index.d.ts"
+      },
+      "import": "./lib/asserts/lazy/index.mjs",
+      "require": "./lib/asserts/lazy/index.js"
     },
     "./mix/*": {
       "types": {

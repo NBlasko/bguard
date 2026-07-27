@@ -8,6 +8,7 @@ import {
   WithUndefined,
   WithObject,
   WithRecord,
+  WithTuple,
   WithUnion,
 } from './commonTypes';
 
@@ -41,6 +42,10 @@ export type InferType<T> =
     : // record
     T extends WithRecord<unknown, unknown, unknown>
     ? ResolveNullish<T, ExtractFromRecord<T>>
+
+    : // tuple
+    T extends WithTuple<unknown, infer S extends readonly unknown[]>
+    ? ResolveNullish<T, { -readonly [K in keyof S]: InferType<S[K]> }>
 
     : unknown;
 

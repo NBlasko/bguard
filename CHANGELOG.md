@@ -34,9 +34,46 @@ A restricted key type infers as `Partial`, because validation checks the keys th
 than requiring the whole set — claiming `Record<'en' | 'sr', string>` would say both are always
 there. `codeGen` emits the same shape.
 
-Both are exported from the root and as their own subpaths, `bguard/union` and `bguard/record`, and
-both work everywhere a schema does: nested in each other, in arrays, as object properties, and with
-`nullable`, `optional`, `default` and `custom`.
+**`tuple([...schemas])`** validates a fixed-length array where each position has its own schema.
+Unlike `array`, the inferred type keeps the positions distinct: `tuple([string(), number()])` infers
+`[string, number]`, not `(string | number)[]`. Note that `optional()` on a position describes the
+value there, not whether the position exists — the length must still match.
+
+**`intersection([...objectSchemas])`** combines object schemas into one requiring all of them. The
+shapes are merged when the schema is built, so the result is an ordinary object schema and a key
+declared by any member is recognised. Validating against each member separately would have the first
+reject the second's keys as unrecognised.
+
+Members must be object schemas, and a key may not be declared twice: two members declaring the same
+key would mean `A & B` for that property in the type while only one schema could run during
+validation, so it throws rather than resolving it one way silently. Member-level `nullable` and
+`optional` are rejected for the same reason.
+
+**`lazy(typeName, getSchema)`** defers building a schema until first use, which is what allows a
+schema to refer to itself:
+
+```ts
+interface Category {
+  name: string;
+  children: Category[];
+}
+
+const categorySchema: CommonSchema = object({
+  name: string(),
+  children: array(lazy<Category>('Category', () => categorySchema)),
+});
+// codeGen: { name: string; children: Category[]; }
+```
+
+The inferred type is supplied by the caller, because TypeScript cannot infer through a
+self-reference. `typeName` is what `codeGen` emits at the recursion point; without it code generation
+would descend again and never finish, so it is required. Recursive schemas are supported; cyclic
+values are not, since validation follows the data.
+
+All five are exported from the root and as their own subpaths — `bguard/union`, `bguard/record`,
+`bguard/tuple`, `bguard/intersection`, `bguard/lazy` — and all work everywhere a schema does: nested
+in each other, in arrays, as object properties, and with `nullable`, `optional`, `default` and
+`custom`.
 
 ### Breaking
 

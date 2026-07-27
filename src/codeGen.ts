@@ -26,6 +26,17 @@ function innerGenerator(schema: CommonSchema, isProperty: boolean, indent = INDE
   // emptiness check below could not tell a missing type from a bare `?: `.
   let code = '';
 
+  if (schemaData.lazy) {
+    // The name, not the schema behind it. Descending into a lazy schema is what makes recursion
+    // possible at validation time and what would make code generation loop forever.
+    code = code + schemaData.lazy.typeName;
+  }
+
+  if (schemaData.tuple) {
+    const positions = schemaData.tuple.map((positionSchema) => innerGenerator(positionSchema, false, indent));
+    code = code + `[${positions.join(', ')}]`;
+  }
+
   if (schemaData.union) {
     const members = schemaData.union.map((memberSchema) => innerGenerator(memberSchema, false, indent));
     code = code + members.join(' | ');

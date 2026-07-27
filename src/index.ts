@@ -22,6 +22,8 @@ export { dateMin } from './asserts/date/dateMin';
 
 export { oneOfTypes } from './asserts/mix/index';
 export { union } from './asserts/union/index';
+export { tuple } from './asserts/tuple/index';
+export { lazy } from './asserts/lazy/index';
 export { equalTo } from './asserts/mix/equalTo';
 export { oneOfValues } from './asserts/mix/oneOfValues';
 
@@ -35,6 +37,7 @@ export { negative } from './asserts/number/negative';
 
 export { object } from './asserts/object/index';
 export { record } from './asserts/record/index';
+export { intersection } from './asserts/intersection/index';
 export { maxKeys } from './asserts/object/maxKeys';
 
 export { string } from './asserts/string/index';

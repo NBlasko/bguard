@@ -411,7 +411,7 @@ parseOrFail(stringOrNullSchema, 'test');
 parseOrFail(stringOrNullSchema, '');
 ```
 
-### <a id="h3_union_and_record"> Unions and Records </a>
+### <a id="h3_union_and_record"> Composing Schemas </a>
 
 #### <a id="h4_union"> union(schemas) </a>
 
@@ -458,6 +458,71 @@ const labelsSchema = record(string().oneOfValues(['en', 'sr']), string());
 A restricted key type infers as `Partial`, because validation checks the keys that are present rather
 than requiring the whole set. Claiming `Record<'en' | 'sr', string>` would say both keys are always
 there, which validation does not guarantee.
+
+#### <a id="h4_tuple"> tuple(schemas) </a>
+
+A fixed-length array where each position has its own schema. Unlike `array`, which applies one schema
+to every element, the inferred type keeps the positions distinct.
+
+```typeScript
+import { tuple } from 'bguard/tuple';
+
+const pointSchema = tuple([number(), number()]);
+// InferType: [number, number]
+
+const entrySchema = tuple([string(), boolean().optional()]);
+// InferType: [string, boolean | undefined]
+```
+
+> **Notice:** `optional()` on a position describes the value at that position, not whether the
+> position exists. The length must still match exactly.
+
+#### <a id="h4_intersection"> intersection(schemas) </a>
+
+Combines object schemas into one that requires all of them. The shapes are merged when the schema is
+built, so the result is an ordinary object schema — a key declared by any member is recognised.
+
+```typeScript
+import { intersection } from 'bguard/intersection';
+
+const withId = object({ id: string() });
+const withTimestamps = object({ createdAt: string(), updatedAt: string() });
+
+const entitySchema = intersection([withId, withTimestamps]);
+// InferType: { id: string; createdAt: string; updatedAt: string }
+```
+
+Members must be object schemas, and a key may not be declared twice. Two members declaring the same
+key would mean `A & B` for that property in the type while only one schema could run during
+validation, so it throws a `BuildSchemaError` rather than resolving it one way silently. Member-level
+`nullable()` and `optional()` are rejected for the same reason.
+
+#### <a id="h4_lazy"> lazy(typeName, getSchema) </a>
+
+Defers building a schema until it is first used, which is what allows a schema to refer to itself.
+
+```typeScript
+import { lazy } from 'bguard/lazy';
+
+interface Category {
+  name: string;
+  children: Category[];
+}
+
+const categorySchema: CommonSchema = object({
+  name: string(),
+  children: array(lazy<Category>('Category', () => categorySchema)),
+});
+
+// codeGen: { name: string; children: Category[]; }
+```
+
+The inferred type is the one you supply, because TypeScript cannot infer a type through a
+self-reference. `typeName` is what `codeGen` emits at the recursion point — without it, code
+generation would descend into the schema again and never finish, which is why it is required.
+
+> **Notice:** Recursive *schemas* are supported; cyclic *values* are not. Validation follows the data,
+> so a value containing a cycle recurses until the call stack is exhausted.
 
 ### <a id="h3_literals"> Literals </a>
 
