@@ -10,6 +10,7 @@ export interface TranslationErrorMap {
   'c:invalidType': string;
   'c:isBoolean': string;
   'c:date': string;
+  'c:nan': string;
   [val: string]: string;
 }
 

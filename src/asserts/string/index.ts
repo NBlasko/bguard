@@ -3,6 +3,7 @@ import { BuildSchemaError } from '../../exceptions';
 import { ONLY_ONCE } from '../../helpers/constants';
 import { CommonSchema } from '../../core';
 import { _setStrictType } from '../../helpers/setStrictType';
+import { _quoteStringLiteral } from '../../helpers/quoteStringLiteral';
 import { equalTo } from '../mix/equalTo';
 import { oneOfValues } from '../mix/oneOfValues';
 
@@ -40,7 +41,7 @@ class StringSchema extends CommonSchema {
     // them on `this` first would refine the schema this one was derived from.
     const next = this.custom(equalTo(expectedValue));
     next.limit = true;
-    _setStrictType(next, `'${expectedValue}'`);
+    _setStrictType(next, _quoteStringLiteral(expectedValue));
     return next as WithBGuardType<this, Y>;
   }
 
@@ -60,7 +61,7 @@ class StringSchema extends CommonSchema {
     next.limit = true;
     _setStrictType(
       next,
-      expectedValue.map((el) => `'${el}'`),
+      expectedValue.map((el) => _quoteStringLiteral(el)),
     );
     return next as WithBGuardType<this, Y>;
   }

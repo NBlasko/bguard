@@ -38,12 +38,15 @@ export class ExceptionContext {
   }
 
   public ref(path: string): unknown {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let ref: any = this.initialReceived;
-    const parsedRefPath = path.split('.');
-    parsedRefPath.forEach((el) => {
-      ref = ref[el];
-    });
+    let ref: unknown = this.initialReceived;
+
+    for (const el of path.split('.')) {
+      // A path that runs past the end of the data yields undefined. Indexing straight into it threw
+      // a TypeError, which parseOrFail turned into a bare 'Something unexpected happened' with no
+      // indication of which assert or which path was at fault.
+      if (ref === null || ref === undefined) return undefined;
+      ref = (ref as Record<string, unknown>)[el];
+    }
 
     return ref;
   }
@@ -99,14 +102,25 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
   const commonTmap = exCtx.t;
   const schemaData = schema[ctxSymbol];
 
-  schemaData.transformListBefore?.forEach((transformCallback) => {
-    receivedValue = transformCallback(receivedValue);
-  });
+  // Nothing to transform when the value is absent. Running the list anyway turned `undefined` into
+  // whatever the callback made of it, so an optional string with a `val + ''` transform parsed to
+  // the string 'undefined'.
+  if (receivedValue !== undefined) {
+    schemaData.transformListBefore?.forEach((transformCallback) => {
+      receivedValue = transformCallback(receivedValue);
+    });
+  }
 
   if (receivedValue === undefined) {
-    if (schemaData.defaultValue !== undefined) return schemaData.defaultValue;
-    if (!schemaData.isOptional) exCtx.addIssue('Required', receivedValue, commonTmap['c:optional']);
-    return receivedValue;
+    if (schemaData.defaultValue === undefined) {
+      if (!schemaData.isOptional) exCtx.addIssue('Required', receivedValue, commonTmap['c:optional']);
+      return receivedValue;
+    }
+
+    // Carry on with the default as the received value rather than returning it. Returning it handed
+    // every parse the same array or object, so mutating one result changed what later parses gave
+    // back; going through validation rebuilds containers and yields a fresh value each time.
+    receivedValue = schemaData.defaultValue;
   }
 
   if (receivedValue === null) {
@@ -122,6 +136,10 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
   if (schemaData.type.length) {
     if (!schemaData.type.includes(typeOfVal)) exCtx.addIssue(schemaData.type, typeOfVal, commonTmap['c:invalidType']);
+    // NaN is a number by typeof, and every comparison against it is false, so it slipped past
+    // min, max, positive and negative alike.
+    else if (typeOfVal === 'number' && Number.isNaN(receivedValue))
+      exCtx.addIssue('number', receivedValue, commonTmap['c:nan']);
   }
 
   if (schemaData.array) {
@@ -134,15 +152,18 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     const schema = schemaData.array;
     const pathToError = exCtx.pathToError;
     const parsedReceivedValue: unknown[] = [];
-    receivedValue.forEach((elem, i) => {
+    // Indexed rather than forEach, which skips holes: a sparse array used to come back shorter than
+    // it went in, with no error to say so. A hole now reaches innerCheck as undefined and is
+    // reported unless the element schema is optional.
+    for (let i = 0; i < receivedValue.length; i++) {
       const parsedElement = innerCheck(
         schema,
-        elem,
+        receivedValue[i],
         // The element's own metadata wins; the array's is inherited when it has none.
         exCtx.createChild(`${pathToError}[${i}]`, schema[ctxSymbol].meta ?? schemaData.meta),
       );
       parsedReceivedValue.push(parsedElement);
-    });
+    }
 
     return parsedReceivedValue;
   }
@@ -167,9 +188,11 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
     const shapeSchema = schemaData.object;
     const parsedReceivedValue: Record<string, unknown> = {};
+    // Null was handled above and the type guard just ruled out arrays and non-objects.
+    const receivedObject = receivedValue as Record<string, unknown>;
 
     if (!schemaData.allowUnrecognizedObjectProps) {
-      for (const keyPerReceivedValue of Object.keys(receivedValue)) {
+      for (const keyPerReceivedValue of Object.keys(receivedObject)) {
         // An own-property check, not an undefined check: `constructor`, `toString` and `__proto__`
         // all resolve on Object.prototype, so a plain lookup accepted them as declared properties
         // and then dropped them from the output. Spelled out rather than via Object.hasOwn, which
@@ -182,7 +205,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     const pathToError = exCtx.pathToError;
     for (const [keyOfSchema, valueOfSchema] of Object.entries(shapeSchema)) {
       const valueSchemaData = valueOfSchema[ctxSymbol];
-      const receivedObjectValuePropery = (receivedValue as Record<string, unknown>)[keyOfSchema];
+      const receivedObjectValuePropery = receivedObject[keyOfSchema];
       if (
         receivedObjectValuePropery === undefined &&
         !valueSchemaData.isOptional &&

@@ -15,6 +15,7 @@ const defaultErrorMap: TranslationErrorMap = {
   'c:invalidType': 'Invalid type of data',
   'c:isBoolean': 'The received value is not {{e}}',
   'c:date': 'The received value is not a valid instance of Date',
+  'c:nan': 'The received number is not a valid number',
   //@@end
 };
 
