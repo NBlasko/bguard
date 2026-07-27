@@ -109,6 +109,14 @@
       "import": "./lib/codeGen.mjs",
       "require": "./lib/codeGen.js"
     },
+    "./string": {
+      "types": {
+        "import": "./lib/asserts/string/index.d.mts",
+        "require": "./lib/asserts/string/index.d.ts"
+      },
+      "import": "./lib/asserts/string/index.mjs",
+      "require": "./lib/asserts/string/index.js"
+    },
     "./string/*": {
       "types": {
         "import": "./lib/asserts/string/*.d.mts",
@@ -116,6 +124,14 @@
       },
       "import": "./lib/asserts/string/*.mjs",
       "require": "./lib/asserts/string/*.js"
+    },
+    "./number": {
+      "types": {
+        "import": "./lib/asserts/number/index.d.mts",
+        "require": "./lib/asserts/number/index.d.ts"
+      },
+      "import": "./lib/asserts/number/index.mjs",
+      "require": "./lib/asserts/number/index.js"
     },
     "./number/*": {
       "types": {
@@ -125,6 +141,14 @@
       "import": "./lib/asserts/number/*.mjs",
       "require": "./lib/asserts/number/*.js"
     },
+    "./boolean": {
+      "types": {
+        "import": "./lib/asserts/boolean/index.d.mts",
+        "require": "./lib/asserts/boolean/index.d.ts"
+      },
+      "import": "./lib/asserts/boolean/index.mjs",
+      "require": "./lib/asserts/boolean/index.js"
+    },
     "./boolean/*": {
       "types": {
         "import": "./lib/asserts/boolean/*.d.mts",
@@ -132,6 +156,14 @@
       },
       "import": "./lib/asserts/boolean/*.mjs",
       "require": "./lib/asserts/boolean/*.js"
+    },
+    "./array": {
+      "types": {
+        "import": "./lib/asserts/array/index.d.mts",
+        "require": "./lib/asserts/array/index.d.ts"
+      },
+      "import": "./lib/asserts/array/index.mjs",
+      "require": "./lib/asserts/array/index.js"
     },
     "./array/*": {
       "types": {
@@ -141,6 +173,14 @@
       "import": "./lib/asserts/array/*.mjs",
       "require": "./lib/asserts/array/*.js"
     },
+    "./object": {
+      "types": {
+        "import": "./lib/asserts/object/index.d.mts",
+        "require": "./lib/asserts/object/index.d.ts"
+      },
+      "import": "./lib/asserts/object/index.mjs",
+      "require": "./lib/asserts/object/index.js"
+    },
     "./object/*": {
       "types": {
         "import": "./lib/asserts/object/*.d.mts",
@@ -148,6 +188,14 @@
       },
       "import": "./lib/asserts/object/*.mjs",
       "require": "./lib/asserts/object/*.js"
+    },
+    "./mix": {
+      "types": {
+        "import": "./lib/asserts/mix/index.d.mts",
+        "require": "./lib/asserts/mix/index.d.ts"
+      },
+      "import": "./lib/asserts/mix/index.mjs",
+      "require": "./lib/asserts/mix/index.js"
     },
     "./mix/*": {
       "types": {
@@ -157,6 +205,14 @@
       "import": "./lib/asserts/mix/*.mjs",
       "require": "./lib/asserts/mix/*.js"
     },
+    "./bigint": {
+      "types": {
+        "import": "./lib/asserts/bigint/index.d.mts",
+        "require": "./lib/asserts/bigint/index.d.ts"
+      },
+      "import": "./lib/asserts/bigint/index.mjs",
+      "require": "./lib/asserts/bigint/index.js"
+    },
     "./bigint/*": {
       "types": {
         "import": "./lib/asserts/bigint/*.d.mts",
@@ -164,6 +220,14 @@
       },
       "import": "./lib/asserts/bigint/*.mjs",
       "require": "./lib/asserts/bigint/*.js"
+    },
+    "./date": {
+      "types": {
+        "import": "./lib/asserts/date/index.d.mts",
+        "require": "./lib/asserts/date/index.d.ts"
+      },
+      "import": "./lib/asserts/date/index.mjs",
+      "require": "./lib/asserts/date/index.js"
     },
     "./date/*": {
       "types": {

@@ -388,7 +388,7 @@ Bguard allows developers to create custom validation functions that can be integ
 Example: Creating a `minLength` Custom Validation
 
 ```typescript
-import { ExceptionContext, RequiredValidation } from 'bguard/ExceptionContext';
+import { ExceptionContext, RequiredValidation } from 'bguard/core';
 import { setToDefaultLocale } from 'bguard/translationMap';
 
 const minLengthErrorMessage = 'The received value {{r}} is shorter than the expected length {{e}}';

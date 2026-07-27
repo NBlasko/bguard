@@ -2,6 +2,8 @@
 
 ## 0.6.1 Fix broken subpath exports and ESM type resolution
  - Fixed the catch-all `"./*"` export, which pointed at the package root instead of `lib/`. Subpaths such as `bguard/core`, `bguard/InferType`, `bguard/translationMap` and `bguard/exceptions` previously failed to resolve in both CJS and ESM.
+ - `bguard/string`, `bguard/number`, `bguard/object`, `bguard/array`, `bguard/boolean`, `bguard/date`, `bguard/bigint` and `bguard/mix` now resolve directly, as the README has always documented. The trailing `/index` is no longer required, and the old `bguard/string/index` form keeps working.
+ - Fixed the docs, which referenced `bguard/ExceptionContext`. That module was merged into `core` in 0.6.0, so `ExceptionContext` and `RequiredValidation` now come from `bguard/core`.
  - Fixed `bguard/codeGen`, which was mapped as a directory (`./codeGen/*`) although the build emits a single `lib/codeGen.js` file.
  - ESM consumers now resolve `.d.mts` declarations instead of the CJS `.d.ts` ones, fixing the "Masquerading as CJS" type mismatch reported by `@arethetypeswrong/cli`.
  - Removed the `./function/*` and `./symbol/*` export entries. Those assert directories are empty, so the subpaths could never resolve.
