@@ -32,6 +32,8 @@ Table of contents
  * [Error Shape](#h3_error_shape)
  * [Deriving Object Schemas](#h3_object_utilities)
  * [Formatting Errors](#h3_formatting_errors)
+ * [Coercion](#h3_coercion)
+ * [InferInput and InferOutput](#h3_infer_input)
  * [Literals](#h3_literals)
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
@@ -696,6 +698,56 @@ if (errors) {
 
 `flattenErrors` attributes a failure to its top-level field, so a form bound to `address` still sees a
 message that came from `address.street`. `treeifyErrors` keeps the full structure instead.
+
+### <a id="h3_coercion"> Coercion </a>
+
+For input that does not arrive already typed — query strings, form data, environment variables.
+
+```typeScript
+import { coerce } from 'bguard/coerce';
+
+const querySchema = object({
+  page: coerce.number().default(1),
+  limit: coerce.number(),
+  active: coerce.boolean(),
+});
+
+parseOrFail(querySchema, { limit: '20', active: 'true' });
+// { page: 1, limit: 20, active: true }
+```
+
+`coerce.string()`, `coerce.number()`, `coerce.boolean()`, `coerce.bigint()` and `coerce.date()` convert
+the value before validating it. Anything a helper cannot convert is left alone, so validation reports
+the type problem rather than the conversion silently succeeding: `coerce.number()` on `'abc'` fails,
+because `Number('abc')` is `NaN` and `number()` rejects that.
+
+`null` is never coerced, so `nullable()` still decides whether it is allowed instead of it becoming the
+string `'null'` or the number `0`.
+
+> **Notice:** `coerce.boolean()` only converts what unambiguously means a boolean — the strings
+> `'true'` and `'false'` in any case, and the numbers `1` and `0`. Everything else is rejected. This is
+> deliberately narrower than passing the value through `Boolean`, which would accept every input and
+> read `'false'` as `true`.
+
+### <a id="h3_infer_input"> InferInput and InferOutput </a>
+
+`InferType` is the type a schema *produces*, which is what `parse` returns. `InferInput` is the type it
+*accepts*. The two differ wherever a schema converts or supplies something:
+
+```typeScript
+const schema = object({ page: coerce.number().default(1), q: string() });
+
+type Output = InferType<typeof schema>;   // { page: number; q: string }
+type Input = InferInput<typeof schema>;   // { q: string; page?: unknown }
+```
+
+A default makes a property optional on the input and present on the output. A coercing schema accepts
+`unknown` and yields its target type. Everywhere else the two coincide, so `InferType` needs no
+thought unless you are generating something from the input side — a form, or a client. `InferOutput` is
+available as a name for symmetry and is the same type as `InferType`.
+
+Both are reported through Standard Schema, so a consumer asks for what the schema takes rather than
+what it returns.
 
 ### <a id="h3_literals"> Literals </a>
 

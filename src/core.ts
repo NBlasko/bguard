@@ -7,13 +7,15 @@ import {
   ValidationErrorData,
   WithArray,
   WithBGuardType,
+  WithDefault,
+  WithInput,
   WithNull,
   WithObject,
   WithRecord,
   WithTuple,
   WithUndefined,
 } from './commonTypes';
-import { type InferType } from './InferType';
+import { type InferInput, type InferType } from './InferType';
 import { BuildSchemaError, ValidationError } from './exceptions';
 import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
@@ -435,9 +437,10 @@ export class CommonSchema {
    *
    * A getter rather than a stored property, so it costs nothing until something asks for it and is
    * not copied by `clone`. `types` is declared but deliberately never assigned: the spec defines it
-   * as type-only. bguard's input and output types coincide, so both sides of it are `InferType`.
+   * as type-only. Input and output are reported separately, so a consumer generating a form asks for
+   * what the schema takes rather than what it returns.
    */
-  public get '~standard'(): StandardSchemaProps<InferType<this>, InferType<this>> {
+  public get '~standard'(): StandardSchemaProps<InferInput<this>, InferType<this>> {
     return {
       version: 1,
       vendor: 'bguard',
@@ -509,7 +512,7 @@ export class CommonSchema {
    *
    * @returns {this} The schema instance. This method should be used as a last one because it does the check of previous methods and
    */
-  public default(defaultValue: InferType<this>): this {
+  public default(defaultValue: InferType<this>): WithDefault<this> {
     const ctx = this[ctxSymbol];
     if (ctx.isOptional) {
       throw new BuildSchemaError(`Cannot call method 'default' after method 'optional'`);
@@ -523,7 +526,7 @@ export class CommonSchema {
 
     const next = this.clone();
     next[ctxSymbol].defaultValue = defaultValue;
-    return next;
+    return next as WithDefault<this>;
   }
 
   /**
@@ -547,7 +550,7 @@ export class CommonSchema {
    * // Parsing '' will be transformed to null and will pass due to .nullable().
    * parseOrFail(schema, '');
    */
-  public transformBeforeValidation<In>(cb: TransformCallback<In, InferType<this>>): this {
+  public transformBeforeValidation<In>(cb: TransformCallback<In, InferType<this>>): WithInput<this, In> {
     const next = this.clone();
     const ctx = next[ctxSymbol];
     if (ctx.transformListBefore) {
@@ -556,7 +559,9 @@ export class CommonSchema {
       ctx.transformListBefore = [cb];
     }
 
-    return next;
+    // The callback's parameter type becomes the schema's input type, which is what lets a coercing
+    // schema say that it accepts more than it produces.
+    return next as WithInput<this, In>;
   }
 
   /**

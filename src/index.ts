@@ -1,4 +1,4 @@
-export type { InferType } from './InferType';
+export type { InferType, InferInput, InferOutput } from './InferType';
 export type {
   StandardSchemaV1,
   StandardSchemaProps,
@@ -28,6 +28,7 @@ export { date } from './asserts/date/index';
 export { dateMax } from './asserts/date/dateMax';
 export { dateMin } from './asserts/date/dateMin';
 
+export { coerce } from './asserts/coerce/index';
 export { oneOfTypes } from './asserts/mix/index';
 export { union } from './asserts/union/index';
 export { tuple } from './asserts/tuple/index';

@@ -58,6 +58,12 @@ export type WithBGuardType<T, Y> = T & { validation_bguard: Y };
 export type ExtractFromBGuardType<T> = T extends WithBGuardType<unknown, infer Y> ? Y : never;
 export type WithNull<T> = T & { validation_null: true };
 export type WithUndefined<T> = T & { validation_undefined: true };
+/** Records the value a schema accepts before transformation, which is what makes coercion typable. */
+export type WithInput<T, In> = T & { validation_input: In };
+
+/** Records that a schema supplies its own value, so the input may leave it out. */
+export type WithDefault<T> = T & { validation_default: true };
+
 export type WithArray<T, Y> = T & { validation_array: Y };
 export type ExtractFromArray<T> = T extends WithArray<unknown, infer X> ? X : never;
 export type WithObject<T, Y> = T & { validation_object: Y };

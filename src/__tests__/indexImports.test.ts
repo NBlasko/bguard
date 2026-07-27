@@ -38,6 +38,7 @@ describe('Library exports', () => {
       'dateMin',
 
       // mix
+      'coerce',
       'oneOfTypes',
       'union',
       'record',

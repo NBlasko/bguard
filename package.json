@@ -146,6 +146,14 @@
       "import": "./lib/asserts/boolean/index.mjs",
       "require": "./lib/asserts/boolean/index.js"
     },
+    "./coerce": {
+      "types": {
+        "import": "./lib/asserts/coerce/index.d.mts",
+        "require": "./lib/asserts/coerce/index.d.ts"
+      },
+      "import": "./lib/asserts/coerce/index.mjs",
+      "require": "./lib/asserts/coerce/index.js"
+    },
     "./boolean/*": {
       "types": {
         "import": "./lib/asserts/boolean/*.d.mts",

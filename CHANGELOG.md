@@ -29,6 +29,32 @@ taken apart again reliably when a key may itself contain a dot. `code` is the fa
 key, for example `'s:minLength'`, which unlike `message` does not change with the locale, so it is
 what to branch on. Both appear on `ValidationError` too.
 
+**Coercion, and separate input and output types.** `InferType` has always been the type a schema
+*produces*. `InferInput` is the type it *accepts*, and the two now differ wherever a schema converts or
+supplies something:
+
+```ts
+const schema = object({ page: coerce.number().default(1), q: string() });
+
+type Output = InferType<typeof schema>;  // { page: number; q: string }
+type Input = InferInput<typeof schema>;  // { q: string; page?: unknown }
+```
+
+`coerce.string()`, `coerce.number()`, `coerce.boolean()`, `coerce.bigint()` and `coerce.date()` convert
+before validating, for input that does not arrive typed — query strings, form data, environment
+variables. Anything a helper cannot convert is passed through so validation reports the type problem
+itself, and `null` is never coerced so `nullable()` still decides whether it is allowed. Available from
+the root and as `bguard/coerce`.
+
+`coerce.boolean()` only converts what unambiguously means a boolean — `'true'`/`'false'` in any case,
+and `1`/`0` — and rejects the rest. Deliberately narrower than passing the value through `Boolean`,
+which accepts everything and reads `'false'` as `true`.
+
+`transformBeforeValidation` now records its callback's parameter type as the schema's input type, and
+`default()` records that its position may be left out. `InferOutput` is available as a name for
+symmetry with `InferInput` and is the same type as `InferType`. Both sides are reported through
+Standard Schema's `types`, so a consumer generating a form asks for what the schema takes.
+
 **Formatting errors: `flattenErrors` and `treeifyErrors`.** Pure functions over the errors array,
 which is what the array-valued `path` made possible. `flattenErrors` gives
 `{ formErrors, fieldErrors }`, attributing a nested failure to its top-level field so a form bound to
