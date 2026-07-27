@@ -8,10 +8,13 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance
     steps:
       - name: checkout
         uses: actions/checkout@v4
-        
+
       - name: node
         uses: actions/setup-node@v4
         with:
@@ -25,6 +28,9 @@ jobs:
       - name: build:package
         run: npm run build:package
 
+      - name: check:package
+        run: npm run check:package
+
       - name: lint:check
         run: npm run lint:check
 
@@ -32,6 +38,6 @@ jobs:
         run: npm run test:coverage
 
       - name: publish
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}

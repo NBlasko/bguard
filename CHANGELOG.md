@@ -1,5 +1,13 @@
 # bguard
 
+## 0.6.1 Fix broken subpath exports and ESM type resolution
+ - Fixed the catch-all `"./*"` export, which pointed at the package root instead of `lib/`. Subpaths such as `bguard/core`, `bguard/InferType`, `bguard/translationMap` and `bguard/exceptions` previously failed to resolve in both CJS and ESM.
+ - Fixed `bguard/codeGen`, which was mapped as a directory (`./codeGen/*`) although the build emits a single `lib/codeGen.js` file.
+ - ESM consumers now resolve `.d.mts` declarations instead of the CJS `.d.ts` ones, fixing the "Masquerading as CJS" type mismatch reported by `@arethetypeswrong/cli`.
+ - Removed the `./function/*` and `./symbol/*` export entries. Those assert directories are empty, so the subpaths could never resolve.
+ - Added `"sideEffects": false` so bundlers can tree-shake the package.
+ - Added `npm run check:package`, wired into CI, which validates every export target against the real build output.
+
 ## 0.6.0 Documentation cleanup and export fixes
  - Improved docs
  - Fixed missing exports in index.ts

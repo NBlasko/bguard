@@ -2,16 +2,17 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
+  "sideEffects": false,
   "files": [
     "/lib"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/NBlasko/bguard.git"
+    "url": "git+https://github.com/NBlasko/bguard.git"
   },
   "bugs": {
     "url": "https://github.com/NBlasko/bguard/issues"
@@ -50,11 +51,14 @@
     "change:start": "changeset",
     "change:version": "changeset version",
     "change:publish": "changeset publish",
-    "arethetypeswrong": "npx @arethetypeswrong/cli",
+    "arethetypeswrong": "attw --pack . --ignore-rules no-resolution",
+    "check:exports": "node scripts/check-exports.mjs",
+    "check:package": "npm run check:exports && npm run arethetypeswrong",
     "docs:join-assert": "node scripts/join-assert-docs.mjs",
     "test:before": "ts-node jest/assets/generateStaticTypes"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@changesets/cli": "^2.29.5",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.30.1",
@@ -90,69 +94,92 @@
   },
   "exports": {
     ".": {
-      "types": "./lib/index.d.ts",
+      "types": {
+        "import": "./lib/index.d.mts",
+        "require": "./lib/index.d.ts"
+      },
       "import": "./lib/index.mjs",
       "require": "./lib/index.js"
     },
-    "./codeGen/*": {
-      "types": "./lib/codeGen/*.d.ts",
-      "import": "./lib/codeGen/*.mjs",
-      "require": "./lib/codeGen/*.js"
+    "./codeGen": {
+      "types": {
+        "import": "./lib/codeGen.d.mts",
+        "require": "./lib/codeGen.d.ts"
+      },
+      "import": "./lib/codeGen.mjs",
+      "require": "./lib/codeGen.js"
     },
     "./string/*": {
-      "types": "./lib/asserts/string/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/string/*.d.mts",
+        "require": "./lib/asserts/string/*.d.ts"
+      },
       "import": "./lib/asserts/string/*.mjs",
       "require": "./lib/asserts/string/*.js"
     },
     "./number/*": {
-      "types": "./lib/asserts/number/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/number/*.d.mts",
+        "require": "./lib/asserts/number/*.d.ts"
+      },
       "import": "./lib/asserts/number/*.mjs",
       "require": "./lib/asserts/number/*.js"
     },
     "./boolean/*": {
-      "types": "./lib/asserts/boolean/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/boolean/*.d.mts",
+        "require": "./lib/asserts/boolean/*.d.ts"
+      },
       "import": "./lib/asserts/boolean/*.mjs",
       "require": "./lib/asserts/boolean/*.js"
     },
     "./array/*": {
-      "types": "./lib/asserts/array/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/array/*.d.mts",
+        "require": "./lib/asserts/array/*.d.ts"
+      },
       "import": "./lib/asserts/array/*.mjs",
       "require": "./lib/asserts/array/*.js"
     },
     "./object/*": {
-      "types": "./lib/asserts/object/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/object/*.d.mts",
+        "require": "./lib/asserts/object/*.d.ts"
+      },
       "import": "./lib/asserts/object/*.mjs",
       "require": "./lib/asserts/object/*.js"
     },
     "./mix/*": {
-      "types": "./lib/asserts/mix/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/mix/*.d.mts",
+        "require": "./lib/asserts/mix/*.d.ts"
+      },
       "import": "./lib/asserts/mix/*.mjs",
       "require": "./lib/asserts/mix/*.js"
     },
-    "./function/*": {
-      "types": "./lib/asserts/function/*.d.ts",
-      "import": "./lib/asserts/function/*.mjs",
-      "require": "./lib/asserts/function/*.js"
-    },
-    "./symbol/*": {
-      "types": "./lib/asserts/symbol/*.d.ts",
-      "import": "./lib/asserts/symbol/*.mjs",
-      "require": "./lib/asserts/symbol/*.js"
-    },
     "./bigint/*": {
-      "types": "./lib/asserts/bigint/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/bigint/*.d.mts",
+        "require": "./lib/asserts/bigint/*.d.ts"
+      },
       "import": "./lib/asserts/bigint/*.mjs",
       "require": "./lib/asserts/bigint/*.js"
     },
     "./date/*": {
-      "types": "./lib/asserts/date/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/date/*.d.mts",
+        "require": "./lib/asserts/date/*.d.ts"
+      },
       "import": "./lib/asserts/date/*.mjs",
       "require": "./lib/asserts/date/*.js"
     },
     "./*": {
-      "types": "./*.d.ts",
-      "import": "./*.mjs",
-      "require": "./*.js"
+      "types": {
+        "import": "./lib/*.d.mts",
+        "require": "./lib/*.d.ts"
+      },
+      "import": "./lib/*.mjs",
+      "require": "./lib/*.js"
     }
   }
 }
