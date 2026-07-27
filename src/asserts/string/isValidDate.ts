@@ -1,3 +1,4 @@
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 import type { ExceptionContext, RequiredValidation } from '../../core';
 
@@ -20,11 +21,11 @@ const dateRegexPattern = /^(19|20)\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
  * @translation Error Translation Key = 's:isValidDate'
  */
 export const isValidDate = (): RequiredValidation<string> => {
-  return (received: string, ctx: ExceptionContext) => {
+  return _constrain({ format: 'date' }, (received: string, ctx: ExceptionContext) => {
     if (!dateRegexPattern.test(received)) {
       ctx.addIssue('valid date', received, dateErrorKey);
     }
-  };
+  });
 };
 
 isValidDate.key = dateErrorKey;

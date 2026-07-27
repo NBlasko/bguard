@@ -1,4 +1,5 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const emailRegExp = /^[^@]+@[^@]+\.[^@]+$/;
@@ -16,9 +17,10 @@ const emailErrorKey = 's:email';
  *
  * @translation - Error Translation Key = 's:email'
  */
-export const email = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
-  if (!emailRegExp.test(received)) ctx.addIssue(emailRegExp, received, emailErrorKey);
-};
+export const email = (): RequiredValidation<string> =>
+  _constrain({ format: 'email' }, (received: string, ctx: ExceptionContext) => {
+    if (!emailRegExp.test(received)) ctx.addIssue(emailRegExp, received, emailErrorKey);
+  });
 
 email.key = emailErrorKey;
 email.message = emailErrorMessage;

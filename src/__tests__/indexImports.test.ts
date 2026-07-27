@@ -16,6 +16,7 @@ describe('Library exports', () => {
       'clearLocales',
       'codeGen',
       'codeGenWithName',
+      'toJSONSchema',
       'flattenErrors',
       'treeifyErrors',
 

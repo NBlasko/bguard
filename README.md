@@ -35,6 +35,7 @@ Table of contents
  * [Coercion](#h3_coercion)
  * [InferInput and InferOutput](#h3_infer_input)
  * [Async Validation](#h3_async)
+ * [JSON Schema](#h3_json_schema)
  * [Literals](#h3_literals)
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
@@ -813,6 +814,44 @@ consumer that never awaits keeps working for every other schema.
 > **Notice:** Because the async validations are awaited after the walk, their issues come after the
 > synchronous ones. `parseOrFailAsync` therefore cannot stop at the first error the way `parseOrFail`
 > does; it throws the first one found once everything has been awaited.
+
+### <a id="h3_json_schema"> JSON Schema </a>
+
+`toJSONSchema` renders a schema as a JSON Schema document, for OpenAPI, form generators and LLM tool
+definitions.
+
+```typeScript
+import { object, string, number, toJSONSchema } from 'bguard';
+import { minLength } from 'bguard/string/minLength';
+
+const userSchema = object({ name: string().custom(minLength(2)), age: number().optional() });
+
+toJSONSchema(userSchema, { dialect: null });
+// {
+//   type: 'object',
+//   properties: { name: { type: 'string', minLength: 2 }, age: { type: 'number' } },
+//   required: ['name'],
+//   additionalProperties: false,
+// }
+```
+
+Represented: types, object properties and which are required, arrays, tuples, records, unions, literals
+and enums, nullability, defaults, `description()`, and recursive schemas through `$defs` and `$ref`.
+Assertions that map onto a keyword are included — string lengths, patterns and formats, numeric bounds,
+array lengths, `maxKeys`.
+
+Assertions with no JSON Schema counterpart are **left out rather than approximated**. `contains('x')`
+has no keyword, so it does not appear; a value the document accepts may still be rejected by bguard.
+The document is a faithful description of what it can express, not a complete one.
+
+`bigint` raises a `BuildSchemaError`, since it is not representable in JSON at all and emitting
+`integer` would be a lie. A `date()` becomes `{ type: 'string', format: 'date-time' }`.
+
+Pass `dialect: null` to leave out `$schema`, which is what you want when embedding the result in an
+OpenAPI `components.schemas` entry.
+
+> **Verified against a real validator:** the generated documents are cross-checked with `ajv` over 70
+> values across 19 schemas, so a JSON Schema validator agrees with bguard about which values pass.
 
 ### <a id="h3_literals"> Literals </a>
 

@@ -9,6 +9,8 @@ export { parseOrFail, parse, parseOrFailAsync, parseAsync, ExceptionContext } fr
 export { ValidationError, BuildSchemaError } from './exceptions';
 export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
 export { codeGen, codeGenWithName } from './codeGen';
+export { toJSONSchema } from './toJSONSchema';
+export type { JSONSchema, ToJSONSchemaOptions } from './toJSONSchema';
 export { flattenErrors, treeifyErrors } from './formatErrors';
 export type { FlatErrors, ErrorTree } from './formatErrors';
 

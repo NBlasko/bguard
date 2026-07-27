@@ -1,4 +1,5 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const validUrlErrorMessage = 'The received value is not a valid URL';
@@ -20,9 +21,8 @@ const urlRegex = /^(http:\/\/|https:\/\/)([a-zA-Z0-9\-.]+)(:\d+)?(\/[^\s]*)?$/;
  *
  * @translation Error Translation Key = 's:url'
  */
-export const validUrl =
-  (protocol?: string): RequiredValidation<string> =>
-  (received: string, ctx: ExceptionContext) => {
+export const validUrl = (protocol?: string): RequiredValidation<string> =>
+  _constrain({ format: 'uri' }, (received: string, ctx: ExceptionContext) => {
     let regex = urlRegex;
     if (protocol) {
       regex = new RegExp(`^${protocol}:\\/\\/([a-zA-Z0-9\\-\\.]+)(:[0-9]+)?(\\/[^\\s]*)?$`);
@@ -31,7 +31,7 @@ export const validUrl =
     if (!regex.test(received)) {
       ctx.addIssue('Invalid URL', received, validUrlErrorKey);
     }
-  };
+  });
 
 validUrl.key = validUrlErrorKey;
 validUrl.message = validUrlErrorMessage;

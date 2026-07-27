@@ -1,4 +1,5 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const maxLengthErrorMessage = 'The received value length is greater than expected';
@@ -16,11 +17,10 @@ const maxLengthErrorKey = 's:maxLength';
  *
  * @translation Error Translation Key = 's:maxLength'
  */
-export const maxLength =
-  (expected: number): RequiredValidation<string> =>
-  (received: string, ctx: ExceptionContext) => {
+export const maxLength = (expected: number): RequiredValidation<string> =>
+  _constrain({ maxLength: expected }, (received: string, ctx: ExceptionContext) => {
     if (received.length > expected) ctx.addIssue(expected, received, maxLengthErrorKey);
-  };
+  });
 
 maxLength.key = maxLengthErrorKey;
 maxLength.message = maxLengthErrorMessage;

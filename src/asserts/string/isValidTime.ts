@@ -1,3 +1,4 @@
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 import type { ExceptionContext, RequiredValidation } from '../../core';
 
@@ -26,7 +27,7 @@ interface IsValidTimeOptions {
  * @translation Error Translation Key = 's:isValidTime'
  */
 export const isValidTime = (options: IsValidTimeOptions = {}): RequiredValidation<string> => {
-  return (received: string, ctx: ExceptionContext) => {
+  return _constrain({ format: 'time' }, (received: string, ctx: ExceptionContext) => {
     const { precision } = options;
 
     // Base regex for HH:mm:ss format
@@ -46,7 +47,7 @@ export const isValidTime = (options: IsValidTimeOptions = {}): RequiredValidatio
     if (precision !== undefined && !received.includes('.')) {
       ctx.addIssue('valid time', received, timeErrorKey);
     }
-  };
+  });
 };
 
 isValidTime.key = timeErrorKey;

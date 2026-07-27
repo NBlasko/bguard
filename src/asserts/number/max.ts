@@ -1,3 +1,4 @@
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 import type { ExceptionContext, RequiredValidation } from '../../core';
 
@@ -17,11 +18,10 @@ const maxErrorKey = 'n:max';
  *
  * @translation Error Translation Key = 'n:max'
  */
-export const max =
-  (expected: number): RequiredValidation<number> =>
-  (received: number, ctx: ExceptionContext) => {
+export const max = (expected: number): RequiredValidation<number> =>
+  _constrain({ maximum: expected }, (received: number, ctx: ExceptionContext) => {
     if (expected < received) ctx.addIssue(expected, received, maxErrorKey);
-  };
+  });
 
 max.key = maxErrorKey;
 max.message = maxErrorMessage;

@@ -29,6 +29,23 @@ taken apart again reliably when a key may itself contain a dot. `code` is the fa
 key, for example `'s:minLength'`, which unlike `message` does not change with the locale, so it is
 what to branch on. Both appear on `ValidationError` too.
 
+**JSON Schema output.** `toJSONSchema` renders a schema as a JSON Schema document, for OpenAPI, form
+generators and LLM tool definitions.
+
+Types, object properties and which are required, arrays, tuples, records, unions, literals and enums,
+nullability, defaults, `description()` and recursive schemas via `$defs`/`$ref` are all represented.
+Assertions that map onto a keyword are too — string lengths, patterns and formats, numeric bounds, array
+lengths, `maxKeys` — which needed each of those assertions to start carrying the keywords it stands for,
+since the generator only ever sees the closure a factory returned, not its arguments.
+
+Assertions with no counterpart are left out rather than approximated: `contains('x')` has no keyword, so
+a document may accept a value bguard would reject. `bigint` raises a `BuildSchemaError` instead of being
+emitted as `integer`, which would be a lie. A `date()` becomes `{ type: 'string', format: 'date-time' }`.
+
+The generated documents are cross-checked against `ajv` over 70 values across 19 schemas, so a real
+validator agrees with bguard about which values pass. That is the check that makes the feature worth
+anything.
+
 **Async validation.** `customAsync` registers a check that has to wait — a uniqueness lookup, an HTTP
 call — and `parseAsync` / `parseOrFailAsync` mirror the synchronous entry points.
 
