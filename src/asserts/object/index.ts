@@ -39,8 +39,9 @@ class ObjectSchema extends CommonSchema {
    * @public
    */
   public allowUnrecognized(): this {
-    this[ctxSymbol].allowUnrecognizedObjectProps = true;
-    return this;
+    const next = this.clone();
+    next[ctxSymbol].allowUnrecognizedObjectProps = true;
+    return next;
   }
 }
 

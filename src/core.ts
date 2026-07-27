@@ -205,6 +205,28 @@ export interface ValidatorContext {
   transformListBefore?: TransformCallback<any, any>[];
 }
 
+/**
+ * Copies a context so a derived schema can be changed without touching the one it came from.
+ *
+ * Child schemas in `array` and `object` are shared by reference rather than copied. That is safe
+ * because schemas are immutable: refining a child produces a new instance instead of altering the
+ * shared one. Only the containers themselves are re-allocated, so adding a key to a derived
+ * object schema cannot be seen by the original.
+ */
+function cloneValidatorContext(ctx: ValidatorContext): ValidatorContext {
+  const next: ValidatorContext = {
+    ...ctx,
+    type: [...ctx.type],
+    requiredValidations: [...ctx.requiredValidations],
+  };
+
+  if (ctx.object) next.object = { ...ctx.object };
+  if (ctx.transformListBefore) next.transformListBefore = [...ctx.transformListBefore];
+  if (ctx.meta) next.meta = { ...ctx.meta };
+
+  return next;
+}
+
 export class CommonSchema {
   [ctxSymbol]: ValidatorContext;
   constructor(ctx: ValidatorContext) {
@@ -212,35 +234,52 @@ export class CommonSchema {
   }
 
   /**
+   * Returns a copy of this schema that carries its own context.
+   *
+   * Every refining method goes through this, so a schema can be shared between properties and
+   * reused as a base without one use leaking into another. Construction is deliberately bypassed:
+   * the subclass constructors validate their arguments and take extra parameters, and neither
+   * applies when deriving from an already-valid schema.
+   */
+  protected clone(): this {
+    const next = Object.assign(Object.create(Object.getPrototypeOf(this) as object), this) as this;
+    next[ctxSymbol] = cloneValidatorContext(this[ctxSymbol]);
+    return next;
+  }
+
+  /**
    * @param validators - One or more custom validation functions.
-   * @returns {this} The schema instance with the added custom validation.
+   * @returns {this} A new schema instance with the added custom validation.
    */
   public custom(...validators: RequiredValidation<AssertInput<this>>[]): this {
     this.defaultValueCheck();
-    this[ctxSymbol].requiredValidations.push(...validators);
-    return this;
+    const next = this.clone();
+    next[ctxSymbol].requiredValidations.push(...validators);
+    return next;
   }
 
   /**
    * Marks the schema as nullable, allowing the value to be `null`.
    *
-   * @returns {WithNull<this>} The schema instance marked as nullable.
+   * @returns {WithNull<this>} A new schema instance marked as nullable.
    */
   public nullable(): WithNull<this> {
     this.defaultValueCheck();
-    this[ctxSymbol].isNullable = true;
-    return this as WithNull<this>;
+    const next = this.clone();
+    next[ctxSymbol].isNullable = true;
+    return next as WithNull<this>;
   }
 
   /**
    * Marks the schema as optional, allowing the value to be `undefined`.
    *
-   * @returns {WithUndefined<this>} The schema instance marked as optional.
+   * @returns {WithUndefined<this>} A new schema instance marked as optional.
    */
   public optional(): WithUndefined<this> {
     this.defaultValueCheck();
-    this[ctxSymbol].isOptional = true;
-    return this as WithUndefined<this>;
+    const next = this.clone();
+    next[ctxSymbol].isOptional = true;
+    return next as WithUndefined<this>;
   }
 
   /**
@@ -260,8 +299,9 @@ export class CommonSchema {
       throw new BuildSchemaError((e as Error).message);
     }
 
-    this[ctxSymbol].defaultValue = defaultValue;
-    return this;
+    const next = this.clone();
+    next[ctxSymbol].defaultValue = defaultValue;
+    return next;
   }
 
   /**
@@ -271,7 +311,7 @@ export class CommonSchema {
    *
    * @template In - The type of the input value before transformation (defaults to `unknown`).
    * @param {TransformCallback<In, InferType<this>>} cb - The callback function that performs the transformation.
-   * @returns {this} The updated schema with the applied transformation.
+   * @returns {this} A new schema with the applied transformation.
    *
    * @example
    * const schema = string()
@@ -286,14 +326,15 @@ export class CommonSchema {
    * parseOrFail(schema, '');
    */
   public transformBeforeValidation<In>(cb: TransformCallback<In, InferType<this>>): this {
-    const ctx = this[ctxSymbol];
+    const next = this.clone();
+    const ctx = next[ctxSymbol];
     if (ctx.transformListBefore) {
       ctx.transformListBefore.push(cb);
     } else {
       ctx.transformListBefore = [cb];
     }
 
-    return this;
+    return next;
   }
 
   /**
@@ -302,7 +343,7 @@ export class CommonSchema {
    * in a form or other structures.
    *
    * @param {string} value - The unique identifier for the schema.
-   * @returns {this} The updated schema with the assigned ID.
+   * @returns {this} A new schema with the assigned ID.
    *
    * @example
    * const schema = string().id('username');
@@ -316,7 +357,7 @@ export class CommonSchema {
    * The description can be used when displaying validation errors or for documentation purposes.
    *
    * @param {string} value - The description for the schema.
-   * @returns {this} The updated schema with the added description.
+   * @returns {this} A new schema with the added description.
    *
    * @example
    * const schema = string().description('The username of the account holder.');
@@ -326,9 +367,10 @@ export class CommonSchema {
   }
 
   private meta(key: string, value: string): this {
-    const ctx = this[ctxSymbol];
+    const next = this.clone();
+    const ctx = next[ctxSymbol];
     ctx.meta = { ...ctx.meta, [key]: value };
-    return this;
+    return next;
   }
 
   protected defaultValueCheck() {

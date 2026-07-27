@@ -335,6 +335,28 @@ Explanation
 
 ### <a id="h3_chaining_methods"> Chaining Methods </a>
 
+Schemas are immutable. Every method below returns a new schema rather than changing the one it was
+called on, so a schema can be defined once and reused with different refinements:
+
+```typeScript
+const name = string().custom(minLength(2));
+
+const schema = object({
+  firstName: name,                          // required
+  middleName: name.optional(),              // optional, firstName is unaffected
+  lastName: name.custom(maxLength(50)),     // extra rule, only here
+});
+```
+
+This also means a refinement has no effect unless you keep its result:
+
+```typeScript
+const schema = string();
+schema.custom(minLength(5));          // returns a new schema, which is then discarded
+
+const schema = string().custom(minLength(5));   // keep the result instead
+```
+
 #### <a id="h4_chaining_nullable"> nullable() </a>
 
 Allows the value to be `null`.
@@ -661,6 +683,9 @@ import { string } from 'bguard/string';
 ```typescript
  string().oneOfValues(['foo', 'bar']); // Infers the type 'foo' | 'bar'
 ```
+
+Reads the once-only flag without setting it. The flag belongs on the schema that `custom`
+ returns, not on the one it was derived from.
    
         
 ##### <a id="assert_atleastonedigit_string"> atLeastOneDigit </a>
@@ -1325,6 +1350,9 @@ import { bigint } from 'bguard/bigint';
 ```typescript
  bigint().oneOfValues([5n, 7n]); // Infers the type 5n | 7n
 ```
+
+Reads the once-only flag without setting it. The flag belongs on the schema that `custom`
+ returns, not on the one it was derived from.
    
         
 ##### <a id="assert_bigintmax_bigint"> bigintMax </a>

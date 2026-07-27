@@ -1,5 +1,56 @@
 # bguard
 
+## 0.7.0 Immutable schemas, assert type safety, and export fixes
+
+### Breaking
+
+Refining a schema now returns a new schema instead of changing the one it was called on. Every
+method that narrows a schema is affected: `custom`, `nullable`, `optional`, `default`,
+`transformBeforeValidation`, `id`, `description`, `allowUnrecognized`, `equalTo`, `oneOfValues`,
+`onlyTrue` and `onlyFalse`.
+
+Previously they mutated and returned the same instance, so a schema could not be shared:
+
+```ts
+const name = string();
+const schema = object({ a: name.optional(), b: name });
+// `b` silently became optional too, and a missing `b` produced no error
+```
+
+Chained code such as `string().optional().custom(email())` behaves exactly as before. Code that
+relied on refining a schema for its side effect needs updating:
+
+```ts
+const schema = string();
+schema.custom(minLength(5));   // before: mutated `schema`. now: returns a new schema, discarded
+const schema = string().custom(minLength(5));   // do this instead
+```
+
+Child schemas inside `array` and `object` are shared by reference rather than deep-copied, which is
+safe now that refining a child cannot alter it in place.
+
+### Fixed
+
+ - `custom` now rejects asserts that belong to a different type. `RequiredValidation` takes the
+   value it inspects (`RequiredValidation<string>`), and `custom` asks for the schema's own value
+   type, so `number().custom(email())` and `string().custom(min(3))` are compile errors instead of
+   validations that never match. Asserts that accept anything declare `RequiredValidation<unknown>`,
+   and the parameter defaults to `any` so existing custom asserts keep compiling.
+ - Ten built-in asserts ignored `setLocale` and always emitted hardcoded English, because they
+   passed their message text to `addIssue` where the translation key belongs: `positive`,
+   `minLength`, `maxLength`, `minArrayLength`, `maxArrayLength`, `email` and `regExp`. Three more
+   had the arguments in the wrong order, reporting the received value as `expected` and the message
+   text as `received`: `isValidDate`, `isValidTime` and `isValidDateTime`.
+ - `codeGen` indented an object nested inside an array one level too far, and its closing brace two,
+   producing misaligned output from a function whose purpose is emitting source.
+
+### Internal
+
+ - The test suite was not type checking at all. ts-jest reads `isolatedModules` from the tsconfig as
+   "transpile only", so roughly 150 compile-time type assertions asserted nothing. Checking is on
+   again, with canaries that fail if it is ever disabled.
+ - `npm run prettier` now covers `jest/` and `scripts/`, not only `src/`.
+
 ## 0.6.1 Fix broken subpath exports and ESM type resolution
  - Fixed the catch-all `"./*"` export, which pointed at the package root instead of `lib/`. Subpaths such as `bguard/core`, `bguard/InferType`, `bguard/translationMap` and `bguard/exceptions` previously failed to resolve in both CJS and ESM.
  - `bguard/string`, `bguard/number`, `bguard/object`, `bguard/array`, `bguard/boolean`, `bguard/date`, `bguard/bigint` and `bguard/mix` now resolve directly, as the README has always documented. The trailing `/index` is no longer required, and the old `bguard/string/index` form keeps working.

@@ -34,6 +34,10 @@ export default async (): Promise<Config.InitialOptions> => ({
           strict: true,
           strictFunctionTypes: true,
           noUncheckedIndexedAccess: true,
+          // Jest loads the suite as CommonJS. The root tsconfig targets node16 module resolution,
+          // which ts-jest only supports alongside isolatedModules, so pin the module kind here.
+          module: 'commonjs',
+          moduleResolution: 'node10',
         },
       },
     ],

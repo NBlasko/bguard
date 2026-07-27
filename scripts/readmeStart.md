@@ -257,6 +257,28 @@ Explanation
 
 ### <a id="h3_chaining_methods"> Chaining Methods </a>
 
+Schemas are immutable. Every method below returns a new schema rather than changing the one it was
+called on, so a schema can be defined once and reused with different refinements:
+
+```typeScript
+const name = string().custom(minLength(2));
+
+const schema = object({
+  firstName: name,                          // required
+  middleName: name.optional(),              // optional, firstName is unaffected
+  lastName: name.custom(maxLength(50)),     // extra rule, only here
+});
+```
+
+This also means a refinement has no effect unless you keep its result:
+
+```typeScript
+const schema = string();
+schema.custom(minLength(5));          // returns a new schema, which is then discarded
+
+const schema = string().custom(minLength(5));   // keep the result instead
+```
+
 #### <a id="h4_chaining_nullable"> nullable() </a>
 
 Allows the value to be `null`.

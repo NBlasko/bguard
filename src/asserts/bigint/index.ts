@@ -29,7 +29,7 @@ class BigIntSchema extends CommonSchema {
    * @method equalTo
    * @description Restricts the schema to exactly match the specified value and infers the literal value as the TypeScript type.
    * @param expectedValue - The value that the schema must exactly match.
-   * @returns The schema instance restricted to the specified value, with the literal value inferred as the TypeScript type
+   * @returns A new schema restricted to the specified value, with the literal value inferred as the TypeScript type
    * @example
    * bigint().equalTo(42n); // Infers the type 42n
    *
@@ -37,16 +37,18 @@ class BigIntSchema extends CommonSchema {
    */
   public equalTo<Y extends bigint>(expectedValue: Y): WithBGuardType<this, Y> {
     this.defaultValueCheck();
-    this.limitCheck();
-    _setStrictType(this, `${expectedValue}n`);
-    return this.custom(equalTo(expectedValue)) as WithBGuardType<this, Y>;
+    this.limitGuard();
+    const next = this.custom(equalTo(expectedValue));
+    next.limit = true;
+    _setStrictType(next, `${expectedValue}n`);
+    return next as WithBGuardType<this, Y>;
   }
 
   /**
    * @method oneOfValues
    * @description Restricts the schema to match one of the specified values and infers the union of those values as the TypeScript type.
    * @param expectedValues - An array of values that the schema can match.
-   * @returns The schema instance restricted to one of the specified values, with the union of those values inferred as the TypeScript type.
+   * @returns A new schema restricted to one of the specified values, with the union of those values inferred as the TypeScript type.
    * @example
    * bigint().oneOfValues([5n, 7n]); // Infers the type 5n | 7n
    *
@@ -54,16 +56,21 @@ class BigIntSchema extends CommonSchema {
    */
   public oneOfValues<Y extends bigint>(expectedValue: Y[]): WithBGuardType<this, Y> {
     this.defaultValueCheck();
-    this.limitCheck();
+    this.limitGuard();
+    const next = this.custom(oneOfValues(expectedValue));
+    next.limit = true;
     _setStrictType(
-      this,
+      next,
       expectedValue.map((el) => `${el}n`),
     );
-    return this.custom(oneOfValues(expectedValue)) as WithBGuardType<this, Y>;
+    return next as WithBGuardType<this, Y>;
   }
 
-  private limitCheck() {
+  /**
+   * Reads the once-only flag without setting it. The flag belongs on the schema that `custom`
+   * returns, not on the one it was derived from.
+   */
+  private limitGuard() {
     if (this.limit) throw new BuildSchemaError(ONLY_ONCE);
-    this.limit = true;
   }
 }
