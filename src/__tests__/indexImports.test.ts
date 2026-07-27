@@ -14,6 +14,8 @@ describe('Library exports', () => {
       'clearLocales',
       'codeGen',
       'codeGenWithName',
+      'flattenErrors',
+      'treeifyErrors',
 
       // array
       'array',
@@ -60,6 +62,7 @@ describe('Library exports', () => {
       'pick',
       'omit',
       'partial',
+      'required',
       'extend',
 
       // string

@@ -9,6 +9,8 @@ export { parseOrFail, parse, ExceptionContext } from './core';
 export { ValidationError, BuildSchemaError } from './exceptions';
 export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
 export { codeGen, codeGenWithName } from './codeGen';
+export { flattenErrors, treeifyErrors } from './formatErrors';
+export type { FlatErrors, ErrorTree } from './formatErrors';
 
 export { array } from './asserts/array/index';
 export { maxArrayLength } from './asserts/array/maxArrayLength';
@@ -48,6 +50,7 @@ export { maxKeys } from './asserts/object/maxKeys';
 export { pick } from './asserts/object/pick';
 export { omit } from './asserts/object/omit';
 export { partial } from './asserts/object/partial';
+export { required } from './asserts/object/required';
 export { extend } from './asserts/object/extend';
 
 export { string } from './asserts/string/index';

@@ -574,12 +574,35 @@ pick(userSchema, ['id', 'name']);   // { id: string; name: string }
 omit(userSchema, ['secret']);       // { id: string; name: string }
 partial(userSchema);                // { id?: string; name?: string; secret?: string }
 extend(userSchema, { age: number() });  // adds age
+required(partial(userSchema));      // back to all required
 ```
 
 `extend` replaces a property that is already declared, which is the difference from `intersection`:
 `intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
 explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
 assertions, `id` and `description`.
+
+### <a id="h3_formatting_errors"> Formatting Errors </a>
+
+Two helpers turn the errors array into the shapes a form usually wants. Both work off `path`.
+
+```typeScript
+import { flattenErrors, treeifyErrors } from 'bguard';
+
+const [errors] = parse(userSchema, received, { getAllErrors: true });
+
+if (errors) {
+  const { formErrors, fieldErrors } = flattenErrors(errors);
+  // formErrors: messages belonging to no single field
+  // fieldErrors: { email: ['...'], password: ['...'] }
+
+  const tree = treeifyErrors(errors);
+  // tree.properties?.address?.properties?.street?.errors
+}
+```
+
+`flattenErrors` attributes a failure to its top-level field, so a form bound to `address` still sees a
+message that came from `address.street`. `treeifyErrors` keeps the full structure instead.
 
 ### <a id="h3_literals"> Literals </a>
 

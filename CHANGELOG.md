@@ -29,7 +29,12 @@ taken apart again reliably when a key may itself contain a dot. `code` is the fa
 key, for example `'s:minLength'`, which unlike `message` does not change with the locale, so it is
 what to branch on. Both appear on `ValidationError` too.
 
-**Deriving object schemas: `pick`, `omit`, `partial` and `extend`.** Available as
+**Formatting errors: `flattenErrors` and `treeifyErrors`.** Pure functions over the errors array,
+which is what the array-valued `path` made possible. `flattenErrors` gives
+`{ formErrors, fieldErrors }`, attributing a nested failure to its top-level field so a form bound to
+`address` still hears about `address.street`; `treeifyErrors` keeps the full structure.
+
+**Deriving object schemas: `pick`, `omit`, `partial`, `required` and `extend`.** Available as
 `bguard/object/pick` and so on. Each returns a new schema and leaves the source and its property
 schemas alone, which is only sound because schemas became immutable in this release:
 
@@ -39,12 +44,14 @@ const userSchema = object({ id: string(), name: string(), secret: string() });
 pick(userSchema, ['id', 'name']);      // { id: string; name: string }
 omit(userSchema, ['secret']);          // { id: string; name: string }
 partial(userSchema);                   // { id?: string; name?: string; secret?: string }
+required(partial(userSchema));         // back to all required
 extend(userSchema, { age: number() }); // adds age
 ```
 
 `extend` replaces a property already declared — the difference from `intersection`, which rejects a
-duplicate key because it has no basis for choosing. All four carry over the source's
-`allowUnrecognized`, object assertions, `id` and `description`.
+duplicate key because it has no basis for choosing. All five carry over the source's
+`allowUnrecognized`, object assertions, `id` and `description`. `clone()` is public now, since
+deriving a schema is a reasonable thing to do from outside as well.
 
 **`union([...schemas])`** accepts a value matching any one of several schemas. Members are tried in
 order and the first that validates cleanly wins, so its parsed value is the result. Unlike

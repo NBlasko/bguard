@@ -114,7 +114,8 @@ describe('lazy', () => {
     it('applies the recursive schema rules at every level', () => {
       const missingChildren = { name: 'a', children: [{ name: 'b' }] };
 
-      expect(pathsOf(parse(categorySchema, missingChildren))).toEqual(['.children[0]']);
+      // The missing property is named, through the recursion.
+      expect(pathsOf(parse(categorySchema, missingChildren))).toEqual(['.children[0].children']);
     });
 
     it('returns a rebuilt value, not the input', () => {

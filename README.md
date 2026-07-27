@@ -31,6 +31,7 @@ Table of contents
  * [Standard Schema](#h3_standard_schema)
  * [Error Shape](#h3_error_shape)
  * [Deriving Object Schemas](#h3_object_utilities)
+ * [Formatting Errors](#h3_formatting_errors)
  * [Literals](#h3_literals)
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
@@ -98,6 +99,7 @@ Table of contents
           * [omit](#assert_omit_object)
           * [partial](#assert_partial_object)
           * [pick](#assert_pick_object)
+          * [required](#assert_required_object)
 
 ### <a id="h3_features"> Features </a>
 
@@ -665,12 +667,35 @@ pick(userSchema, ['id', 'name']);   // { id: string; name: string }
 omit(userSchema, ['secret']);       // { id: string; name: string }
 partial(userSchema);                // { id?: string; name?: string; secret?: string }
 extend(userSchema, { age: number() });  // adds age
+required(partial(userSchema));      // back to all required
 ```
 
 `extend` replaces a property that is already declared, which is the difference from `intersection`:
 `intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
 explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
 assertions, `id` and `description`.
+
+### <a id="h3_formatting_errors"> Formatting Errors </a>
+
+Two helpers turn the errors array into the shapes a form usually wants. Both work off `path`.
+
+```typeScript
+import { flattenErrors, treeifyErrors } from 'bguard';
+
+const [errors] = parse(userSchema, received, { getAllErrors: true });
+
+if (errors) {
+  const { formErrors, fieldErrors } = flattenErrors(errors);
+  // formErrors: messages belonging to no single field
+  // fieldErrors: { email: ['...'], password: ['...'] }
+
+  const tree = treeifyErrors(errors);
+  // tree.properties?.address?.properties?.street?.errors
+}
+```
+
+`flattenErrors` attributes a failure to its top-level field, so a form bound to `address` still sees a
+message that came from `address.street`. `treeifyErrors` keeps the full structure instead.
 
 ### <a id="h3_literals"> Literals </a>
 
@@ -1932,6 +1957,36 @@ import { pick } from 'bguard/object/pick';
 Reads the shape of a schema that must be an object schema. Shared by the object utilities.
 
 Builds a new object schema from a shape, carrying over the source's own settings.
+        
+        
+##### <a id="assert_required_object"> required </a>
+        
+```typescript
+import { required } from 'bguard/object/required';
+```
+        
+Named rather than written inline in both the signature and the cast: the two spellings of the same
+ mapped type are not provably identical to the compiler once `~standard` puts a deferred
+ `InferType<this>` inside them.
+
+ Removing the brand rather than trying to recover the type it wraps, because an intersection cannot
+ be taken apart again. What matters to `InferType` is that the result no longer carries the marker.
+
+* _Description_ Creates a new object schema in which every property is required, the counterpart to
+ `partial`.
+
+ A property that carried a default keeps it, so it may still be omitted — a default is what makes a
+ property supply its own value rather than optional.
+
+ 
+* _Param_ {WithObject<CommonSchema, T>} schema - The object schema to tighten.
+* _Example_
+```typescript
+ const patchSchema = partial(object({ id: string(), name: string() }));
+ const fullSchema = required(patchSchema);
+ parseOrFail(fullSchema, { id: '1', name: 'a' }); // Validates successfully
+ parseOrFail(fullSchema, {}); // Throws a validation error
+```
         
 ### Contributing
 Contributions are welcome! Please open an issue or submit a pull request for any bugs or feature requests.

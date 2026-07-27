@@ -331,7 +331,13 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         // check used to run first and reject it, so default() could never apply to a property.
         valueSchemaData.defaultValue === undefined
       ) {
-        exCtx.addIssue('Required', receivedObjectValuePropery, 'c:requiredProperty');
+        // Reported at the property's own path, not the container's. Reporting it on the container
+        // gave every missing property the same empty path, so neither an error list nor a Standard
+        // Schema consumer could tell which field was missing — or tell two of them apart.
+        exCtx
+          .createChild(keyOfSchema, valueSchemaData.meta ?? schemaData.meta)
+          .addIssue('Required', receivedObjectValuePropery, 'c:requiredProperty');
+
         // Stop here, or innerCheck reports the same missing value again as 'c:optional'.
         continue;
       }
@@ -453,8 +459,11 @@ export class CommonSchema {
    * reused as a base without one use leaking into another. Construction is deliberately bypassed:
    * the subclass constructors validate their arguments and take extra parameters, and neither
    * applies when deriving from an already-valid schema.
+   *
+   * Public because deriving a schema is a reasonable thing to do from outside as well — the object
+   * utilities need it to rebuild a property schema without touching the one they were handed.
    */
-  protected clone(): this {
+  public clone(): this {
     const next = Object.assign(Object.create(Object.getPrototypeOf(this) as object), this) as this;
     next[ctxSymbol] = cloneValidatorContext(this[ctxSymbol]);
     return next;
