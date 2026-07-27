@@ -96,9 +96,9 @@ describe('StringSchema', () => {
   it('should output id and description', () => {
     const addressSchema = string().id('address').description('Users address');
 
+    expect.assertions(4);
     try {
       parseOrFail(addressSchema, undefined);
-      expect(true).toBe(false);
     } catch (e) {
       const err = e as ValidationError;
       expect(err.message).toBe('The required value is missing');

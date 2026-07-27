@@ -158,9 +158,9 @@ describe('ObjectSchema', () => {
       verified: true,
     };
 
+    expect.assertions(8);
     try {
       parseOrFail(userSchema, userWithInvalidAddress);
-      expect(true).toBe(false);
     } catch (e) {
       const err = e as ValidationError;
       expect(err.pathToError).toBe('.address[0]');
@@ -204,9 +204,9 @@ describe('ObjectSchema', () => {
       .allowUnrecognized()
       .custom(maxKeys(2));
 
+    expect.assertions(3);
     try {
       parseOrFail(schema, { name: 'John', email: 'john@example.com', address: '123 Main St' });
-      expect(true).toBe(false);
     } catch (e) {
       const err = e as ValidationError;
       expect(err.message).toBe('The received number of keys is greater than expected');
