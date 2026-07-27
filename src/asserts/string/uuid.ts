@@ -1,4 +1,5 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const uuidErrorMessage = 'The received value is not a valid UUID';
@@ -17,11 +18,12 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
  *
  * @translation Error Translation Key = 's:uuid'
  */
-export const uuid = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
-  if (!uuidPattern.test(received)) {
-    ctx.addIssue('uuid', received, uuidErrorKey);
-  }
-};
+export const uuid = (): RequiredValidation<string> =>
+  _constrain({ format: 'uuid' }, (received: string, ctx: ExceptionContext) => {
+    if (!uuidPattern.test(received)) {
+      ctx.addIssue('uuid', received, uuidErrorKey);
+    }
+  });
 
 uuid.key = uuidErrorKey;
 uuid.message = uuidErrorMessage;

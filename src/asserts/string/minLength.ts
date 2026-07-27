@@ -1,4 +1,5 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const minLengthErrorMessage = 'The received value length is less than expected';
@@ -16,11 +17,10 @@ const minLengthErrorKey = 's:minLength';
  *
  * @translation Error Translation Key = 's:minLength'
  */
-export const minLength =
-  (expected: number): RequiredValidation =>
-  (received: string, ctx: ExceptionContext) => {
-    if (received.length < expected) ctx.addIssue(expected, received, minLengthErrorMessage);
-  };
+export const minLength = (expected: number): RequiredValidation<string> =>
+  _constrain({ minLength: expected }, (received: string, ctx: ExceptionContext) => {
+    if (received.length < expected) ctx.addIssue(expected, received, minLengthErrorKey);
+  });
 
 minLength.key = minLengthErrorKey;
 minLength.message = minLengthErrorMessage;

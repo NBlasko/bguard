@@ -17,7 +17,7 @@ const endsWithErrorKey = 's:endsWith';
  * @translation Error Translation Key = 's:endsWith'
  */
 export const endsWith =
-  (substring: string): RequiredValidation =>
+  (substring: string): RequiredValidation<string> =>
   (received: string, ctx: ExceptionContext) => {
     if (!received.endsWith(substring)) {
       ctx.addIssue(`ends with '${substring}'`, received, endsWithErrorKey);

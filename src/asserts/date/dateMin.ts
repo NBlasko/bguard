@@ -18,7 +18,7 @@ const dateMinErrorKey = 'dt:min';
  *
  * @translation Error Translation Key = 'dt:min'
  */
-export const dateMin = (expected: Date | string): RequiredValidation => {
+export const dateMin = (expected: Date | string): RequiredValidation<Date> => {
   const transformedExpected = typeof expected === 'string' ? new Date(expected) : expected;
   if (!isValidDateInner(transformedExpected)) throw new BuildSchemaError('Invalid date in Date assertion');
   return (received: Date, ctx: ExceptionContext) => {

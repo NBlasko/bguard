@@ -1,3 +1,4 @@
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 import type { ExceptionContext, RequiredValidation } from '../../core';
 
@@ -16,9 +17,10 @@ const positiveErrorKey = 'n:positive';
  *
  * @translation Error Translation Key = 'n:positive'
  */
-export const positive = (): RequiredValidation => (received: number, ctx: ExceptionContext) => {
-  if (received <= 0) ctx.addIssue('positive', received, positiveErrorMessage);
-};
+export const positive = (): RequiredValidation<number> =>
+  _constrain({ exclusiveMinimum: 0 }, (received: number, ctx: ExceptionContext) => {
+    if (received <= 0) ctx.addIssue('positive', received, positiveErrorKey);
+  });
 
 positive.key = positiveErrorKey;
 positive.message = positiveErrorMessage;

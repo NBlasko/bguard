@@ -1,8 +1,18 @@
-export type { InferType } from './InferType';
-export { parseOrFail, parse, ExceptionContext } from './core';
+export type { InferType, InferInput, InferOutput } from './InferType';
+export type {
+  StandardSchemaV1,
+  StandardSchemaProps,
+  StandardSchemaResult,
+  StandardSchemaIssue,
+} from './standardSchema';
+export { parseOrFail, parse, parseOrFailAsync, parseAsync, ExceptionContext } from './core';
 export { ValidationError, BuildSchemaError } from './exceptions';
 export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
 export { codeGen, codeGenWithName } from './codeGen';
+export { toJSONSchema } from './toJSONSchema';
+export type { JSONSchema, ToJSONSchemaOptions } from './toJSONSchema';
+export { flattenErrors, treeifyErrors } from './formatErrors';
+export type { FlatErrors, ErrorTree } from './formatErrors';
 
 export { array } from './asserts/array/index';
 export { maxArrayLength } from './asserts/array/maxArrayLength';
@@ -20,7 +30,11 @@ export { date } from './asserts/date/index';
 export { dateMax } from './asserts/date/dateMax';
 export { dateMin } from './asserts/date/dateMin';
 
+export { coerce } from './asserts/coerce/index';
 export { oneOfTypes } from './asserts/mix/index';
+export { union } from './asserts/union/index';
+export { tuple } from './asserts/tuple/index';
+export { lazy } from './asserts/lazy/index';
 export { equalTo } from './asserts/mix/equalTo';
 export { oneOfValues } from './asserts/mix/oneOfValues';
 
@@ -33,7 +47,14 @@ export { positive } from './asserts/number/positive';
 export { negative } from './asserts/number/negative';
 
 export { object } from './asserts/object/index';
+export { record } from './asserts/record/index';
+export { intersection } from './asserts/intersection/index';
 export { maxKeys } from './asserts/object/maxKeys';
+export { pick } from './asserts/object/pick';
+export { omit } from './asserts/object/omit';
+export { partial } from './asserts/object/partial';
+export { required } from './asserts/object/required';
+export { extend } from './asserts/object/extend';
 
 export { string } from './asserts/string/index';
 export { atLeastOneDigit } from './asserts/string/atLeastOneDigit';

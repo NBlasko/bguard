@@ -1,4 +1,5 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const regExpErrorMessage = 'The received value does not match the required text pattern';
@@ -16,11 +17,10 @@ const regExpErrorKey = 's:regExp';
  *
  * @translation Error Translation Key = 's:regExp'
  */
-export const regExp =
-  (expected: RegExp): RequiredValidation =>
-  (received: string, ctx: ExceptionContext) => {
-    if (!expected.test(received)) ctx.addIssue(expected, received, regExpErrorMessage);
-  };
+export const regExp = (expected: RegExp): RequiredValidation<string> =>
+  _constrain({ pattern: expected.source }, (received: string, ctx: ExceptionContext) => {
+    if (!expected.test(received)) ctx.addIssue(expected, received, regExpErrorKey);
+  });
 
 regExp.key = regExpErrorKey;
 regExp.message = regExpErrorMessage;

@@ -15,7 +15,7 @@ const atLeastOneUpperCharErrorKey = 's:atLeastOneUpperChar';
  *
  * @translation Error Translation Key = 's:atLeastOneUpperChar'
  */
-export const atLeastOneUpperChar = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
+export const atLeastOneUpperChar = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
   const upperCharRegExp = /[A-Z]/;
   if (!upperCharRegExp.test(received))
     ctx.addIssue('at least one uppercase character', received, atLeastOneUpperCharErrorKey);

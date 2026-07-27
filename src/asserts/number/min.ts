@@ -1,3 +1,4 @@
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 import type { ExceptionContext, RequiredValidation } from '../../core';
 
@@ -17,11 +18,10 @@ const minErrorKey = 'n:min';
  *
  * @translation Error Translation Key = 'n:min'
  */
-export const min =
-  (expected: number): RequiredValidation =>
-  (received: number, ctx: ExceptionContext) => {
+export const min = (expected: number): RequiredValidation<number> =>
+  _constrain({ minimum: expected }, (received: number, ctx: ExceptionContext) => {
     if (expected > received) ctx.addIssue(expected, received, minErrorKey);
-  };
+  });
 
 min.key = minErrorKey;
 min.message = minErrorMessage;

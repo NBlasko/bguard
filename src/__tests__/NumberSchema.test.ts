@@ -74,7 +74,7 @@ describe('NumberSchema', () => {
     expect(() => parseOrFail(numberSchema, -1)).toThrow('The received value is not a positive number');
   });
 
-  it('should be equal to be positive and equal to 5', () => {
+  it('should be negative and equal to -2', () => {
     const numberSchema = number().custom(negative()).equalTo(-2);
     expectEqualTypes<-2, InferType<typeof numberSchema>>(true);
 

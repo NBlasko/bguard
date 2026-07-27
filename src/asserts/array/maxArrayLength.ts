@@ -1,4 +1,5 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const maxArrayLengthErrorMessage = 'The received value length is greater than expected';
@@ -17,11 +18,10 @@ const maxArrayLengthErrorKey = 'a:maxArrayLength';
  *
  * @translation Error Translation Key = 'a:maxArrayLength'
  */
-export const maxArrayLength =
-  (expected: number): RequiredValidation =>
-  (received: unknown[], ctx: ExceptionContext) => {
-    if (received.length > expected) ctx.addIssue(expected, received, maxArrayLengthErrorMessage);
-  };
+export const maxArrayLength = (expected: number): RequiredValidation<unknown[]> =>
+  _constrain({ maxItems: expected }, (received: unknown[], ctx: ExceptionContext) => {
+    if (received.length > expected) ctx.addIssue(expected, received, maxArrayLengthErrorKey);
+  });
 
 maxArrayLength.key = maxArrayLengthErrorKey;
 maxArrayLength.message = maxArrayLengthErrorMessage;

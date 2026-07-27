@@ -2,16 +2,17 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
+  "sideEffects": false,
   "files": [
     "/lib"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/NBlasko/bguard.git"
+    "url": "git+https://github.com/NBlasko/bguard.git"
   },
   "bugs": {
     "url": "https://github.com/NBlasko/bguard/issues"
@@ -43,35 +44,36 @@
     "test:coverage": "jest --watchAll=false --runInBand --config=./jest/config.ts --coverage",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "prettier": "prettier --check src",
-    "prettier:fix": "prettier --write src",
+    "prettier": "prettier --check src jest scripts",
+    "prettier:fix": "prettier --write src jest scripts",
     "lint:check": "npm run prettier && npm run lint",
     "release:package": "npm run build:package && changeset publish",
     "change:start": "changeset",
     "change:version": "changeset version",
     "change:publish": "changeset publish",
-    "arethetypeswrong": "npx @arethetypeswrong/cli",
+    "arethetypeswrong": "attw --pack . --ignore-rules no-resolution",
+    "check:exports": "node scripts/check-exports.mjs",
+    "check:package": "npm run check:exports && npm run check:docs && npm run arethetypeswrong",
     "docs:join-assert": "node scripts/join-assert-docs.mjs",
-    "test:before": "ts-node jest/assets/generateStaticTypes"
+    "test:before": "ts-node jest/assets/generateStaticTypes",
+    "check:docs": "node scripts/check-docs.mjs"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.5",
-    "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.30.1",
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@changesets/cli": "^2.31.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.0.10",
-    "@typescript-eslint/eslint-plugin": "^8.35.1",
-    "@typescript-eslint/parser": "^8.35.1",
-    "eslint": "^9.30.1",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-jest": "^29.0.1",
-    "globals": "^16.3.0",
-    "jest": "^30.0.4",
-    "prettier": "^3.6.2",
-    "ts-jest": "^29.4.0",
+    "@types/node": "^26.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.8.0",
+    "jest": "^30.4.2",
+    "prettier": "^3.9.6",
+    "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   },
   "tsup": {
     "entry": [
@@ -90,69 +92,204 @@
   },
   "exports": {
     ".": {
-      "types": "./lib/index.d.ts",
+      "types": {
+        "import": "./lib/index.d.mts",
+        "require": "./lib/index.d.ts"
+      },
       "import": "./lib/index.mjs",
       "require": "./lib/index.js"
     },
-    "./codeGen/*": {
-      "types": "./lib/codeGen/*.d.ts",
-      "import": "./lib/codeGen/*.mjs",
-      "require": "./lib/codeGen/*.js"
+    "./codeGen": {
+      "types": {
+        "import": "./lib/codeGen.d.mts",
+        "require": "./lib/codeGen.d.ts"
+      },
+      "import": "./lib/codeGen.mjs",
+      "require": "./lib/codeGen.js"
+    },
+    "./string": {
+      "types": {
+        "import": "./lib/asserts/string/index.d.mts",
+        "require": "./lib/asserts/string/index.d.ts"
+      },
+      "import": "./lib/asserts/string/index.mjs",
+      "require": "./lib/asserts/string/index.js"
     },
     "./string/*": {
-      "types": "./lib/asserts/string/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/string/*.d.mts",
+        "require": "./lib/asserts/string/*.d.ts"
+      },
       "import": "./lib/asserts/string/*.mjs",
       "require": "./lib/asserts/string/*.js"
     },
+    "./number": {
+      "types": {
+        "import": "./lib/asserts/number/index.d.mts",
+        "require": "./lib/asserts/number/index.d.ts"
+      },
+      "import": "./lib/asserts/number/index.mjs",
+      "require": "./lib/asserts/number/index.js"
+    },
     "./number/*": {
-      "types": "./lib/asserts/number/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/number/*.d.mts",
+        "require": "./lib/asserts/number/*.d.ts"
+      },
       "import": "./lib/asserts/number/*.mjs",
       "require": "./lib/asserts/number/*.js"
     },
+    "./boolean": {
+      "types": {
+        "import": "./lib/asserts/boolean/index.d.mts",
+        "require": "./lib/asserts/boolean/index.d.ts"
+      },
+      "import": "./lib/asserts/boolean/index.mjs",
+      "require": "./lib/asserts/boolean/index.js"
+    },
+    "./coerce": {
+      "types": {
+        "import": "./lib/asserts/coerce/index.d.mts",
+        "require": "./lib/asserts/coerce/index.d.ts"
+      },
+      "import": "./lib/asserts/coerce/index.mjs",
+      "require": "./lib/asserts/coerce/index.js"
+    },
     "./boolean/*": {
-      "types": "./lib/asserts/boolean/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/boolean/*.d.mts",
+        "require": "./lib/asserts/boolean/*.d.ts"
+      },
       "import": "./lib/asserts/boolean/*.mjs",
       "require": "./lib/asserts/boolean/*.js"
     },
+    "./array": {
+      "types": {
+        "import": "./lib/asserts/array/index.d.mts",
+        "require": "./lib/asserts/array/index.d.ts"
+      },
+      "import": "./lib/asserts/array/index.mjs",
+      "require": "./lib/asserts/array/index.js"
+    },
     "./array/*": {
-      "types": "./lib/asserts/array/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/array/*.d.mts",
+        "require": "./lib/asserts/array/*.d.ts"
+      },
       "import": "./lib/asserts/array/*.mjs",
       "require": "./lib/asserts/array/*.js"
     },
+    "./object": {
+      "types": {
+        "import": "./lib/asserts/object/index.d.mts",
+        "require": "./lib/asserts/object/index.d.ts"
+      },
+      "import": "./lib/asserts/object/index.mjs",
+      "require": "./lib/asserts/object/index.js"
+    },
+    "./record": {
+      "types": {
+        "import": "./lib/asserts/record/index.d.mts",
+        "require": "./lib/asserts/record/index.d.ts"
+      },
+      "import": "./lib/asserts/record/index.mjs",
+      "require": "./lib/asserts/record/index.js"
+    },
+    "./intersection": {
+      "types": {
+        "import": "./lib/asserts/intersection/index.d.mts",
+        "require": "./lib/asserts/intersection/index.d.ts"
+      },
+      "import": "./lib/asserts/intersection/index.mjs",
+      "require": "./lib/asserts/intersection/index.js"
+    },
     "./object/*": {
-      "types": "./lib/asserts/object/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/object/*.d.mts",
+        "require": "./lib/asserts/object/*.d.ts"
+      },
       "import": "./lib/asserts/object/*.mjs",
       "require": "./lib/asserts/object/*.js"
     },
+    "./mix": {
+      "types": {
+        "import": "./lib/asserts/mix/index.d.mts",
+        "require": "./lib/asserts/mix/index.d.ts"
+      },
+      "import": "./lib/asserts/mix/index.mjs",
+      "require": "./lib/asserts/mix/index.js"
+    },
+    "./union": {
+      "types": {
+        "import": "./lib/asserts/union/index.d.mts",
+        "require": "./lib/asserts/union/index.d.ts"
+      },
+      "import": "./lib/asserts/union/index.mjs",
+      "require": "./lib/asserts/union/index.js"
+    },
+    "./tuple": {
+      "types": {
+        "import": "./lib/asserts/tuple/index.d.mts",
+        "require": "./lib/asserts/tuple/index.d.ts"
+      },
+      "import": "./lib/asserts/tuple/index.mjs",
+      "require": "./lib/asserts/tuple/index.js"
+    },
+    "./lazy": {
+      "types": {
+        "import": "./lib/asserts/lazy/index.d.mts",
+        "require": "./lib/asserts/lazy/index.d.ts"
+      },
+      "import": "./lib/asserts/lazy/index.mjs",
+      "require": "./lib/asserts/lazy/index.js"
+    },
     "./mix/*": {
-      "types": "./lib/asserts/mix/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/mix/*.d.mts",
+        "require": "./lib/asserts/mix/*.d.ts"
+      },
       "import": "./lib/asserts/mix/*.mjs",
       "require": "./lib/asserts/mix/*.js"
     },
-    "./function/*": {
-      "types": "./lib/asserts/function/*.d.ts",
-      "import": "./lib/asserts/function/*.mjs",
-      "require": "./lib/asserts/function/*.js"
-    },
-    "./symbol/*": {
-      "types": "./lib/asserts/symbol/*.d.ts",
-      "import": "./lib/asserts/symbol/*.mjs",
-      "require": "./lib/asserts/symbol/*.js"
+    "./bigint": {
+      "types": {
+        "import": "./lib/asserts/bigint/index.d.mts",
+        "require": "./lib/asserts/bigint/index.d.ts"
+      },
+      "import": "./lib/asserts/bigint/index.mjs",
+      "require": "./lib/asserts/bigint/index.js"
     },
     "./bigint/*": {
-      "types": "./lib/asserts/bigint/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/bigint/*.d.mts",
+        "require": "./lib/asserts/bigint/*.d.ts"
+      },
       "import": "./lib/asserts/bigint/*.mjs",
       "require": "./lib/asserts/bigint/*.js"
     },
+    "./date": {
+      "types": {
+        "import": "./lib/asserts/date/index.d.mts",
+        "require": "./lib/asserts/date/index.d.ts"
+      },
+      "import": "./lib/asserts/date/index.mjs",
+      "require": "./lib/asserts/date/index.js"
+    },
     "./date/*": {
-      "types": "./lib/asserts/date/*.d.ts",
+      "types": {
+        "import": "./lib/asserts/date/*.d.mts",
+        "require": "./lib/asserts/date/*.d.ts"
+      },
       "import": "./lib/asserts/date/*.mjs",
       "require": "./lib/asserts/date/*.js"
     },
     "./*": {
-      "types": "./*.d.ts",
-      "import": "./*.mjs",
-      "require": "./*.js"
+      "types": {
+        "import": "./lib/*.d.mts",
+        "require": "./lib/*.d.ts"
+      },
+      "import": "./lib/*.mjs",
+      "require": "./lib/*.js"
     }
   }
 }

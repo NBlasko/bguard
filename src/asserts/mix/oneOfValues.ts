@@ -19,7 +19,7 @@ const oneOfValuesErrorKey = 'm:oneOfValues';
  * @translation Error Translation Key = 'm:oneOfValues'
  */
 export const oneOfValues =
-  (expected: unknown[]): RequiredValidation =>
+  (expected: unknown[]): RequiredValidation<unknown> =>
   (received: unknown, ctx: ExceptionContext) => {
     if (!expected.includes(received)) ctx.addIssue(expected, received, oneOfValuesErrorKey);
   };

@@ -3,7 +3,7 @@ import { BuildSchemaError } from '../../exceptions';
 import { ctxSymbol } from '../../helpers/constants';
 import { CommonSchema, ValidatorContext, type ObjectShapeSchemaType } from '../../core';
 
-class ObjectSchema extends CommonSchema {
+export class ObjectSchema extends CommonSchema {
   protected _object = 1;
   constructor(ctx: ValidatorContext, shapeSchema: ObjectShapeSchemaType) {
     super(ctx);
@@ -39,8 +39,9 @@ class ObjectSchema extends CommonSchema {
    * @public
    */
   public allowUnrecognized(): this {
-    this[ctxSymbol].allowUnrecognizedObjectProps = true;
-    return this;
+    const next = this.clone();
+    next[ctxSymbol].allowUnrecognizedObjectProps = true;
+    return next;
   }
 }
 

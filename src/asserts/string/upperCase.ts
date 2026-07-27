@@ -16,7 +16,7 @@ const upperCaseErrorKey = 's:upperCase';
  *
  * @translation Error Translation Key = 's:upperCase'
  */
-export const upperCase = (): RequiredValidation => (received: string, ctx: ExceptionContext) => {
+export const upperCase = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
   if (received !== received.toUpperCase()) {
     ctx.addIssue('upper case', received, upperCaseErrorKey);
   }

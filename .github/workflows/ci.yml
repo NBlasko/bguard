@@ -23,6 +23,9 @@ jobs:
       - name: build:package
         run: npm run build:package
 
+      - name: check:package
+        run: npm run check:package
+
       - name: lint:check
         run: npm run lint:check
 

@@ -226,7 +226,7 @@ The `parseOrFail` method validates the data and throws an error on the first val
 **Syntax:**
 
 ```typeScript
-import { parseOrFail } from 'bguard';
+import { parseOrFail, ValidationError } from 'bguard';
 // import other dependencies
 
 try {
@@ -234,8 +234,12 @@ try {
   const validatedData = parseOrFail(studentSchema, validStudentData);
   // If the data is valid, validatedData will contain the parsed value with inferred TypeScript types
 } catch (error) {
-  // If the data does not conform to the schema, an error will be thrown
-  console.error(error.message); // Logs the first validation error message, if any
+  // If the data does not conform to the schema, a ValidationError will be thrown
+  if (error instanceof ValidationError) {
+    console.error(error.message); // The first validation error message
+    console.error(error.pathToError); // Where in the received value it happened
+    console.error(error.meta?.id); // The id() of the schema that failed, if it has one
+  }
 }
 ```
 
@@ -249,13 +253,55 @@ Options:
 
 Explanation
 
-- **`parse` Method**: This method returns a tuple where the first element is an array of validation errors (if any), and the second element is the successfully parsed value (or `undefined` if errors exist). It allows collecting all errors by setting the `getAllErrors` flag.
+- **`parse` Method**: Returns a tuple of `[errors, value]`. Exactly one of the two is present and the other is `null`:
+
+  - on success: `[null, parsedValue]`
+  - on failure: `[errors, null]`
+
+  So the first element is what you branch on:
+
+```typeScript
+const [errors, parsedValue] = parse(schema, receivedValue);
+
+if (errors) {
+  // errors is ValidationErrorData[], parsedValue is null
+  return errors;
+}
+
+// parsedValue is typed as InferType<typeof schema> here
+```
+
+  Do not test the second element to decide whether validation passed: a schema may legitimately parse
+  to `null`, for example `string().nullable()`. Set `getAllErrors` to collect every error instead of
+  stopping at the first.
 
 - **`parseOrFail` Method**: This method throws a `ValidationError` when the first validation rule fails, making it suitable for scenarios where early termination of validation is desired.
 
 - **Options**: Both methods accept options for language settings and error collection, enhancing flexibility in handling validation processes.
 
 ### <a id="h3_chaining_methods"> Chaining Methods </a>
+
+Schemas are immutable. Every method below returns a new schema rather than changing the one it was
+called on, so a schema can be defined once and reused with different refinements:
+
+```typeScript
+const name = string().custom(minLength(2));
+
+const schema = object({
+  firstName: name,                          // required
+  middleName: name.optional(),              // optional, firstName is unaffected
+  lastName: name.custom(maxLength(50)),     // extra rule, only here
+});
+```
+
+This also means a refinement has no effect unless you keep its result:
+
+```typeScript
+const schema = string();
+schema.custom(minLength(5));          // returns a new schema, which is then discarded
+
+const schema = string().custom(minLength(5));   // keep the result instead
+```
 
 #### <a id="h4_chaining_nullable"> nullable() </a>
 
@@ -286,6 +332,20 @@ Sets a default value if the received value is `undefined`. The default value mus
 
 
 > **Notice:** Additionally, `default()` must be the last method in the chain because it validates during schema build time that the default value is compatible with the rest of the schema. For example, if the schema is `number()`, the default value cannot be a `string`.
+
+
+A default also applies to a property of an object schema, so the property may be omitted from the
+received value:
+
+```typeScript
+const schema = object({ page: number().default(1), query: string() });
+
+parseOrFail(schema, { query: 'shoes' }); // { page: 1, query: 'shoes' }
+parseOrFail(schema, { page: 3, query: 'shoes' }); // { page: 3, query: 'shoes' }
+```
+
+Each parse receives its own copy of an object or array default, so mutating one result cannot affect
+a later one.
 
 _Example_:
 
@@ -351,6 +411,351 @@ parseOrFail(stringOrNullSchema, 'test');
 parseOrFail(stringOrNullSchema, '');
 ```
 
+### <a id="h3_union_and_record"> Composing Schemas </a>
+
+#### <a id="h4_union"> union(schemas) </a>
+
+Accepts a value matching any one of several schemas. Members are tried in order and the first that
+validates cleanly wins, so its parsed value is the result.
+
+Unlike `oneOfTypes`, which only compares `typeof`, each member is a full schema. Members carry their
+own assertions and structure, which is what makes discriminating by shape possible.
+
+```typeScript
+import { union } from 'bguard/union';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
+
+const shapeSchema = union([
+  object({ kind: string().equalTo('circle'), radius: number() }),
+  object({ kind: string().equalTo('square'), side: number() }),
+]);
+
+// InferType: { kind: 'circle'; radius: number } | { kind: 'square'; side: number }
+```
+
+> **Notice:** A member whose `transformBeforeValidation` coerces the value will match everything, so
+> nothing after it is ever reached. Order members from most to least specific.
+
+#### <a id="h4_record"> record(keySchema, valueSchema) </a>
+
+Validates an object whose keys are not known in advance. Every key is checked against `keySchema` and
+every value against `valueSchema`.
+
+```typeScript
+import { record } from 'bguard/record';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
+
+const countsSchema = record(string(), number());
+// InferType: Record<string, number>
+
+const labelsSchema = record(string().oneOfValues(['en', 'sr']), string());
+// InferType: Partial<Record<'en' | 'sr', string>>
+```
+
+A restricted key type infers as `Partial`, because validation checks the keys that are present rather
+than requiring the whole set. Claiming `Record<'en' | 'sr', string>` would say both keys are always
+there, which validation does not guarantee.
+
+#### <a id="h4_tuple"> tuple(schemas) </a>
+
+A fixed-length array where each position has its own schema. Unlike `array`, which applies one schema
+to every element, the inferred type keeps the positions distinct.
+
+```typeScript
+import { tuple } from 'bguard/tuple';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
+import { boolean } from 'bguard/boolean';
+
+const pointSchema = tuple([number(), number()]);
+// InferType: [number, number]
+
+const entrySchema = tuple([string(), boolean().optional()]);
+// InferType: [string, boolean | undefined]
+```
+
+> **Notice:** `optional()` on a position describes the value at that position, not whether the
+> position exists. The length must still match exactly.
+
+#### <a id="h4_intersection"> intersection(schemas) </a>
+
+Combines object schemas into one that requires all of them. The shapes are merged when the schema is
+built, so the result is an ordinary object schema — a key declared by any member is recognised.
+
+```typeScript
+import { intersection } from 'bguard/intersection';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
+
+const withId = object({ id: string() });
+const withTimestamps = object({ createdAt: string(), updatedAt: string() });
+
+const entitySchema = intersection([withId, withTimestamps]);
+// InferType: { id: string; createdAt: string; updatedAt: string }
+```
+
+Members must be object schemas, and a key may not be declared twice. Two members declaring the same
+key would mean `A & B` for that property in the type while only one schema could run during
+validation, so it throws a `BuildSchemaError` rather than resolving it one way silently. Member-level
+`nullable()` and `optional()` are rejected for the same reason.
+
+#### <a id="h4_lazy"> lazy(typeName, getSchema) </a>
+
+Defers building a schema until it is first used, which is what allows a schema to refer to itself.
+
+```typeScript
+import { lazy } from 'bguard/lazy';
+import { object } from 'bguard/object';
+import { array } from 'bguard/array';
+import { string } from 'bguard/string';
+import type { CommonSchema } from 'bguard/core';
+
+interface Category {
+  name: string;
+  children: Category[];
+}
+
+const categorySchema: CommonSchema = object({
+  name: string(),
+  children: array(lazy<Category>('Category', () => categorySchema)),
+});
+
+// codeGen: { name: string; children: Category[]; }
+```
+
+The inferred type is the one you supply, because TypeScript cannot infer a type through a
+self-reference. `typeName` is what `codeGen` emits at the recursion point — without it, code
+generation would descend into the schema again and never finish, which is why it is required.
+
+> **Notice:** Recursive *schemas* are supported; cyclic *values* are not. Validation follows the data,
+> so a value containing a cycle recurses until the call stack is exhausted.
+
+### <a id="h3_standard_schema"> Standard Schema </a>
+
+Every bguard schema implements [Standard Schema](https://github.com/standard-schema/standard-schema) v1,
+so it can be handed to any library that accepts a validator — tRPC, TanStack Form and Router, Hono,
+oRPC, React Hook Form — without either side knowing about the other.
+
+```typeScript
+import { object, string, number } from 'bguard';
+
+const schema = object({ name: string(), age: number() });
+
+const result = schema['~standard'].validate({ name: 'a', age: 3 });
+// { value: { name: 'a', age: 3 } }
+
+const failed = schema['~standard'].validate({ name: 'a', age: 'x' });
+// { issues: [{ message: 'Invalid type of data', path: ['age'] }] }
+```
+
+`validate` collects every issue rather than stopping at the first, since a consumer rendering a form
+needs them all at once. Issue paths are arrays of keys, with numbers for array and tuple positions.
+
+### <a id="h3_error_shape"> Error Shape </a>
+
+Each validation error carries:
+
+| Field | Meaning |
+| --- | --- |
+| `message` | The translated, human-readable message. |
+| `code` | The translation key of the failure, for example `'s:minLength'`. Stable across locales, so this is what to branch on. |
+| `pathToError` | The location as a string, for display: `'.users[1].mail'`. |
+| `path` | The same location as keys: `['users', 1, 'mail']`. A string path cannot be taken apart again reliably, because a key may itself contain a dot. |
+| `expected` / `received` | What the assertion wanted and what it got. |
+| `meta` | The `id()` and `description()` of the schema that failed, if it has any. |
+
+### <a id="h3_object_utilities"> Deriving Object Schemas </a>
+
+Schemas are immutable, so these return a new schema and leave the source alone.
+
+```typeScript
+import { pick } from 'bguard/object/pick';
+import { omit } from 'bguard/object/omit';
+import { partial } from 'bguard/object/partial';
+import { extend } from 'bguard/object/extend';
+import { required } from 'bguard/object/required';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
+import { number } from 'bguard/number';
+
+const userSchema = object({ id: string(), name: string(), secret: string() });
+
+pick(userSchema, ['id', 'name']);   // { id: string; name: string }
+omit(userSchema, ['secret']);       // { id: string; name: string }
+partial(userSchema);                // { id?: string; name?: string; secret?: string }
+extend(userSchema, { age: number() });  // adds age
+required(partial(userSchema));      // back to all required
+```
+
+`extend` replaces a property that is already declared, which is the difference from `intersection`:
+`intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
+explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
+assertions, `id` and `description`.
+
+### <a id="h3_formatting_errors"> Formatting Errors </a>
+
+Two helpers turn the errors array into the shapes a form usually wants. Both work off `path`.
+
+```typeScript
+import { flattenErrors, treeifyErrors, parse, object, string } from 'bguard';
+
+const userSchema = object({ email: string(), address: object({ street: string() }) });
+const received: unknown = { email: 1 };
+
+const [errors] = parse(userSchema, received, { getAllErrors: true });
+
+if (errors) {
+  const { formErrors, fieldErrors } = flattenErrors(errors);
+  // formErrors: messages belonging to no single field
+  // fieldErrors: { email: ['...'], password: ['...'] }
+
+  const tree = treeifyErrors(errors);
+  // tree.properties?.address?.properties?.street?.errors
+}
+```
+
+`flattenErrors` attributes a failure to its top-level field, so a form bound to `address` still sees a
+message that came from `address.street`. `treeifyErrors` keeps the full structure instead.
+
+### <a id="h3_coercion"> Coercion </a>
+
+For input that does not arrive already typed — query strings, form data, environment variables.
+
+```typeScript
+import { coerce } from 'bguard/coerce';
+import { object } from 'bguard/object';
+import { parseOrFail } from 'bguard';
+
+const querySchema = object({
+  page: coerce.number().default(1),
+  limit: coerce.number(),
+  active: coerce.boolean(),
+});
+
+parseOrFail(querySchema, { limit: '20', active: 'true' });
+// { page: 1, limit: 20, active: true }
+```
+
+`coerce.string()`, `coerce.number()`, `coerce.boolean()`, `coerce.bigint()` and `coerce.date()` convert
+the value before validating it. Anything a helper cannot convert is left alone, so validation reports
+the type problem rather than the conversion silently succeeding: `coerce.number()` on `'abc'` fails,
+because `Number('abc')` is `NaN` and `number()` rejects that.
+
+`null` is never coerced, so `nullable()` still decides whether it is allowed instead of it becoming the
+string `'null'` or the number `0`.
+
+> **Notice:** `coerce.boolean()` only converts what unambiguously means a boolean — the strings
+> `'true'` and `'false'` in any case, and the numbers `1` and `0`. Everything else is rejected. This is
+> deliberately narrower than passing the value through `Boolean`, which would accept every input and
+> read `'false'` as `true`.
+
+### <a id="h3_infer_input"> InferInput and InferOutput </a>
+
+`InferType` is the type a schema *produces*, which is what `parse` returns. `InferInput` is the type it
+*accepts*. The two differ wherever a schema converts or supplies something:
+
+```typeScript
+import { coerce } from 'bguard/coerce';
+import { object } from 'bguard/object';
+import { string } from 'bguard/string';
+import type { InferType, InferInput } from 'bguard/InferType';
+
+const schema = object({ page: coerce.number().default(1), q: string() });
+
+type Output = InferType<typeof schema>;   // { page: number; q: string }
+type Input = InferInput<typeof schema>;   // { q: string; page?: unknown }
+```
+
+A default makes a property optional on the input and present on the output. A coercing schema accepts
+`unknown` and yields its target type. Everywhere else the two coincide, so `InferType` needs no
+thought unless you are generating something from the input side — a form, or a client. `InferOutput` is
+available as a name for symmetry and is the same type as `InferType`.
+
+Both are reported through Standard Schema, so a consumer asks for what the schema takes rather than
+what it returns.
+
+### <a id="h3_async"> Async Validation </a>
+
+For a check that has to wait — a uniqueness lookup, an HTTP call — use `customAsync` and one of the
+async entry points.
+
+```typeScript
+import { object, string, parseAsync } from 'bguard';
+import type { ExceptionContext } from 'bguard/core';
+
+declare function isNameTaken(name: string): Promise<boolean>;
+
+const signupSchema = object({
+  name: string().customAsync(async (received: string, ctx: ExceptionContext) => {
+    if (await isNameTaken(received)) ctx.addIssue('an unused name', received, 'u:taken');
+  }),
+});
+
+async function handleSignup(received: unknown) {
+  const [errors, value] = await parseAsync(signupSchema, received, { getAllErrors: true });
+
+  if (errors) return errors;
+  return value;
+}
+```
+
+`parseAsync` and `parseOrFailAsync` mirror `parse` and `parseOrFail`. The structure is validated
+synchronously first and the async validations are collected as they are reached, then awaited **all
+together** — so several slow checks across one schema cost one round of waiting rather than one each.
+
+A synchronous `parse` of a schema carrying an async validation throws a `BuildSchemaError` naming the
+async entry points, rather than skipping the validation. A validation that never runs is worse than a
+clear instruction.
+
+Standard Schema handles this on its own: `~standard.validate` returns a promise for a schema that needs
+awaiting and stays synchronous for one that does not. The spec allows either, chosen per call, so a
+consumer that never awaits keeps working for every other schema.
+
+> **Notice:** Because the async validations are awaited after the walk, their issues come after the
+> synchronous ones. `parseOrFailAsync` therefore cannot stop at the first error the way `parseOrFail`
+> does; it throws the first one found once everything has been awaited.
+
+### <a id="h3_json_schema"> JSON Schema </a>
+
+`toJSONSchema` renders a schema as a JSON Schema document, for OpenAPI, form generators and LLM tool
+definitions.
+
+```typeScript
+import { object, string, number, toJSONSchema } from 'bguard';
+import { minLength } from 'bguard/string/minLength';
+
+const userSchema = object({ name: string().custom(minLength(2)), age: number().optional() });
+
+toJSONSchema(userSchema, { dialect: null });
+// {
+//   type: 'object',
+//   properties: { name: { type: 'string', minLength: 2 }, age: { type: 'number' } },
+//   required: ['name'],
+//   additionalProperties: false,
+// }
+```
+
+Represented: types, object properties and which are required, arrays, tuples, records, unions, literals
+and enums, nullability, defaults, `description()`, and recursive schemas through `$defs` and `$ref`.
+Assertions that map onto a keyword are included — string lengths, patterns and formats, numeric bounds,
+array lengths, `maxKeys`.
+
+Assertions with no JSON Schema counterpart are **left out rather than approximated**. `contains('x')`
+has no keyword, so it does not appear; a value the document accepts may still be rejected by bguard.
+The document is a faithful description of what it can express, not a complete one.
+
+`bigint` raises a `BuildSchemaError`, since it is not representable in JSON at all and emitting
+`integer` would be a lie. A `date()` becomes `{ type: 'string', format: 'date-time' }`.
+
+Pass `dialect: null` to leave out `$schema`, which is what you want when embedding the result in an
+OpenAPI `components.schemas` entry.
+
+> **Verified against a real validator:** the generated documents are cross-checked with `ajv` over 70
+> values across 19 schemas, so a JSON Schema validator agrees with bguard about which values pass.
+
 ### <a id="h3_literals"> Literals </a>
 
 - <b>String Literals</b>:
@@ -373,6 +778,7 @@ All built-in asserts are documented in the [Built-in Custom Assert Documentation
 Example
 
 ```typeScript
+import { number } from 'bguard/number';
 import { min } from 'bguard/number/min';
 import { max } from 'bguard/number/max';
 
@@ -388,7 +794,7 @@ Bguard allows developers to create custom validation functions that can be integ
 Example: Creating a `minLength` Custom Validation
 
 ```typescript
-import { ExceptionContext, RequiredValidation } from 'bguard/ExceptionContext';
+import { ExceptionContext, RequiredValidation } from 'bguard/core';
 import { setToDefaultLocale } from 'bguard/translationMap';
 
 const minLengthErrorMessage = 'The received value {{r}} is shorter than the expected length {{e}}';

@@ -6,6 +6,8 @@ describe('Library exports', () => {
     const expectedExports = [
       'parseOrFail',
       'parse',
+      'parseAsync',
+      'parseOrFailAsync',
       'ExceptionContext',
       'ValidationError',
       'BuildSchemaError',
@@ -14,6 +16,9 @@ describe('Library exports', () => {
       'clearLocales',
       'codeGen',
       'codeGenWithName',
+      'toJSONSchema',
+      'flattenErrors',
+      'treeifyErrors',
 
       // array
       'array',
@@ -36,7 +41,13 @@ describe('Library exports', () => {
       'dateMin',
 
       // mix
+      'coerce',
       'oneOfTypes',
+      'union',
+      'record',
+      'tuple',
+      'lazy',
+      'intersection',
       'equalTo',
       'oneOfValues',
 
@@ -52,6 +63,11 @@ describe('Library exports', () => {
       // object
       'object',
       'maxKeys',
+      'pick',
+      'omit',
+      'partial',
+      'required',
+      'extend',
 
       // string
       'string',

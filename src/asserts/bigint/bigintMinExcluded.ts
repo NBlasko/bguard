@@ -18,7 +18,7 @@ const bigintMinExcludedErrorKey = 'bi:minExcluded';
  * @translation Error Translation Key = 'bi:minExcluded'
  */
 export const bigintMinExcluded =
-  (expected: bigint): RequiredValidation =>
+  (expected: bigint): RequiredValidation<bigint> =>
   (received: bigint, ctx: ExceptionContext) => {
     if (expected >= received) ctx.addIssue(expected, received, bigintMinExcludedErrorKey);
   };

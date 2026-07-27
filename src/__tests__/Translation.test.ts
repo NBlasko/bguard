@@ -14,9 +14,12 @@ describe('Translation', () => {
   customEqual.key = 'somethingEqual';
   customEqual.message = 'Something Equal';
 
+  // Registered once: setToDefaultLocale rejects a duplicate key, and registrations now survive
+  // clearLocales so that built-in assert messages are not lost with the locales.
+  setToDefaultLocale(customEqual);
+
   beforeEach(() => {
     clearLocales();
-    setToDefaultLocale(customEqual);
   });
 
   it('should use test translation', () => {
@@ -36,11 +39,43 @@ describe('Translation', () => {
   });
 
   it('should fail to set same key for default translation', () => {
-    customEqual.key = 'test:key';
-    customEqual.message = 'My Translation';
-    setToDefaultLocale(customEqual);
-    expect(() => setToDefaultLocale(customEqual)).toThrow('Duplicate default message key');
-    expect(() => setToDefaultLocale(customEqual)).toThrow(BuildSchemaError);
+    // A local assert, so this does not rewrite the key of the shared one above.
+    const ownKeyAssert = customEqual;
+    const registerTwice = Object.assign(ownKeyAssert.bind(null), {
+      key: 'test:key',
+      message: 'My Translation',
+    }) as unknown as typeof customEqual;
+
+    setToDefaultLocale(registerTwice);
+    expect(() => setToDefaultLocale(registerTwice)).toThrow('Duplicate default message key');
+    expect(() => setToDefaultLocale(registerTwice)).toThrow(BuildSchemaError);
+  });
+
+  it('should reject a key that collides with a common message', () => {
+    const collides = Object.assign(customEqual.bind(null), {
+      key: 'c:optional',
+      message: 'Anything',
+    }) as unknown as typeof customEqual;
+
+    expect(() => setToDefaultLocale(collides)).toThrow('Duplicate default message key');
+  });
+
+  it('should keep built-in assert messages after clearLocales', () => {
+    clearLocales();
+
+    // Assert defaults are registered once, at import time, so clearing locales must not drop them.
+    expect(() => parseOrFail(string().custom(customEqual('hello')), 'not hello')).toThrow('Something Equal');
+  });
+
+  it('should fall back to the default message for keys a locale does not override', () => {
+    setLocale('partial', { 'c:optional': 'Nedostaje vrednost' });
+
+    // The overridden key is translated...
+    expect(() => parseOrFail(string(), undefined, { lng: 'partial' })).toThrow('Nedostaje vrednost');
+    // ...and one the locale says nothing about falls back to its message, not to its raw key.
+    expect(() => parseOrFail(string().custom(customEqual('hello')), 'not hello', { lng: 'partial' })).toThrow(
+      'Something Equal',
+    );
   });
 
   it('should use test translation with template reolvers', () => {

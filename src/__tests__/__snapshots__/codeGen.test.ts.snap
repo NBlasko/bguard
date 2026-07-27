@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`CodeGen should have same static and dynamic type: TestSchema1String 1`] = `
 "{
@@ -6,10 +6,10 @@ exports[`CodeGen should have same static and dynamic type: TestSchema1String 1`]
   age: number;
   address: string | null;
   classes: ({
-      name: string;
-      mandatory: boolean;
-      rooms: number[];
-    } | undefined)[];
+    name: string;
+    mandatory: boolean;
+    rooms: number[];
+  } | undefined)[];
   verified?: boolean | undefined;
 };"
 `;

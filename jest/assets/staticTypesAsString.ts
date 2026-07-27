@@ -3,10 +3,10 @@ export const TestSchema1String = `{
   age: number;
   address: string | null;
   classes: ({
-      name: string;
-      mandatory: boolean;
-      rooms: number[];
-    } | undefined)[];
+    name: string;
+    mandatory: boolean;
+    rooms: number[];
+  } | undefined)[];
   verified?: boolean | undefined;
 };`;
 

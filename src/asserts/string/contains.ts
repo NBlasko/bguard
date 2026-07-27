@@ -17,7 +17,7 @@ const containsErrorKey = 's:contains';
  * @translation Error Translation Key = 's:contains'
  */
 export const contains =
-  (substring: string): RequiredValidation =>
+  (substring: string): RequiredValidation<string> =>
   (received: string, ctx: ExceptionContext) => {
     if (!received.includes(substring)) {
       ctx.addIssue(`contains '${substring}'`, received, containsErrorKey);

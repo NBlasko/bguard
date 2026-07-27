@@ -20,7 +20,7 @@ const atLeastOneSpecialCharErrorKey = 's:atLeastOneSpecialChar';
  *
  * @translation Error Translation Key = 's:atLeastOneSpecialChar'
  */
-export const atLeastOneSpecialChar = (allowedSpecialChars?: string): RequiredValidation => {
+export const atLeastOneSpecialChar = (allowedSpecialChars?: string): RequiredValidation<string> => {
   const specialCharRegExp = new RegExp(
     `[${(allowedSpecialChars ?? '*@$!#%&()^~{}').replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}]`,
   );

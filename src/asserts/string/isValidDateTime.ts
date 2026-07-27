@@ -1,3 +1,4 @@
+import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 import type { ExceptionContext, RequiredValidation } from '../../core';
 
@@ -37,8 +38,8 @@ const defaultOptions: DateTimeOptions = {
  *
  * @translation Error Translation Key = 's:isValidDateTime'
  */
-export const isValidDateTime = (options: DateTimeOptions = defaultOptions): RequiredValidation => {
-  return (received: string, ctx: ExceptionContext) => {
+export const isValidDateTime = (options: DateTimeOptions = defaultOptions): RequiredValidation<string> => {
+  return _constrain({ format: 'date-time' }, (received: string, ctx: ExceptionContext) => {
     const { offset, precision } = options;
 
     const dateTimeRegex = new RegExp(
@@ -48,9 +49,9 @@ export const isValidDateTime = (options: DateTimeOptions = defaultOptions): Requ
     );
 
     if (!dateTimeRegex.test(received)) {
-      ctx.addIssue(received, dateTimeErrorMessage, dateTimeErrorKey);
+      ctx.addIssue('valid date time', received, dateTimeErrorKey);
     }
-  };
+  });
 };
 
 isValidDateTime.key = dateTimeErrorKey;

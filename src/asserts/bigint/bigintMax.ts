@@ -18,7 +18,7 @@ const bigintMaxErrorKey = 'bi:max';
  * @translation Error Translation Key = 'bi:max'
  */
 export const bigintMax =
-  (expected: bigint): RequiredValidation =>
+  (expected: bigint): RequiredValidation<bigint> =>
   (received: bigint, ctx: ExceptionContext) => {
     if (expected < received) ctx.addIssue(expected, received, bigintMaxErrorKey);
   };
