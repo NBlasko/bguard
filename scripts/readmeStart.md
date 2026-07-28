@@ -625,29 +625,47 @@ message that came from `address.street`. `treeifyErrors` keeps the full structur
 For input that does not arrive already typed — query strings, form data, environment variables.
 
 ```typeScript
-import { coerce } from 'bguard/coerce';
+import { coerceNumber } from 'bguard/coerce/number';
+import { coerceBoolean } from 'bguard/coerce/boolean';
 import { object } from 'bguard/object';
 import { parseOrFail } from 'bguard';
 
 const querySchema = object({
-  page: coerce.number().default(1),
-  limit: coerce.number(),
-  active: coerce.boolean(),
+  page: coerceNumber().default(1),
+  limit: coerceNumber(),
+  active: coerceBoolean(),
 });
 
 parseOrFail(querySchema, { limit: '20', active: 'true' });
 // { page: 1, limit: 20, active: true }
 ```
 
-`coerce.string()`, `coerce.number()`, `coerce.boolean()`, `coerce.bigint()` and `coerce.date()` convert
-the value before validating it. Anything a helper cannot convert is left alone, so validation reports
-the type problem rather than the conversion silently succeeding: `coerce.number()` on `'abc'` fails,
-because `Number('abc')` is `NaN` and `number()` rejects that.
+`coerceString`, `coerceNumber`, `coerceBoolean`, `coerceBigInt` and `coerceDate` convert the value
+before validating it. Each lives in its own module — `bguard/coerce/number` and so on — like every other
+assertion in the package.
+
+They are also gathered on a `coerce` object for when several read better together:
+
+```typeScript
+import { coerce } from 'bguard/coerce';
+import { object } from 'bguard/object';
+
+object({ page: coerce.number(), q: coerce.string() });
+```
+
+> **Notice:** that object references all five, so a bundler has to keep all five wherever it is used.
+> Reaching for `coerce.number()` alone still pulls in the string, boolean, bigint and date schemas —
+> measured at 2033 bytes against 87 for importing `coerceNumber` from its own module. Import the one you
+> need when bundle size matters.
+
+Anything a helper cannot convert is left alone, so validation reports the type problem rather than the conversion silently
+succeeding: `coerceNumber()` on `'abc'` fails, because `Number('abc')` is `NaN` and `number()` rejects
+that.
 
 `null` is never coerced, so `nullable()` still decides whether it is allowed instead of it becoming the
 string `'null'` or the number `0`.
 
-> **Notice:** `coerce.boolean()` only converts what unambiguously means a boolean — the strings
+> **Notice:** `coerceBoolean()` only converts what unambiguously means a boolean — the strings
 > `'true'` and `'false'` in any case, and the numbers `1` and `0`. Everything else is rejected. This is
 > deliberately narrower than passing the value through `Boolean`, which would accept every input and
 > read `'false'` as `true`.
@@ -658,12 +676,12 @@ string `'null'` or the number `0`.
 *accepts*. The two differ wherever a schema converts or supplies something:
 
 ```typeScript
-import { coerce } from 'bguard/coerce';
+import { coerceNumber } from 'bguard/coerce/number';
 import { object } from 'bguard/object';
 import { string } from 'bguard/string';
 import type { InferType, InferInput } from 'bguard/InferType';
 
-const schema = object({ page: coerce.number().default(1), q: string() });
+const schema = object({ page: coerceNumber().default(1), q: string() });
 
 type Output = InferType<typeof schema>;   // { page: number; q: string }
 type Input = InferInput<typeof schema>;   // { q: string; page?: unknown }

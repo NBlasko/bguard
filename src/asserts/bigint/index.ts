@@ -21,7 +21,7 @@ export function bigint(): WithBGuardType<BigIntSchema, bigint> {
   return new BigIntSchema({ type: ['bigint'], requiredValidations: [] }) as WithBGuardType<BigIntSchema, bigint>;
 }
 
-class BigIntSchema extends CommonSchema {
+export class BigIntSchema extends CommonSchema {
   protected _bigint = 1;
   private limit: boolean | undefined;
 
