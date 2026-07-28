@@ -31,6 +31,11 @@ export { dateMax } from './asserts/date/dateMax';
 export { dateMin } from './asserts/date/dateMin';
 
 export { coerce } from './asserts/coerce/index';
+export { coerceString } from './asserts/coerce/string';
+export { coerceNumber } from './asserts/coerce/number';
+export { coerceBoolean } from './asserts/coerce/boolean';
+export { coerceBigInt } from './asserts/coerce/bigint';
+export { coerceDate } from './asserts/coerce/date';
 export { oneOfTypes } from './asserts/mix/index';
 export { union } from './asserts/union/index';
 export { tuple } from './asserts/tuple/index';

@@ -21,7 +21,7 @@ export function string(): WithBGuardType<StringSchema, string> {
   return new StringSchema({ type: ['string'], requiredValidations: [] }) as WithBGuardType<StringSchema, string>;
 }
 
-class StringSchema extends CommonSchema {
+export class StringSchema extends CommonSchema {
   protected _string = 1;
   private limit: boolean | undefined;
 

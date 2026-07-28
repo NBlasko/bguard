@@ -27,7 +27,7 @@ export function boolean(): WithBGuardType<BooleanSchema, boolean> {
   return new BooleanSchema({ type: ['boolean'], requiredValidations: [] }) as WithBGuardType<BooleanSchema, boolean>;
 }
 
-class BooleanSchema extends CommonSchema {
+export class BooleanSchema extends CommonSchema {
   protected _boolean = 1;
   private limit: boolean | undefined;
 

@@ -19,7 +19,7 @@ export function array<T extends CommonSchema>(arraySchema: T): WithArray<ArraySc
   return new ArraySchema({ type: [], requiredValidations: [] }, arraySchema) as WithArray<ArraySchema, T>;
 }
 
-class ArraySchema extends CommonSchema {
+export class ArraySchema extends CommonSchema {
   protected _array = 1;
   constructor(ctx: ValidatorContext, arraySchema: CommonSchema) {
     super(ctx);

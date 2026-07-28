@@ -98,7 +98,15 @@ const run = async () => {
   const rawDirs = await fs.readdir(path.join('src/asserts'));
   const dirs = rearrangeArray(rawDirs, ['string', 'number']);
 
+  // This section documents assertions used through `.custom(...)`, and derives each import name from the
+  // file name. `coerce` holds schema factories rather than assertions, and its exports are named
+  // `coerceNumber` and so on, not after their files — so it would document imports that do not exist.
+  // It has a hand-written section in readmeStart.md instead.
+  const notAssertDirs = new Set(['coerce']);
+
   for (const dir of dirs) {
+    if (notAssertDirs.has(dir)) continue;
+
     const files = await fs.readdir(path.join('src/asserts', dir));
     const hasAsserts = files.findIndex((file) => file.endsWith('.ts') && file !== 'index.ts');
     if (hasAsserts === -1) continue;

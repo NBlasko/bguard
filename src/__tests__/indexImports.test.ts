@@ -42,6 +42,11 @@ describe('Library exports', () => {
 
       // mix
       'coerce',
+      'coerceString',
+      'coerceNumber',
+      'coerceBoolean',
+      'coerceBigInt',
+      'coerceDate',
       'oneOfTypes',
       'union',
       'record',

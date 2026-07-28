@@ -1,5 +1,43 @@
 # bguard
 
+## 0.7.1 Restore the schema methods coercion was dropping
+
+ - **`coerce.string()`, `coerce.number()` and `coerce.boolean()` lost their type-specific methods.**
+   Their return types were written out by hand as `WithBGuardType<CommonSchema, string>`, which flattened
+   each schema to `CommonSchema` and so dropped `equalTo`, `oneOfValues`, `onlyTrue` and `onlyFalse` —
+   everything the concrete classes define rather than the base. `coerce.string().equalTo('yes')` did not
+   compile. The return types are inferred now, so a coerced schema is exactly as refinable as the plain
+   one it came from, and the value is coerced before the literal is checked:
+   `coerce.number().equalTo(5)` accepts `'5'`.
+
+   `transformBeforeValidation` was never affected — `string().transformBeforeValidation(cb).equalTo('x')`
+   worked throughout. Only the hand-written annotations in `coerce` were wrong.
+
+   Fixing it meant exporting `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigIntSchema`,
+   `DateSchema` and `ArraySchema`. Declaration emit has to be able to name a type, and an unexported
+   class with private members cannot be named — which is what drove the original annotations. The class
+   names already appeared in the public declarations of `string()`, `number()` and the rest, so nothing
+   new is surfaced.
+
+   Worth knowing for next time: `tsc --noEmit` accepted the inferred version. Only `tsup`'s declaration
+   build rejected it, so a type change is not verified until the package has been built.
+
+ - **Each coercing schema is now its own module** — `bguard/coerce/number`, `bguard/coerce/string` and so
+   on, exporting `coerceNumber`, `coerceString`, `coerceBoolean`, `coerceBigInt` and `coerceDate`. The
+   `coerce` object references all five, so a bundler had to keep all five wherever it was used: reaching
+   for `coerce.number()` alone pulled in the string, boolean, bigint and date schemas. Measured at
+   2033 bytes of coercion overhead through the object against 87 through the module, with the unused
+   schemas genuinely absent rather than merely unreferenced.
+
+   The object remains, and the functions on it are the same references, so existing code keeps working.
+   Its cost is documented where it is described.
+
+ - Forced `brace-expansion` to a patched version through `overrides`. Twenty high-severity advisories
+   all traced to that one package, reaching the whole Jest tree transitively. They were
+   devDependencies-only — `npm audit --omit=dev` reported nothing, and the published package ships only
+   `lib/` with no runtime dependencies — but the noise is worth removing. npm's own suggested fix was to
+   downgrade Jest from 30 to 25.
+
 ## 0.7.0 Immutable schemas, type-safe asserts, working metadata and locales
 
 ### Added

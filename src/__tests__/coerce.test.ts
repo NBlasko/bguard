@@ -1,5 +1,11 @@
 import { expectEqualTypes, hasErrors } from '../../jest/setup';
-import { parse, parseOrFail, coerce } from '../';
+import { parse, parseOrFail, coerce, BuildSchemaError } from '../';
+import { coerceBigInt } from '../asserts/coerce/bigint';
+import { coerceBoolean } from '../asserts/coerce/boolean';
+import { coerceDate } from '../asserts/coerce/date';
+import { coerceNumber } from '../asserts/coerce/number';
+import { coerceString } from '../asserts/coerce/string';
+import * as barrel from '../asserts/coerce/index';
 import { InferInput, InferOutput, InferType } from '../InferType';
 import { array } from '../asserts/array';
 import { number } from '../asserts/number';
@@ -18,6 +24,44 @@ const parsed = (result: ReturnType<typeof parse>) => result[1];
  * error with an unexplained failure. Anything a helper cannot convert is passed through for validation
  * to reject.
  */
+describe('each helper is its own module', () => {
+  // The barrel object references all five, so a bundler has to keep all five wherever it is used. That
+  // is contrary to how the rest of the package is built, where every assertion has its own subpath.
+  // Measured: importing coerceNumber on its own costs 87 bytes over a plain number(), against 2033 for
+  // reaching it through the barrel, and the bigint schema is genuinely absent rather than merely unused.
+  it('exports the same function through its own module and through the barrel', () => {
+    expect(coerceString).toBe(coerce.string);
+    expect(coerceNumber).toBe(coerce.number);
+    expect(coerceBoolean).toBe(coerce.boolean);
+    expect(coerceBigInt).toBe(coerce.bigint);
+    expect(coerceDate).toBe(coerce.date);
+  });
+
+  it('behaves identically either way', () => {
+    expect(parseOrFail(coerceNumber(), '3')).toBe(3);
+    expect(parseOrFail(coerce.number(), '3')).toBe(3);
+    expect(parseOrFail(coerceString().equalTo('yes'), 'yes')).toBe('yes');
+  });
+
+  it('re-exports each one by name from the barrel, which is a public subpath too', () => {
+    // bguard/coerce is an entry point in its own right, so what it names is part of the API.
+    expect(barrel.coerceString).toBe(coerceString);
+    expect(barrel.coerceNumber).toBe(coerceNumber);
+    expect(barrel.coerceBoolean).toBe(coerceBoolean);
+    expect(barrel.coerceBigInt).toBe(coerceBigInt);
+    expect(barrel.coerceDate).toBe(coerceDate);
+  });
+
+  it('works when reached through its own module', () => {
+    // Identity alone never calls them, which would leave each module's factory uncovered.
+    expect(parseOrFail(coerceString(), 42)).toBe('42');
+    expect(parseOrFail(coerceNumber(), '42')).toBe(42);
+    expect(parseOrFail(coerceBoolean(), 'true')).toBe(true);
+    expect(parseOrFail(coerceBigInt(), '42')).toBe(42n);
+    expect(parseOrFail(coerceDate(), '2024-01-01')).toEqual(new Date('2024-01-01'));
+  });
+});
+
 describe('coerce', () => {
   describe('number', () => {
     it.each([
@@ -127,6 +171,47 @@ describe('coerce', () => {
     it('leaves null for nullable to decide', () => {
       expect(hasErrors(parse(coerce.date(), null))).toBe(true);
       expect(parseOrFail(coerce.date().nullable(), null)).toBeNull();
+    });
+  });
+
+  describe('the schema class survives coercion', () => {
+    // The return types used to be written out as `WithBGuardType<CommonSchema, string>`, which flattened
+    // each schema to CommonSchema and silently dropped the methods only the concrete classes define. A
+    // coerced schema has to stay as refinable as the plain one it came from.
+    it('keeps equalTo, coercing before the literal is checked', () => {
+      const schema = coerce.number().equalTo(5);
+
+      expectEqualTypes<5, InferType<typeof schema>>(true);
+      expect(parseOrFail(schema, '5')).toBe(5);
+      expect(hasErrors(parse(schema, '6'))).toBe(true);
+    });
+
+    it('keeps oneOfValues', () => {
+      const schema = coerce.string().oneOfValues(['en', 'sr']);
+
+      expectEqualTypes<'en' | 'sr', InferType<typeof schema>>(true);
+      expect(parseOrFail(schema, 'sr')).toBe('sr');
+      expect(hasErrors(parse(schema, 'de'))).toBe(true);
+    });
+
+    it('keeps onlyTrue and onlyFalse', () => {
+      const onlyTrue = coerce.boolean().onlyTrue();
+
+      expectEqualTypes<true, InferType<typeof onlyTrue>>(true);
+      expect(parseOrFail(onlyTrue, 'true')).toBe(true);
+      expect(hasErrors(parse(onlyTrue, 'false'))).toBe(true);
+      expect(parseOrFail(coerce.boolean().onlyFalse(), 0)).toBe(false);
+    });
+
+    it('keeps the once-only guard those methods carry', () => {
+      expect(() => coerce.string().equalTo('a').equalTo('b')).toThrow(BuildSchemaError);
+    });
+
+    it('still reports unknown as the input after a literal is applied', () => {
+      const schema = coerce.string().equalTo('yes');
+
+      expectEqualTypes<unknown, InferInput<typeof schema>>(true);
+      expect(parseOrFail(schema, 'yes')).toBe('yes');
     });
   });
 

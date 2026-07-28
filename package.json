@@ -2,7 +2,7 @@
   "name": "bguard",
   "private": false,
   "license": "MIT",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "main": "lib/index.js",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
@@ -155,6 +155,14 @@
       "import": "./lib/asserts/coerce/index.mjs",
       "require": "./lib/asserts/coerce/index.js"
     },
+    "./coerce/*": {
+      "types": {
+        "import": "./lib/asserts/coerce/*.d.mts",
+        "require": "./lib/asserts/coerce/*.d.ts"
+      },
+      "import": "./lib/asserts/coerce/*.mjs",
+      "require": "./lib/asserts/coerce/*.js"
+    },
     "./boolean/*": {
       "types": {
         "import": "./lib/asserts/boolean/*.d.mts",
@@ -291,5 +299,8 @@
       "import": "./lib/*.mjs",
       "require": "./lib/*.js"
     }
+  },
+  "overrides": {
+    "brace-expansion": "^5.0.8"
   }
 }

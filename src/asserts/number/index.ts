@@ -20,7 +20,7 @@ export function number(): WithBGuardType<NumberSchema, number> {
   return new NumberSchema({ type: ['number'], requiredValidations: [] }) as WithBGuardType<NumberSchema, number>;
 }
 
-class NumberSchema extends CommonSchema {
+export class NumberSchema extends CommonSchema {
   protected _number = 1;
   private limit: boolean | undefined;
 
