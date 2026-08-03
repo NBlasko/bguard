@@ -1,5 +1,5 @@
 import { expectEqualTypes } from '../../jest/setup';
-import { parse, parseOrFail, readsAffectedBy, type InferType, type RefRead } from '../';
+import { parse, parseOrFail, readsAffectedBy, BuildSchemaError, type InferType, type RefRead } from '../';
 import { ExceptionContext } from '../core';
 import { pickPath } from '../helpers/pickPath';
 import { array } from '../asserts/array';
@@ -273,5 +273,235 @@ describe('ctx.ref with a callback', () => {
     expect(parseOrFail(schema, { password: 'p', confirm: 'p' })).toEqual({ password: 'p', confirm: 'p' });
     const [errors] = parse(schema, { password: 'p', confirm: 'q' });
     expect(errors).toHaveLength(1);
+  });
+});
+
+/**
+ * `ctx.sibling` — a property beside this one, without naming the way back to it.
+ *
+ * `ref` is absolute, which is awkward inside an array: a rule on `contacts[i].value` that wants its
+ * own row's `kind` had to rebuild the path from the index, `ctx.ref(`contacts.${ctx.path[1]}.kind`)`.
+ * That reads an internal, interpolates it, and nothing checks it.
+ */
+describe('ctx.sibling', () => {
+  interface Contact {
+    kind: string;
+    value: string;
+  }
+
+  it('reaches its own row, at whatever index the row is at', () => {
+    const seen: unknown[] = [];
+    const schema = object({
+      contacts: array(
+        object({
+          kind: string(),
+          value: string().custom((received: string, ctx: ExceptionContext) => {
+            seen.push(ctx.sibling((row: Contact) => row.kind));
+            void received;
+          }),
+        }),
+      ),
+    });
+
+    parseOrFail(schema, {
+      contacts: [
+        { kind: 'email', value: 'a@b.c' },
+        { kind: 'phone', value: '060' },
+      ],
+    });
+
+    // Each row read ITS OWN kind — the point of the whole method.
+    expect(seen).toEqual(['email', 'phone']);
+  });
+
+  it('reaches another property of the same object, one level down', () => {
+    const seen: unknown[] = [];
+    const schema = object({
+      home: object({
+        street: string(),
+        city: string().custom((received: string, ctx: ExceptionContext) => {
+          seen.push(ctx.sibling((parent: { street: string }) => parent.street));
+          void received;
+        }),
+      }),
+    });
+
+    parseOrFail(schema, { home: { street: 'Main', city: 'NS' } });
+    expect(seen).toEqual(['Main']);
+  });
+
+  it('reaches a top-level property, whose parent is the root', () => {
+    const seen: unknown[] = [];
+    const schema = object({
+      password: string(),
+      confirm: string().custom((received: string, ctx: ExceptionContext) => {
+        seen.push(ctx.sibling((parent: { password: string }) => parent.password));
+        void received;
+      }),
+    });
+
+    parseOrFail(schema, { password: 'p', confirm: 'p' });
+    expect(seen).toEqual(['p']);
+  });
+
+  it('takes a string name too, for one known only at runtime', () => {
+    const seen: unknown[] = [];
+    const schema = object({
+      password: string(),
+      confirm: string().custom((received: string, ctx: ExceptionContext) => {
+        seen.push(ctx.sibling('password'));
+        void received;
+      }),
+    });
+
+    parseOrFail(schema, { password: 'p', confirm: 'p' });
+    expect(seen).toEqual(['p']);
+  });
+
+  it("splits a dotted string, so a sibling's child is reachable", () => {
+    const seen: unknown[] = [];
+    const schema = object({
+      home: object({ city: string() }),
+      label: string().custom((received: string, ctx: ExceptionContext) => {
+        seen.push(ctx.sibling('home.city'));
+        void received;
+      }),
+    });
+
+    parseOrFail(schema, { home: { city: 'NS' }, label: 'x' });
+    expect(seen).toEqual(['NS']);
+  });
+
+  it('reaches a neighbouring ROW from inside an array of primitives', () => {
+    // The item's parent is the array itself, so a sibling is another index. Consistent rather than
+    // special-cased, and occasionally what a rule wants.
+    const seen: unknown[] = [];
+    const schema = object({
+      rows: array(
+        string().custom((received: string, ctx: ExceptionContext) => {
+          if (ctx.path[1] === 1) seen.push(ctx.sibling('0'));
+          void received;
+        }),
+      ),
+    });
+
+    parseOrFail(schema, { rows: ['first', 'second'] });
+    expect(seen).toEqual(['first']);
+  });
+
+  it('yields undefined when the sibling is not there', () => {
+    const seen: unknown[] = [];
+    const schema = object({
+      label: string().custom((received: string, ctx: ExceptionContext) => {
+        seen.push(ctx.sibling((parent: { missing?: string }) => parent.missing));
+        void received;
+      }),
+    });
+
+    parseOrFail(schema, { label: 'x' });
+    expect(seen).toEqual([undefined]);
+  });
+
+  it('throws on the ROOT, which has no parent', () => {
+    // A mistake in the rule rather than a condition of the data. `undefined` here would be a
+    // comparison that quietly passes or quietly fails — the failure this whole feature removes.
+    const schema = object({ a: string() }).custom((_value, ctx: ExceptionContext) => {
+      ctx.sibling('a');
+    });
+
+    expect(() => parseOrFail(schema, { a: 'x' })).toThrow(BuildSchemaError);
+    expect(() => parseOrFail(schema, { a: 'x' })).toThrow(/no parent/);
+  });
+
+  it('records the ABSOLUTE path, so the dependency graph reads the same either way', () => {
+    const refReads: RefRead[] = [];
+    const schema = object({
+      contacts: array(
+        object({
+          kind: string(),
+          value: string().custom((received: string, ctx: ExceptionContext) => {
+            ctx.sibling((row: Contact) => row.kind);
+            void received;
+          }),
+        }),
+      ),
+    });
+
+    parseOrFail(
+      schema,
+      {
+        contacts: [
+          { kind: 'email', value: 'a' },
+          { kind: 'phone', value: 'b' },
+        ],
+      },
+      { refReads },
+    );
+
+    expect(refReads).toEqual([
+      {
+        from: ['contacts', 0, 'value'],
+        fromPath: '.contacts[0].value',
+        to: 'contacts.0.kind',
+        toPath: ['contacts', '0', 'kind'],
+      },
+      {
+        from: ['contacts', 1, 'value'],
+        fromPath: '.contacts[1].value',
+        to: 'contacts.1.kind',
+        toPath: ['contacts', '1', 'kind'],
+      },
+    ]);
+    // And it feeds `readsAffectedBy` like any other read.
+    expect(readsAffectedBy(refReads, 'contacts.0.kind').map((read) => read.fromPath)).toEqual(['.contacts[0].value']);
+  });
+
+  it('records exactly what the rebuilt `ref` would have', () => {
+    const viaSibling: RefRead[] = [];
+    const viaRef: RefRead[] = [];
+
+    const build = (rule: (received: string, ctx: ExceptionContext) => void) =>
+      object({ contacts: array(object({ kind: string(), value: string().custom(rule) })) });
+
+    const values = { contacts: [{ kind: 'email', value: 'a' }] };
+
+    parseOrFail(
+      build((_r, ctx) => void ctx.sibling((row: Contact) => row.kind)),
+      values,
+      { refReads: viaSibling },
+    );
+    parseOrFail(
+      build((_r, ctx) => void ctx.ref(`contacts.${String(ctx.path[1])}.kind`)),
+      values,
+      { refReads: viaRef },
+    );
+
+    expect(viaSibling).toEqual(viaRef);
+  });
+
+  it('hands back the property type, and refuses a name the parent has not', () => {
+    const schema = object({
+      contacts: array(
+        object({
+          kind: string(),
+          value: string().custom((received: string, ctx: ExceptionContext) => {
+            const kind = ctx.sibling((row: Contact) => row.kind);
+            expectEqualTypes<typeof kind, string>(true);
+            expect(kind).toBe('email');
+
+            const asString = ctx.sibling('kind');
+            expectEqualTypes<typeof asString, unknown>(true);
+            expect(asString).toBe('email');
+
+            // @ts-expect-error 'kynd' does not exist on Contact
+            ctx.sibling((row: Contact) => row.kynd);
+
+            void received;
+          }),
+        }),
+      ),
+    });
+
+    expect(parseOrFail(schema, { contacts: [{ kind: 'email', value: 'a' }] })).toBeTruthy();
   });
 });

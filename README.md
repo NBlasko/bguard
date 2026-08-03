@@ -40,6 +40,7 @@ Table of contents
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
  * [Typed Cross-Field References](#h3_typed_ref)
+ * [Reaching a Sibling](#h3_sibling)
  * [Cross-Field Dependencies](#h3_ref_tracking)
  * [Translation](#translation)
     * [Using Translations](#h4_using_translation)
@@ -1040,6 +1041,63 @@ misuse beats a quietly wrong answer.
 
 The string form stays for a path only known at runtime, and both forms read the value the parse
 started with, before any `transformBeforeValidation`.
+
+### <a id="h3_sibling"> Reaching a Sibling </a>
+
+`ctx.ref` is absolute. That is fine at the top of an object and awkward inside an array: a rule on
+`contacts[i].value` that wants its own row's `kind` has to rebuild the path from the index.
+
+```typeScript
+// import other dependencies
+// Before: reads an internal, interpolates it, and nothing checks it
+ctx.ref('contacts.' + ctx.path[1] + '.kind');
+```
+
+`ctx.sibling` asks the parent instead, so the index never appears:
+
+```typeScript
+import { object, parseOrFail } from 'bguard';
+import { array } from 'bguard/array';
+import { string } from 'bguard/string';
+import type { ExceptionContext } from 'bguard/core';
+
+interface Contact {
+  kind: string;
+  value: string;
+}
+
+const contactSchema = object({
+  contacts: array(
+    object({
+      kind: string(),
+      value: string().custom((received: string, ctx: ExceptionContext) => {
+        // this row's `kind`, whatever index the row is at
+        if (ctx.sibling((row: Contact) => row.kind) === 'email' && !received.includes('@')) {
+          ctx.addIssue('an email address', received, 'u:not-email');
+        }
+      }),
+    }),
+  ),
+});
+
+parseOrFail(contactSchema, { contacts: [{ kind: 'email', value: 'a@b.c' }] });
+```
+
+Both forms of `ref` work here too and mean the same things: the callback is type-checked and returns
+the property's own type, the string is for a name known only at runtime and splits on dots — so
+`ctx.sibling('address.city')` reaches a sibling's child.
+
+**The dependency graph does not care which you used.** A sibling read records the *absolute* path it
+resolved to, so a read from `contacts[0].value` of `kind` appears as `contacts.0.kind` — exactly what
+the rebuilt `ref` records, entry for entry.
+
+Two things worth knowing:
+
+- **An array item's parent is the array**, so a sibling there is another index. Consistent rather than
+  special-cased, and occasionally what a rule wants.
+- **A rule on the root object throws**, because the root has no parent. That is a mistake in the rule
+  rather than a condition of the data, and returning `undefined` would give a comparison that quietly
+  passes or quietly fails — the failure the typed callback exists to remove.
 
 ### <a id="h3_ref_tracking"> Cross-Field Dependencies </a>
 

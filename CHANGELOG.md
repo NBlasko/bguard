@@ -71,6 +71,34 @@ Nested properties, array elements and `length` all work — `root.home.city`, `r
 `root.rows.length` — and the recorded segments are identical to what the string form produces, so a
 dependency graph built from `refReads` cannot tell which form a rule was written in.
 
+**`ctx.sibling` — a property beside this one, without naming the way back to it.** `ref` is absolute,
+which is fine at the top of an object and awkward inside an array: a rule on `contacts[i].value` that
+wanted its own row's `kind` had to rebuild the path from the index —
+`ctx.ref('contacts.' + ctx.path[1] + '.kind')` — reading an internal, interpolating it, and checked by
+nothing.
+
+```ts
+value: string().custom((received: string, ctx: ExceptionContext) => {
+  // this row's `kind`, whatever index the row is at
+  if (ctx.sibling((row: Contact) => row.kind) === 'email' && !received.includes('@')) {
+    ctx.addIssue('an email address', received, 'u:not-email');
+  }
+}),
+```
+
+Both forms of `ref` are available and mean the same things: the callback is type-checked and returns
+the property's own type, the string splits on dots so `ctx.sibling('address.city')` reaches a
+sibling's child.
+
+A sibling read records the **absolute** path it resolved to, so `refReads` from `contacts[0].value`
+reading `kind` says `contacts.0.kind` — identical to what the rebuilt `ref` records, which a test
+asserts entry for entry. A consumer building a dependency graph cannot tell the two apart.
+
+An array item's parent is the array, so a sibling there is another index — consistent rather than
+special-cased. A rule on the root object throws a `BuildSchemaError`, because the root has no parent:
+a mistake in the rule rather than a condition of the data, and `undefined` would give a comparison
+that quietly passes or quietly fails.
+
 **A key containing a dot becomes reachable**, which it was not before: `ref('user.name')` splits into
 two segments and finds nothing, while the callback records the property as the single key it is. The
 recorded `toPath` keeps it as one segment; `to`, being joined with dots, is ambiguous for such a key,
