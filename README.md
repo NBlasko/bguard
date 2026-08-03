@@ -996,6 +996,10 @@ Two things the string form cannot give you:
 Nested properties, array elements and `length` all work: `root.home.city`, `root.rows[0]`,
 `root.rows.length`.
 
+**A key that contains a dot is reachable only this way.** `ctx.ref('user.name')` splits into two
+segments and finds nothing; `ctx.ref((root) => root['user.name'])` records the property as the single
+key it is.
+
 #### Why the type goes on the parameter
 
 `ctx.ref<Signup>(root => root.password)` does **not** compile. TypeScript takes explicit type
@@ -1059,6 +1063,9 @@ Each entry carries both locations in both forms:
 
 `fromPath` and `to` are **not the same convention** — one is leading-dot and bracketed, the other is
 what you wrote in the call. Compare locations by segments and keep the strings for messages.
+
+That is not only tidiness: `to` is joined with dots, so for a key that itself contains one it reads as
+two segments. `toPath` is exact, which is why both are recorded.
 
 Three things worth knowing:
 

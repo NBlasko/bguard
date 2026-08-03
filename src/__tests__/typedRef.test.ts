@@ -182,6 +182,42 @@ describe('ctx.ref with a callback', () => {
     expect(readsAffectedBy(refReads, 'home.city').map((read) => read.fromPath)).toEqual(['.work.city']);
   });
 
+  it('reaches a key that CONTAINS a dot, which the string form cannot', () => {
+    // `ref('user.name')` splits into two segments and finds nothing. The callback records the
+    // property as the single key it is, so this is the only way to address such a field.
+    const seen: unknown[] = [];
+    const schema = object({
+      'user.name': string(),
+      label: string().custom((received: string, ctx: ExceptionContext) => {
+        seen.push(ctx.ref('user.name'));
+        seen.push(ctx.ref((root: { 'user.name': string }) => root['user.name']));
+        void received;
+      }),
+    });
+
+    parseOrFail(schema, { 'user.name': 'nikola', label: 'x' });
+
+    expect(seen).toEqual([undefined, 'nikola']);
+  });
+
+  it('records a dotted key as ONE segment, so `toPath` stays exact', () => {
+    // `to` joins with a dot and is therefore ambiguous for such a key — 'user.name' reads as two
+    // segments. `toPath` is the form to compare on, which is why both are recorded.
+    const refReads: RefRead[] = [];
+    const schema = object({
+      'user.name': string(),
+      label: string().custom((received: string, ctx: ExceptionContext) => {
+        void ctx.ref((root: { 'user.name': string }) => root['user.name']);
+        void received;
+      }),
+    });
+
+    parseOrFail(schema, { 'user.name': 'nikola', label: 'x' }, { refReads });
+
+    expect(refReads[0]!.toPath).toEqual(['user.name']);
+    expect(refReads[0]!.to).toBe('user.name');
+  });
+
   /**
    * The compile-time half, which is the whole reason for the callback and is checked by nothing at
    * runtime. `jest/config.ts` turns `isolatedModules` off precisely so these are enforced.

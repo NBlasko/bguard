@@ -33,6 +33,11 @@ Nested properties, array elements and `length` all work — `root.home.city`, `r
 `root.rows.length` — and the recorded segments are identical to what the string form produces, so a
 dependency graph built from `refReads` cannot tell which form a rule was written in.
 
+**A key containing a dot becomes reachable**, which it was not before: `ref('user.name')` splits into
+two segments and finds nothing, while the callback records the property as the single key it is. The
+recorded `toPath` keeps it as one segment; `to`, being joined with dots, is ambiguous for such a key,
+which is why both forms are recorded.
+
 **The type goes on the callback's parameter, not as `ref<Signup>(…)`.** That is not a style
 preference: TypeScript takes explicit type arguments all or none, so supplying the root would mean
 supplying the result too, and the result is the thing worth inferring. Verified against `tsc`, along
