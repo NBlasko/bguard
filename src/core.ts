@@ -19,6 +19,7 @@ import { type InferInput, type InferType } from './InferType';
 import { BuildSchemaError, ValidationError } from './exceptions';
 import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
+import { pickPath } from './helpers/pickPath';
 import type { StandardSchemaProps, StandardSchemaResult } from './standardSchema';
 import type { RefRead } from './refTracking';
 
@@ -102,14 +103,122 @@ export class ExceptionContext {
     );
   }
 
-  public ref(path: string): unknown {
-    let ref: unknown = this.initialReceived;
-    const segments = path.split('.');
+  /**
+   * Another property of the value being validated, for a rule about two fields.
+   *
+   * Two ways to say which one. **Prefer the callback**: it is checked by the compiler, and it hands
+   * back the property's own type instead of `unknown`.
+   *
+   * ```ts
+   * type Signup = InferType<typeof signupSchema>;
+   *
+   * const signupSchema = object({
+   *   password: string(),
+   *   confirm: string().custom((received, ctx) => {
+   *     // string — no cast, and `pasword` would not compile
+   *     if (received !== ctx.ref((root: Signup) => root.password)) {
+   *       ctx.addIssue('the same password', received, 'u:mismatch');
+   *     }
+   *   }),
+   * });
+   * ```
+   *
+   * The type is written on the callback's parameter rather than as `ref<Signup>(…)`, because
+   * TypeScript takes explicit type arguments all or none: supplying the root would mean supplying the
+   * result too, and the result is the thing worth inferring. Annotating the parameter infers both.
+   *
+   * `InferType<typeof signupSchema>` inside the schema's own definition is not circular — a type
+   * alias is hoisted, and the callback's return type takes no part in inferring the object's shape.
+   * Verified against `tsc`, including nested properties and array elements.
+   *
+   * The string form stays, unchanged, for a path only known at runtime:
+   *
+   * ```ts
+   * ctx.ref('home.city'); // unknown
+   * ```
+   *
+   * Both forms read the value the parse STARTED with, before any `transformBeforeValidation`, so a
+   * cross-property comparison means the same thing however the value is later reshaped.
+   */
+  public ref(path: string): unknown;
+  public ref<T, V>(pick: (root: T) => V): V;
+  public ref<T, V>(pathOrPick: string | ((root: T) => V)): unknown {
+    const segments = typeof pathOrPick === 'string' ? pathOrPick.split('.') : pickPath(pathOrPick);
 
-    // Recorded before the walk, not after, so a read is known even when the path runs past the end of
-    // the data: `confirm` depends on `password` whether or not `password` is present yet, and an
-    // absent value is exactly when a form is being filled in.
-    this.refReads?.push({ from: this.path, fromPath: this.pathToError, to: path, toPath: segments });
+    return this.readAbsolute(segments);
+  }
+
+  /**
+   * A property beside this one — same parent, without naming the way back to it.
+   *
+   * `ref` is absolute, which is fine at the top of an object and awkward inside an array: a rule on
+   * `contacts[i].value` that wants its own row's `kind` has to rebuild the path from the index,
+   * `ctx.ref('contacts.' + ctx.path[1] + '.kind')`. That reads an internal, interpolates it, and
+   * nothing checks it.
+   *
+   * ```ts
+   * const contactSchema = object({
+   *   contacts: array(
+   *     object({
+   *       kind: string(),
+   *       value: string().custom((received, ctx) => {
+   *         // this row's `kind`, whatever index the row is at
+   *         if (ctx.sibling((row: Contact) => row.kind) === 'email' && !received.includes('@')) {
+   *           ctx.addIssue('an email address', received, 'u:not-email');
+   *         }
+   *       }),
+   *     }),
+   *   ),
+   * });
+   * ```
+   *
+   * Both forms of `ref` are available here too, and mean the same things: the callback is checked by
+   * the compiler and returns the property's own type, the string is for a name known only at runtime
+   * and splits on dots — so `ctx.sibling('address.city')` reaches a sibling's child.
+   *
+   * **The dependency graph does not care which was used.** A sibling read records the ABSOLUTE path
+   * it resolved to, so a read from `contacts[0].value` of `kind` says `contacts.0.kind`, exactly as
+   * the rebuilt `ref` would have. There is a test comparing the two, entry for entry.
+   *
+   * A rule on the ROOT object has no parent and no siblings, so asking there throws a
+   * `BuildSchemaError`. That is a mistake in the rule rather than a condition of the data, and the
+   * alternative — `undefined`, and a comparison that quietly passes or quietly fails — is the very
+   * failure the typed callback exists to remove.
+   */
+  public sibling(name: string): unknown;
+  public sibling<T, V>(pick: (parent: T) => V): V;
+  public sibling<T, V>(nameOrPick: string | ((parent: T) => V)): unknown {
+    if (this.path.length === 0) {
+      throw new BuildSchemaError('ctx.sibling is not available on the root, which has no parent. Use ctx.ref');
+    }
+
+    const segments = typeof nameOrPick === 'string' ? nameOrPick.split('.') : pickPath(nameOrPick);
+    // The parent's location, as strings. A JavaScript array indexes by string, so an index carries
+    // over unchanged and the recorded path is identical to the equivalent absolute `ref`.
+    const parent = this.path.slice(0, -1).map(String);
+
+    return this.readAbsolute([...parent, ...segments]);
+  }
+
+  /**
+   * Records the read, then walks it. Shared by `ref` and `sibling` so they cannot drift.
+   *
+   * Recorded BEFORE the walk, not after, so a read is known even when the path runs past the end of
+   * the data: `confirm` depends on `password` whether or not `password` is present yet, and an absent
+   * value is exactly when a form is being filled in.
+   *
+   * `to` is the dotted string either way, so a consumer reading the dependency graph does not have to
+   * care which form the rule was written in.
+   */
+  private readAbsolute(segments: string[]): unknown {
+    this.refReads?.push({
+      from: this.path,
+      fromPath: this.pathToError,
+      to: segments.join('.'),
+      toPath: segments,
+    });
+
+    let ref: unknown = this.initialReceived;
 
     for (const el of segments) {
       // A path that runs past the end of the data yields undefined. Indexing straight into it threw

@@ -592,8 +592,29 @@ required(partial(userSchema));      // back to all required
 
 `extend` replaces a property that is already declared, which is the difference from `intersection`:
 `intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
-explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
-assertions, `id` and `description`.
+explicit instruction to override.
+
+Each of these carries over the source's `allowUnrecognized`, `id` and `description`. The assertions
+attached to the OBJECT — `object({…}).custom(rule)`, as opposed to those on each property, which are
+always kept — depend on whether the utility changes **which properties exist**:
+
+| | object assertions |
+| --- | --- |
+| `partial` · `required` · `extend` | kept — the property set the rule was written about is still there |
+| `pick` · `omit` | dropped — the rule may be about a property the result has not got |
+
+The reason, measured. `object({ email, phone }).custom(oneOfThemIsPresent)` narrowed with
+`pick(schema, ['email'])` reported "one contact method" for `{ email: '' }` — a failure naming a
+`phone` field that the picked schema does not declare, on a value satisfying everything it does.
+
+A rule that only reads properties you kept is dropped along with the rest, because nothing can tell
+the two apart: an object `custom` receives the whole value and reads it directly, so which properties
+it touches is not knowable. Re-attach the ones that still apply:
+
+```typeScript
+// import other dependencies
+const publicSchema = pick(userSchema, ['id', 'name']).custom(maxKeys(2));
+```
 
 ### <a id="h3_formatting_errors"> Formatting Errors </a>
 
@@ -841,7 +862,7 @@ Explanation
 
 - Localization Support (`setToDefaultLocale`): This function registers the default error message with its associated key. If you later decide to support multiple languages, you can easily map this key to different messages.
 
- - Using `ctx.ref` to Reference Other Properties: The `ctx.ref` method allows you to reference other properties in the input object during validation. Method ctx.ref can access nested properties by passing a string that references them, with each level of nesting separated by a dot (.). However, it's important to note that `ctx.ref` retrieves the <b>original</b> value from the object before any transformations (e.g., `transformBeforeValidation`). This ensures that validations based on cross-property references work consistently, regardless of any transformations applied before validation.
+ - Using `ctx.ref` to Reference Other Properties: The `ctx.ref` method allows you to reference other properties in the input object during validation. It takes either a property-access callback — which is type-checked and returns the property's own type, see [Typed Cross-Field References](#h3_typed_ref) — or a string, with each level of nesting separated by a dot (.). However, it's important to note that `ctx.ref` retrieves the <b>original</b> value from the object before any transformations (e.g., `transformBeforeValidation`). This ensures that validations based on cross-property references work consistently, regardless of any transformations applied before validation.
  ```typescript
 const loginSchema = object({
   password: string().custom(minLength(8)),
@@ -861,6 +882,123 @@ const loginSchema = object({
   3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
      For single-language applications, you can override the default message by directly passing your custom message to `addIssue` method.
   4. If we have a nested object { foo: { bar: 'baz' } }, we should use `ctx.ref('foo.bar')` to access the value 'baz' in custom assertions.
+### <a id="h3_typed_ref"> Typed Cross-Field References </a>
+
+`ctx.ref` takes a property-access callback as well as a string. Prefer the callback: it is checked
+by the compiler, and it hands back the property's own type instead of `unknown`.
+
+```typeScript
+import { object, parse, type InferType } from 'bguard';
+import { string } from 'bguard/string';
+import type { ExceptionContext } from 'bguard/core';
+
+type Signup = InferType<typeof signupSchema>;
+
+const signupSchema = object({
+  password: string(),
+  confirm: string().custom((received: string, ctx: ExceptionContext) => {
+    // `string`, with no cast — and `root.pasword` would not compile
+    if (received !== ctx.ref((root: Signup) => root.password)) {
+      ctx.addIssue('the same password', received, 'u:mismatch');
+    }
+  }),
+});
+
+parse(signupSchema, { password: 'secret', confirm: 'secret' });
+```
+
+Two things the string form cannot give you:
+
+- **A typo is a compile error.** `ctx.ref('pasword')` is a perfectly good string, so it yields
+  `undefined` for ever and the comparison against it quietly succeeds or quietly fails — the shape of
+  bug that survives a review, because the line reads correctly.
+- **The result carries the property's type.** `ctx.ref('age')` is `unknown` and every use needs a
+  cast; `ctx.ref((root: Signup) => root.age)` is `number`.
+
+Nested properties, array elements and `length` all work: `root.home.city`, `root.rows[0]`,
+`root.rows.length`.
+
+**A key that contains a dot is reachable only this way.** `ctx.ref('user.name')` splits into two
+segments and finds nothing; `ctx.ref((root) => root['user.name'])` records the property as the single
+key it is.
+
+#### Why the type goes on the parameter
+
+`ctx.ref<Signup>(root => root.password)` does **not** compile. TypeScript takes explicit type
+arguments all or none, so supplying the root would mean supplying the result too — and the result is
+the thing worth inferring. Annotating the callback's parameter infers both.
+
+`InferType<typeof signupSchema>` inside the schema's own definition is not circular: a type alias is
+hoisted, and the callback's return type takes no part in inferring the object's shape.
+
+#### What the callback may do
+
+Read properties, and nothing else. It is not called with your data — it is called with a recorder
+that notes each key and returns itself, so the walk *is* the path. A comparison inside it compares a
+recorder, arithmetic on it is `NaN`, and a callback that reads two properties produces a path that is
+neither. Calling something mid-path — `root.rows.filter(…)` — throws, deliberately: a loud failure on
+misuse beats a quietly wrong answer.
+
+The string form stays for a path only known at runtime, and both forms read the value the parse
+started with, before any `transformBeforeValidation`.
+
+### <a id="h3_sibling"> Reaching a Sibling </a>
+
+`ctx.ref` is absolute. That is fine at the top of an object and awkward inside an array: a rule on
+`contacts[i].value` that wants its own row's `kind` has to rebuild the path from the index.
+
+```typeScript
+// import other dependencies
+// Before: reads an internal, interpolates it, and nothing checks it
+ctx.ref('contacts.' + ctx.path[1] + '.kind');
+```
+
+`ctx.sibling` asks the parent instead, so the index never appears:
+
+```typeScript
+import { object, parseOrFail } from 'bguard';
+import { array } from 'bguard/array';
+import { string } from 'bguard/string';
+import type { ExceptionContext } from 'bguard/core';
+
+interface Contact {
+  kind: string;
+  value: string;
+}
+
+const contactSchema = object({
+  contacts: array(
+    object({
+      kind: string(),
+      value: string().custom((received: string, ctx: ExceptionContext) => {
+        // this row's `kind`, whatever index the row is at
+        if (ctx.sibling((row: Contact) => row.kind) === 'email' && !received.includes('@')) {
+          ctx.addIssue('an email address', received, 'u:not-email');
+        }
+      }),
+    }),
+  ),
+});
+
+parseOrFail(contactSchema, { contacts: [{ kind: 'email', value: 'a@b.c' }] });
+```
+
+Both forms of `ref` work here too and mean the same things: the callback is type-checked and returns
+the property's own type, the string is for a name known only at runtime and splits on dots — so
+`ctx.sibling('address.city')` reaches a sibling's child.
+
+**The dependency graph does not care which you used.** A sibling read records the *absolute* path it
+resolved to, so a read from `contacts[0].value` of `kind` appears as `contacts.0.kind` — exactly what
+the rebuilt `ref` records, entry for entry.
+
+Two things worth knowing:
+
+- **An array item's parent is the array**, so a sibling there is another index. Consistent rather than
+  special-cased, and occasionally what a rule wants.
+- **A rule on the root object throws**, because the root has no parent. That is a mistake in the rule
+  rather than a condition of the data, and returning `undefined` would give a comparison that quietly
+  passes or quietly fails — the failure the typed callback exists to remove.
+
 ### <a id="h3_ref_tracking"> Cross-Field Dependencies </a>
 
 `ctx.ref` says that one field's rule reads another. Recording those reads is what makes the
@@ -904,6 +1042,9 @@ Each entry carries both locations in both forms:
 
 `fromPath` and `to` are **not the same convention** — one is leading-dot and bracketed, the other is
 what you wrote in the call. Compare locations by segments and keep the strings for messages.
+
+That is not only tidiness: `to` is joined with dots, so for a key that itself contains one it reads as
+two segments. `toPath` is exact, which is why both are recorded.
 
 Three things worth knowing:
 

@@ -1,5 +1,126 @@
 # bguard
 
+## 0.9.0 Cross-field references the compiler can check, and narrowed schemas that drop rules that are not theirs
+
+### Changed
+
+**`pick` and `omit` no longer carry the source's OBJECT-level assertions.** Those added with
+`object({…}).custom(rule)` — not the ones on each property, which are always kept.
+
+The reason, measured rather than argued:
+
+```ts
+const contact = object({ email: string(), phone: string() }).custom((value, ctx) => {
+  if (!value.email && !value.phone) ctx.addIssue('one contact method', value, 'u:need-one');
+});
+
+parse(contact, { email: '', phone: '060' });          // passes — a phone is present
+parse(pick(contact, ['email']), { email: '' });       // used to report 'u:need-one'
+```
+
+The picked schema does not declare `phone`, and `{ email: '' }` satisfies everything it does declare
+— yet the carried rule reported a failure about a field that is not there. `pick` and `omit` change
+**which properties exist**, so a rule written about the source's shape is not necessarily a rule about
+the result's.
+
+`partial`, `required` and `extend` keep theirs, and that is the same distinction: the first two change
+whether a property may be absent and the third adds, so the property set the rule was written about is
+still present. Dropping it there would quietly remove a check.
+
+A rule that only reads properties you kept is dropped along with the rest, because nothing can tell
+the two apart: an object `custom` receives the whole value and reads it directly, so which properties
+it touches is not knowable. Re-attach the ones that still apply —
+`pick(userSchema, ['id', 'name']).custom(rule)`.
+
+`allowUnrecognized`, `id` and `description` are unaffected and carry as before: they describe the
+object itself rather than any property of it.
+
+**How this went unnoticed:** the test named "keeps the object asserts" used `extend`, which still
+keeps them, so `pick` and `omit` were never covered on this point at all. Each of the five utilities
+now passes the choice explicitly, and each flag is verified load-bearing — flipping any one of them
+fails a test.
+
+### Added
+
+**`ctx.ref` takes a property-access callback as well as a string**, and the callback is the one to
+reach for:
+
+```ts
+type Signup = InferType<typeof signupSchema>;
+
+const signupSchema = object({
+  password: string(),
+  confirm: string().custom((received: string, ctx: ExceptionContext) => {
+    // `string`, with no cast — and `root.pasword` would not compile
+    if (received !== ctx.ref((root: Signup) => root.password)) {
+      ctx.addIssue('the same password', received, 'u:mismatch');
+    }
+  }),
+});
+```
+
+Two things the string form cannot give you:
+
+- **A typo is a compile error.** `ctx.ref('pasword')` is a perfectly good string, so it yields
+  `undefined` for ever and the comparison against it quietly succeeds or quietly fails. It is the
+  shape of bug that survives a review, because the line reads correctly.
+- **The result carries the property's type.** `ctx.ref('age')` is `unknown` and every use needs a
+  cast; `ctx.ref((root: Signup) => root.age)` is `number`.
+
+Nested properties, array elements and `length` all work — `root.home.city`, `root.rows[0]`,
+`root.rows.length` — and the recorded segments are identical to what the string form produces, so a
+dependency graph built from `refReads` cannot tell which form a rule was written in.
+
+**`ctx.sibling` — a property beside this one, without naming the way back to it.** `ref` is absolute,
+which is fine at the top of an object and awkward inside an array: a rule on `contacts[i].value` that
+wanted its own row's `kind` had to rebuild the path from the index —
+`ctx.ref('contacts.' + ctx.path[1] + '.kind')` — reading an internal, interpolating it, and checked by
+nothing.
+
+```ts
+value: string().custom((received: string, ctx: ExceptionContext) => {
+  // this row's `kind`, whatever index the row is at
+  if (ctx.sibling((row: Contact) => row.kind) === 'email' && !received.includes('@')) {
+    ctx.addIssue('an email address', received, 'u:not-email');
+  }
+}),
+```
+
+Both forms of `ref` are available and mean the same things: the callback is type-checked and returns
+the property's own type, the string splits on dots so `ctx.sibling('address.city')` reaches a
+sibling's child.
+
+A sibling read records the **absolute** path it resolved to, so `refReads` from `contacts[0].value`
+reading `kind` says `contacts.0.kind` — identical to what the rebuilt `ref` records, which a test
+asserts entry for entry. A consumer building a dependency graph cannot tell the two apart.
+
+An array item's parent is the array, so a sibling there is another index — consistent rather than
+special-cased. A rule on the root object throws a `BuildSchemaError`, because the root has no parent:
+a mistake in the rule rather than a condition of the data, and `undefined` would give a comparison
+that quietly passes or quietly fails.
+
+**A key containing a dot becomes reachable**, which it was not before: `ref('user.name')` splits into
+two segments and finds nothing, while the callback records the property as the single key it is. The
+recorded `toPath` keeps it as one segment; `to`, being joined with dots, is ambiguous for such a key,
+which is why both forms are recorded.
+
+**The type goes on the callback's parameter, not as `ref<Signup>(…)`.** That is not a style
+preference: TypeScript takes explicit type arguments all or none, so supplying the root would mean
+supplying the result too, and the result is the thing worth inferring. Verified against `tsc`, along
+with the more surprising half — `InferType<typeof signupSchema>` inside the schema's own definition is
+**not** circular, because a type alias is hoisted and the callback's return type takes no part in
+inferring the object's shape. That was expected to be the blocking problem and turned out not to
+exist.
+
+The callback may read properties and nothing else. It is not called with your data; it is called with
+a recorder that notes each key and returns itself, so the walk *is* the path. Calling something
+mid-path — `root.rows.filter(…)` — throws, deliberately: a loud failure on misuse beats a quietly
+wrong answer, and the alternative was recording `filter` as a segment and returning a path that
+cannot resolve.
+
+The string form is unchanged and stays, for a path only known at runtime. Both read the value the
+parse started with, before any `transformBeforeValidation`.
+
 ## 0.8.0 Cross-field dependencies, recorded
 
 ### Added
