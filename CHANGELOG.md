@@ -1,6 +1,44 @@
 # bguard
 
-## 0.9.0 Cross-field references the compiler can check
+## 0.9.0 Cross-field references the compiler can check, and narrowed schemas that drop rules that are not theirs
+
+### Changed
+
+**`pick` and `omit` no longer carry the source's OBJECT-level assertions.** Those added with
+`object({…}).custom(rule)` — not the ones on each property, which are always kept.
+
+The reason, measured rather than argued:
+
+```ts
+const contact = object({ email: string(), phone: string() }).custom((value, ctx) => {
+  if (!value.email && !value.phone) ctx.addIssue('one contact method', value, 'u:need-one');
+});
+
+parse(contact, { email: '', phone: '060' });          // passes — a phone is present
+parse(pick(contact, ['email']), { email: '' });       // used to report 'u:need-one'
+```
+
+The picked schema does not declare `phone`, and `{ email: '' }` satisfies everything it does declare
+— yet the carried rule reported a failure about a field that is not there. `pick` and `omit` change
+**which properties exist**, so a rule written about the source's shape is not necessarily a rule about
+the result's.
+
+`partial`, `required` and `extend` keep theirs, and that is the same distinction: the first two change
+whether a property may be absent and the third adds, so the property set the rule was written about is
+still present. Dropping it there would quietly remove a check.
+
+A rule that only reads properties you kept is dropped along with the rest, because nothing can tell
+the two apart: an object `custom` receives the whole value and reads it directly, so which properties
+it touches is not knowable. Re-attach the ones that still apply —
+`pick(userSchema, ['id', 'name']).custom(rule)`.
+
+`allowUnrecognized`, `id` and `description` are unaffected and carry as before: they describe the
+object itself rather than any property of it.
+
+**How this went unnoticed:** the test named "keeps the object asserts" used `extend`, which still
+keeps them, so `pick` and `omit` were never covered on this point at all. Each of the five utilities
+now passes the choice explicitly, and each flag is verified load-bearing — flipping any one of them
+fails a test.
 
 ### Added
 

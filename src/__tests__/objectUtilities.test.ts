@@ -9,6 +9,7 @@ import { extend } from '../asserts/object/extend';
 import { omit } from '../asserts/object/omit';
 import { partial } from '../asserts/object/partial';
 import { pick } from '../asserts/object/pick';
+import { required } from '../asserts/object/required';
 import { maxKeys } from '../asserts/object/maxKeys';
 import { minLength } from '../asserts/string/minLength';
 
@@ -206,10 +207,52 @@ describe('object utilities', () => {
       expect(parseOrFail(pick(loose, ['a']), { a: 'x', extra: 1 })).toEqual({ a: 'x' });
     });
 
-    it('keeps the object asserts', () => {
+    it('keeps the object asserts through the utilities that do not change WHICH properties exist', () => {
+      // `extend` adds, `partial` and `required` change whether a property may be absent. In all three
+      // the property set the rule was written about is still there, so dropping the rule would quietly
+      // remove a check.
       const limited = object({ a: string(), b: string() }).custom(maxKeys(1));
 
       expect(parse(extend(limited, { c: string() }), { a: 'x', b: 'y', c: 'z' })[0]![0]!.code).toBe('o:maxKeys');
+      expect(parse(partial(limited), { a: 'x', b: 'y' })[0]![0]!.code).toBe('o:maxKeys');
+      expect(parse(required(partial(limited)), { a: 'x', b: 'y' })[0]![0]!.code).toBe('o:maxKeys');
+    });
+
+    it('DROPS the object asserts in pick and omit, which change which properties exist', () => {
+      // `maxKeys(0)`, not `maxKeys(1)`: the narrowed schemas declare ONE property, and a value with
+      // one key satisfies `maxKeys(1)` either way — so that spelling would pass whether the rule was
+      // carried or not, and prove nothing. Verified by flipping the flag back.
+      const limited = object({ a: string(), b: string() }).custom(maxKeys(0));
+
+      expect(parseOrFail(pick(limited, ['a']), { a: 'x' })).toEqual({ a: 'x' });
+      expect(parseOrFail(omit(limited, ['b']), { a: 'x' })).toEqual({ a: 'x' });
+      // The source is untouched, as always.
+      expect(parse(limited, { a: 'x' })[0]![0]!.code).toBe('o:maxKeys');
+    });
+
+    it('is why pick drops them: the rule fired about a property the result does not declare', () => {
+      // The measured case. "One of these is required" is an ordinary whole-form rule, and carrying it
+      // onto a schema without `phone` reported a failure naming a field that schema has not got.
+      const contact = object({ email: string(), phone: string() }).custom((value, ctx) => {
+        const v = value as { email?: string; phone?: string };
+        if (!v.email && !v.phone) ctx.addIssue('one contact method', value, 'u:need-one');
+      });
+
+      // On the source, with a phone present, it passes.
+      expect(hasErrors(parse(contact, { email: '', phone: '060' }))).toBe(false);
+      // On the picked schema it used to report 'u:need-one' for a value that satisfies everything
+      // the picked schema declares.
+      expect(hasErrors(parse(pick(contact, ['email']), { email: '' }))).toBe(false);
+    });
+
+    it('a rule that only reads kept properties is dropped too, and re-attaching is the answer', () => {
+      // Nothing can tell the two apart: an object `custom` receives the whole value and reads it
+      // directly, so which properties it touches is not knowable. Dropping every rule is the choice,
+      // and it is documented rather than silent.
+      const limited = object({ a: string(), b: string() }).custom(maxKeys(0));
+
+      expect(hasErrors(parse(pick(limited, ['a']), { a: 'x' }))).toBe(false);
+      expect(parse(pick(limited, ['a']).custom(maxKeys(0)), { a: 'x' })[0]![0]!.code).toBe('o:maxKeys');
     });
 
     it('keeps id and description', () => {

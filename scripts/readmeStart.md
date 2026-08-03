@@ -592,8 +592,29 @@ required(partial(userSchema));      // back to all required
 
 `extend` replaces a property that is already declared, which is the difference from `intersection`:
 `intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
-explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
-assertions, `id` and `description`.
+explicit instruction to override.
+
+Each of these carries over the source's `allowUnrecognized`, `id` and `description`. The assertions
+attached to the OBJECT — `object({…}).custom(rule)`, as opposed to those on each property, which are
+always kept — depend on whether the utility changes **which properties exist**:
+
+| | object assertions |
+| --- | --- |
+| `partial` · `required` · `extend` | kept — the property set the rule was written about is still there |
+| `pick` · `omit` | dropped — the rule may be about a property the result has not got |
+
+The reason, measured. `object({ email, phone }).custom(oneOfThemIsPresent)` narrowed with
+`pick(schema, ['email'])` reported "one contact method" for `{ email: '' }` — a failure naming a
+`phone` field that the picked schema does not declare, on a value satisfying everything it does.
+
+A rule that only reads properties you kept is dropped along with the rest, because nothing can tell
+the two apart: an object `custom` receives the whole value and reads it directly, so which properties
+it touches is not knowable. Re-attach the ones that still apply:
+
+```typeScript
+// import other dependencies
+const publicSchema = pick(userSchema, ['id', 'name']).custom(maxKeys(2));
+```
 
 ### <a id="h3_formatting_errors"> Formatting Errors </a>
 

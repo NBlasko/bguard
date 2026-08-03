@@ -11,6 +11,10 @@ import { _objectFrom, _shapeOf } from './pick';
  * from `intersection`: `intersection` rejects a duplicate key because it has no basis for choosing,
  * while `extend` is an explicit instruction to override.
  *
+ * The source's object-level assertions are KEPT: this changes which properties are declared only by ADDING to them, not which properties the result
+ * has, so a rule about the source is still a rule about the result. `pick` and `omit` drop theirs, and
+ * record why.
+ *
  * @template T
  * @template U
  * @param {WithObject<CommonSchema, T>} schema - The object schema to build on.
@@ -36,5 +40,8 @@ export function extend<T extends ObjectShapeSchemaType, U extends ObjectShapeSch
       throw new BuildSchemaError(`Invalid schema in extend method for property '${key}'`);
   }
 
-  return _objectFrom(schema, { ...shape, ...shapeSchema }) as unknown as WithObject<ObjectSchema, Omit<T, keyof U> & U>;
+  return _objectFrom(schema, { ...shape, ...shapeSchema }, true) as unknown as WithObject<
+    ObjectSchema,
+    Omit<T, keyof U> & U
+  >;
 }

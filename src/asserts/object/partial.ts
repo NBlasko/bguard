@@ -16,6 +16,10 @@ type PartialShape<T extends ObjectShapeSchemaType> = { [K in keyof T]: WithUndef
  * Each property schema is made optional in its own right, so the original schema and the property
  * schemas it holds are unchanged.
  *
+ * The source's object-level assertions are KEPT: this changes whether a property may be absent, not which properties the result
+ * has, so a rule about the source is still a rule about the result. `pick` and `omit` drop theirs, and
+ * record why.
+ *
  * @template T
  * @param {WithObject<CommonSchema, T>} schema - The object schema to relax.
  * @returns A new object schema with every property optional.
@@ -36,5 +40,5 @@ export function partial<T extends ObjectShapeSchemaType>(
     relaxed[key] = valueSchema.optional() as CommonSchema;
   }
 
-  return _objectFrom(schema, relaxed) as unknown as WithObject<ObjectSchema, PartialShape<T>>;
+  return _objectFrom(schema, relaxed, true) as unknown as WithObject<ObjectSchema, PartialShape<T>>;
 }

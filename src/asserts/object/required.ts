@@ -21,6 +21,10 @@ type RequiredShape<T extends ObjectShapeSchemaType> = { [K in keyof T]: Omit<T[K
  * A property that carried a default keeps it, so it may still be omitted — a default is what makes a
  * property supply its own value rather than optional.
  *
+ * The source's object-level assertions are KEPT: this changes whether a property may be absent, not which properties the result
+ * has, so a rule about the source is still a rule about the result. `pick` and `omit` drop theirs, and
+ * record why.
+ *
  * @template T
  * @param {WithObject<CommonSchema, T>} schema - The object schema to tighten.
  * @returns A new object schema with every property required.
@@ -45,5 +49,5 @@ export function required<T extends ObjectShapeSchemaType>(
     tightened[key] = tightenedSchema;
   }
 
-  return _objectFrom(schema, tightened) as unknown as WithObject<ObjectSchema, RequiredShape<T>>;
+  return _objectFrom(schema, tightened, true) as unknown as WithObject<ObjectSchema, RequiredShape<T>>;
 }

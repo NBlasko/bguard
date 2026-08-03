@@ -691,8 +691,29 @@ required(partial(userSchema));      // back to all required
 
 `extend` replaces a property that is already declared, which is the difference from `intersection`:
 `intersection` rejects a duplicate key because it has no basis for choosing, while `extend` is an
-explicit instruction to override. Each of these carries over the source's `allowUnrecognized`, object
-assertions, `id` and `description`.
+explicit instruction to override.
+
+Each of these carries over the source's `allowUnrecognized`, `id` and `description`. The assertions
+attached to the OBJECT — `object({…}).custom(rule)`, as opposed to those on each property, which are
+always kept — depend on whether the utility changes **which properties exist**:
+
+| | object assertions |
+| --- | --- |
+| `partial` · `required` · `extend` | kept — the property set the rule was written about is still there |
+| `pick` · `omit` | dropped — the rule may be about a property the result has not got |
+
+The reason, measured. `object({ email, phone }).custom(oneOfThemIsPresent)` narrowed with
+`pick(schema, ['email'])` reported "one contact method" for `{ email: '' }` — a failure naming a
+`phone` field that the picked schema does not declare, on a value satisfying everything it does.
+
+A rule that only reads properties you kept is dropped along with the rest, because nothing can tell
+the two apart: an object `custom` receives the whole value and reads it directly, so which properties
+it touches is not knowable. Re-attach the ones that still apply:
+
+```typeScript
+// import other dependencies
+const publicSchema = pick(userSchema, ['id', 'name']).custom(maxKeys(2));
+```
 
 ### <a id="h3_formatting_errors"> Formatting Errors </a>
 
@@ -2141,6 +2162,10 @@ import { extend } from 'bguard/object/extend';
  from `intersection`: `intersection` rejects a duplicate key because it has no basis for choosing,
  while `extend` is an explicit instruction to override.
 
+ The source's object-level assertions are KEPT: this changes which properties are declared only by ADDING to them, not which properties the result
+ has, so a rule about the source is still a rule about the result. `pick` and `omit` drop theirs, and
+ record why.
+
  
  @template U
 * _Param_ {WithObject<CommonSchema, T>} schema - The object schema to build on.
@@ -2190,6 +2215,10 @@ import { omit } from 'bguard/object/omit';
 
  The original is untouched.
 
+ **The source's OBJECT-level assertions are dropped**, for the reason `pick` records: this changes
+ which properties exist, so a rule about the source's shape may be about one that is now gone.
+ Re-attach any that still apply — `omit(userSchema, ['secret']).custom(rule)`.
+
  
  @template K
 * _Param_ {WithObject<CommonSchema, T>} schema - The object schema to narrow.
@@ -2217,6 +2246,10 @@ Named rather than written inline in both the signature and the cast: the two spe
  Each property schema is made optional in its own right, so the original schema and the property
  schemas it holds are unchanged.
 
+ The source's object-level assertions are KEPT: this changes whether a property may be absent, not which properties the result
+ has, so a rule about the source is still a rule about the result. `pick` and `omit` drop theirs, and
+ record why.
+
  
 * _Param_ {WithObject<CommonSchema, T>} schema - The object schema to relax.
 * _Example_
@@ -2238,6 +2271,16 @@ import { pick } from 'bguard/object/pick';
  The original is untouched, and the properties keep the schemas they had, including their assertions
  and metadata.
 
+ **The source's OBJECT-level assertions are dropped** — those added with
+ `object({…}).custom(rule)`, not the ones on each property, which are kept. A rule written about
+ the source's shape may be about a property this result does not have, and it would run anyway:
+ measured, `pick(object({ email, phone }).custom(oneOfThem), ['email'])` reported "one contact
+ method" for `{ email: '' }`, naming a `phone` field the picked schema does not declare.
+
+ A rule that only reads properties you kept is still meaningful, and it is dropped along with the
+ rest, because nothing can tell the two apart — an object `custom` receives the whole value and
+ reads it directly. Re-attach it: `pick(userSchema, ['id', 'name']).custom(rule)`.
+
  
  @template K
 * _Param_ {WithObject<CommonSchema, T>} schema - The object schema to narrow.
@@ -2252,6 +2295,25 @@ import { pick } from 'bguard/object/pick';
 Reads the shape of a schema that must be an object schema. Shared by the object utilities.
 
 Builds a new object schema from a shape, carrying over the source's own settings.
+
+ `keepAssertions` decides the one setting where the utilities genuinely differ: the assertions
+ attached to the OBJECT — `object({…}).custom(rule)` — as opposed to those on its properties.
+
+ **Which properties exist** is the question. `pick` and `omit` change it, so a rule written about
+ the source's shape may be about a property the result does not have; it ran anyway, against a
+ value that could not satisfy it. Measured on a two-field schema with a "one of these is required"
+ rule: `pick(schema, ['email'])` reported that failure for `{ email: '' }`, naming a `phone` field
+ the picked schema does not declare.
+
+ `partial`, `required` and `extend` leave the property SET intact — the first two change whether a
+ property may be absent, the third adds — so a rule about the source is still a rule about the
+ result, and dropping it would quietly remove a check.
+
+ Passed explicitly at every call site rather than defaulted, because the answer is the thing that
+ differs and a default is a thing to forget.
+
+ `allowUnrecognizedObjectProps` and `meta` always carry: they describe the object itself rather
+ than any property of it.
         
         
 ##### <a id="assert_required_object"> required </a>
@@ -2272,6 +2334,10 @@ Named rather than written inline in both the signature and the cast: the two spe
 
  A property that carried a default keeps it, so it may still be omitted — a default is what makes a
  property supply its own value rather than optional.
+
+ The source's object-level assertions are KEPT: this changes whether a property may be absent, not which properties the result
+ has, so a rule about the source is still a rule about the result. `pick` and `omit` drop theirs, and
+ record why.
 
  
 * _Param_ {WithObject<CommonSchema, T>} schema - The object schema to tighten.

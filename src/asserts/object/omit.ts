@@ -9,6 +9,10 @@ import { _objectFrom, _shapeOf } from './pick';
  *
  * The original is untouched.
  *
+ * **The source's OBJECT-level assertions are dropped**, for the reason `pick` records: this changes
+ * which properties exist, so a rule about the source's shape may be about one that is now gone.
+ * Re-attach any that still apply — `omit(userSchema, ['secret']).custom(rule)`.
+ *
  * @template T
  * @template K
  * @param {WithObject<CommonSchema, T>} schema - The object schema to narrow.
@@ -38,5 +42,5 @@ export function omit<T extends ObjectShapeSchemaType, K extends keyof T & string
     if (!dropped.has(key)) kept[key] = valueSchema;
   }
 
-  return _objectFrom(schema, kept) as unknown as WithObject<ObjectSchema, Omit<T, K>>;
+  return _objectFrom(schema, kept, false) as unknown as WithObject<ObjectSchema, Omit<T, K>>;
 }
