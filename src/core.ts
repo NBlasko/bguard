@@ -19,6 +19,7 @@ import { type InferInput, type InferType } from './InferType';
 import { BuildSchemaError, ValidationError } from './exceptions';
 import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
+import { pickPath } from './helpers/pickPath';
 import type { StandardSchemaProps, StandardSchemaResult } from './standardSchema';
 import type { RefRead } from './refTracking';
 
@@ -102,14 +103,62 @@ export class ExceptionContext {
     );
   }
 
-  public ref(path: string): unknown {
-    let ref: unknown = this.initialReceived;
-    const segments = path.split('.');
+  /**
+   * Another property of the value being validated, for a rule about two fields.
+   *
+   * Two ways to say which one. **Prefer the callback**: it is checked by the compiler, and it hands
+   * back the property's own type instead of `unknown`.
+   *
+   * ```ts
+   * type Signup = InferType<typeof signupSchema>;
+   *
+   * const signupSchema = object({
+   *   password: string(),
+   *   confirm: string().custom((received, ctx) => {
+   *     // string — no cast, and `pasword` would not compile
+   *     if (received !== ctx.ref((root: Signup) => root.password)) {
+   *       ctx.addIssue('the same password', received, 'u:mismatch');
+   *     }
+   *   }),
+   * });
+   * ```
+   *
+   * The type is written on the callback's parameter rather than as `ref<Signup>(…)`, because
+   * TypeScript takes explicit type arguments all or none: supplying the root would mean supplying the
+   * result too, and the result is the thing worth inferring. Annotating the parameter infers both.
+   *
+   * `InferType<typeof signupSchema>` inside the schema's own definition is not circular — a type
+   * alias is hoisted, and the callback's return type takes no part in inferring the object's shape.
+   * Verified against `tsc`, including nested properties and array elements.
+   *
+   * The string form stays, unchanged, for a path only known at runtime:
+   *
+   * ```ts
+   * ctx.ref('home.city'); // unknown
+   * ```
+   *
+   * Both forms read the value the parse STARTED with, before any `transformBeforeValidation`, so a
+   * cross-property comparison means the same thing however the value is later reshaped.
+   */
+  public ref(path: string): unknown;
+  public ref<T, V>(pick: (root: T) => V): V;
+  public ref<T, V>(pathOrPick: string | ((root: T) => V)): unknown {
+    const segments = typeof pathOrPick === 'string' ? pathOrPick.split('.') : pickPath(pathOrPick);
 
     // Recorded before the walk, not after, so a read is known even when the path runs past the end of
     // the data: `confirm` depends on `password` whether or not `password` is present yet, and an
     // absent value is exactly when a form is being filled in.
-    this.refReads?.push({ from: this.path, fromPath: this.pathToError, to: path, toPath: segments });
+    //
+    // `to` is the dotted string either way, so a consumer reading the dependency graph does not have
+    // to care which form the rule was written in.
+    this.refReads?.push({
+      from: this.path,
+      fromPath: this.pathToError,
+      to: segments.join('.'),
+      toPath: segments,
+    });
+
+    let ref: unknown = this.initialReceived;
 
     for (const el of segments) {
       // A path that runs past the end of the data yields undefined. Indexing straight into it threw

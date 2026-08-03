@@ -841,7 +841,7 @@ Explanation
 
 - Localization Support (`setToDefaultLocale`): This function registers the default error message with its associated key. If you later decide to support multiple languages, you can easily map this key to different messages.
 
- - Using `ctx.ref` to Reference Other Properties: The `ctx.ref` method allows you to reference other properties in the input object during validation. Method ctx.ref can access nested properties by passing a string that references them, with each level of nesting separated by a dot (.). However, it's important to note that `ctx.ref` retrieves the <b>original</b> value from the object before any transformations (e.g., `transformBeforeValidation`). This ensures that validations based on cross-property references work consistently, regardless of any transformations applied before validation.
+ - Using `ctx.ref` to Reference Other Properties: The `ctx.ref` method allows you to reference other properties in the input object during validation. It takes either a property-access callback — which is type-checked and returns the property's own type, see [Typed Cross-Field References](#h3_typed_ref) — or a string, with each level of nesting separated by a dot (.). However, it's important to note that `ctx.ref` retrieves the <b>original</b> value from the object before any transformations (e.g., `transformBeforeValidation`). This ensures that validations based on cross-property references work consistently, regardless of any transformations applied before validation.
  ```typescript
 const loginSchema = object({
   password: string().custom(minLength(8)),
@@ -861,6 +861,62 @@ const loginSchema = object({
   3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
      For single-language applications, you can override the default message by directly passing your custom message to `addIssue` method.
   4. If we have a nested object { foo: { bar: 'baz' } }, we should use `ctx.ref('foo.bar')` to access the value 'baz' in custom assertions.
+### <a id="h3_typed_ref"> Typed Cross-Field References </a>
+
+`ctx.ref` takes a property-access callback as well as a string. Prefer the callback: it is checked
+by the compiler, and it hands back the property's own type instead of `unknown`.
+
+```typeScript
+import { object, parse, type InferType } from 'bguard';
+import { string } from 'bguard/string';
+import type { ExceptionContext } from 'bguard/core';
+
+type Signup = InferType<typeof signupSchema>;
+
+const signupSchema = object({
+  password: string(),
+  confirm: string().custom((received: string, ctx: ExceptionContext) => {
+    // `string`, with no cast — and `root.pasword` would not compile
+    if (received !== ctx.ref((root: Signup) => root.password)) {
+      ctx.addIssue('the same password', received, 'u:mismatch');
+    }
+  }),
+});
+
+parse(signupSchema, { password: 'secret', confirm: 'secret' });
+```
+
+Two things the string form cannot give you:
+
+- **A typo is a compile error.** `ctx.ref('pasword')` is a perfectly good string, so it yields
+  `undefined` for ever and the comparison against it quietly succeeds or quietly fails — the shape of
+  bug that survives a review, because the line reads correctly.
+- **The result carries the property's type.** `ctx.ref('age')` is `unknown` and every use needs a
+  cast; `ctx.ref((root: Signup) => root.age)` is `number`.
+
+Nested properties, array elements and `length` all work: `root.home.city`, `root.rows[0]`,
+`root.rows.length`.
+
+#### Why the type goes on the parameter
+
+`ctx.ref<Signup>(root => root.password)` does **not** compile. TypeScript takes explicit type
+arguments all or none, so supplying the root would mean supplying the result too — and the result is
+the thing worth inferring. Annotating the callback's parameter infers both.
+
+`InferType<typeof signupSchema>` inside the schema's own definition is not circular: a type alias is
+hoisted, and the callback's return type takes no part in inferring the object's shape.
+
+#### What the callback may do
+
+Read properties, and nothing else. It is not called with your data — it is called with a recorder
+that notes each key and returns itself, so the walk *is* the path. A comparison inside it compares a
+recorder, arithmetic on it is `NaN`, and a callback that reads two properties produces a path that is
+neither. Calling something mid-path — `root.rows.filter(…)` — throws, deliberately: a loud failure on
+misuse beats a quietly wrong answer.
+
+The string form stays for a path only known at runtime, and both forms read the value the parse
+started with, before any `transformBeforeValidation`.
+
 ### <a id="h3_ref_tracking"> Cross-Field Dependencies </a>
 
 `ctx.ref` says that one field's rule reads another. Recording those reads is what makes the

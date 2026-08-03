@@ -1,5 +1,55 @@
 # bguard
 
+## 0.9.0 Cross-field references the compiler can check
+
+### Added
+
+**`ctx.ref` takes a property-access callback as well as a string**, and the callback is the one to
+reach for:
+
+```ts
+type Signup = InferType<typeof signupSchema>;
+
+const signupSchema = object({
+  password: string(),
+  confirm: string().custom((received: string, ctx: ExceptionContext) => {
+    // `string`, with no cast — and `root.pasword` would not compile
+    if (received !== ctx.ref((root: Signup) => root.password)) {
+      ctx.addIssue('the same password', received, 'u:mismatch');
+    }
+  }),
+});
+```
+
+Two things the string form cannot give you:
+
+- **A typo is a compile error.** `ctx.ref('pasword')` is a perfectly good string, so it yields
+  `undefined` for ever and the comparison against it quietly succeeds or quietly fails. It is the
+  shape of bug that survives a review, because the line reads correctly.
+- **The result carries the property's type.** `ctx.ref('age')` is `unknown` and every use needs a
+  cast; `ctx.ref((root: Signup) => root.age)` is `number`.
+
+Nested properties, array elements and `length` all work — `root.home.city`, `root.rows[0]`,
+`root.rows.length` — and the recorded segments are identical to what the string form produces, so a
+dependency graph built from `refReads` cannot tell which form a rule was written in.
+
+**The type goes on the callback's parameter, not as `ref<Signup>(…)`.** That is not a style
+preference: TypeScript takes explicit type arguments all or none, so supplying the root would mean
+supplying the result too, and the result is the thing worth inferring. Verified against `tsc`, along
+with the more surprising half — `InferType<typeof signupSchema>` inside the schema's own definition is
+**not** circular, because a type alias is hoisted and the callback's return type takes no part in
+inferring the object's shape. That was expected to be the blocking problem and turned out not to
+exist.
+
+The callback may read properties and nothing else. It is not called with your data; it is called with
+a recorder that notes each key and returns itself, so the walk *is* the path. Calling something
+mid-path — `root.rows.filter(…)` — throws, deliberately: a loud failure on misuse beats a quietly
+wrong answer, and the alternative was recording `filter` as a segment and returning a path that
+cannot resolve.
+
+The string form is unchanged and stays, for a path only known at runtime. Both read the value the
+parse started with, before any `transformBeforeValidation`.
+
 ## 0.8.0 Cross-field dependencies, recorded
 
 ### Added
