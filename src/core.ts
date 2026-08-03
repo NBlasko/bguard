@@ -20,6 +20,7 @@ import { BuildSchemaError, ValidationError } from './exceptions';
 import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
 import type { StandardSchemaProps, StandardSchemaResult } from './standardSchema';
+import type { RefRead } from './refTracking';
 
 const replacePlaceholdersRegex = /{{(.*?)}}/g;
 
@@ -42,6 +43,9 @@ export class ExceptionContext {
     /** Where async validations are collected. Absent during a synchronous parse, which is how one
      * is detected and reported rather than silently skipped. */
     public readonly pending?: PendingValidation[],
+    /** Where `ref` reads are recorded, when a caller asked for them. Absent by default, so a parse
+     * that does not want the dependency graph pays nothing for it. See `refTracking.ts`. */
+    public readonly refReads?: RefRead[],
   ) {}
 
   /**
@@ -60,6 +64,7 @@ export class ExceptionContext {
       this.meta,
       this.path,
       this.pending,
+      this.refReads,
     );
   }
 
@@ -93,13 +98,20 @@ export class ExceptionContext {
       childMeta,
       [...this.path, pathSegment],
       this.pending,
+      this.refReads,
     );
   }
 
   public ref(path: string): unknown {
     let ref: unknown = this.initialReceived;
+    const segments = path.split('.');
 
-    for (const el of path.split('.')) {
+    // Recorded before the walk, not after, so a read is known even when the path runs past the end of
+    // the data: `confirm` depends on `password` whether or not `password` is present yet, and an
+    // absent value is exactly when a form is being filled in.
+    this.refReads?.push({ from: this.path, fromPath: this.pathToError, to: path, toPath: segments });
+
+    for (const el of segments) {
       // A path that runs past the end of the data yields undefined. Indexing straight into it threw
       // a TypeError, which parseOrFail turned into a bare 'Something unexpected happened' with no
       // indication of which assert or which path was at fault.
@@ -294,6 +306,10 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         // Carried over, so an async validation inside the winning member keeps the right location.
         exCtx.path,
         exCtx.pending && attemptPending,
+        // NOT held back like the errors and the pending validations are. A read is a fact about what
+        // ran, and a member that loses still read what it read — so recording it keeps the graph on
+        // the safe side, where a dependency is known rather than missed. See `refTracking.ts`.
+        exCtx.refReads,
       );
 
       const parsedMember = innerCheck(memberSchema, receivedValue, attemptCtx);
@@ -747,6 +763,11 @@ export function parseOrFail<T extends CommonSchema>(
       '',
       undefined,
       schema[ctxSymbol].meta,
+      // Two positional skips to reach `refReads`: the root `path`, left to the constructor's own
+      // default rather than repeating `[]` here, and `pending`, which a synchronous parse has none of.
+      undefined,
+      undefined,
+      options?.refReads,
     );
     return innerCheck(schema, receivedValue, ctx) as InferType<T>;
   } catch (e) {
@@ -768,6 +789,21 @@ interface ParseOptions {
    * @example 'sr' or 'Serbia' or any string to identify language
    */
   lng?: string;
+  /**
+   * An array to record every `ctx.ref` read into, which is how a cross-field dependency becomes
+   * visible: a `custom` on `confirm` that reads `password` appends one entry saying so.
+   *
+   * Passed in rather than returned, so the four parse functions keep the signatures they have — and
+   * so the SAME array can be handed to many parses. The graph then accumulates: a rule that returns
+   * early on an empty value reveals its read the first time it gets far enough, and never unlearns
+   * it. Absent by default, and nothing is recorded without it.
+   *
+   * @example
+   * const refReads: RefRead[] = [];
+   * parse(signupSchema, values, { refReads });
+   * readsAffectedBy(refReads, 'password'); // the fields whose rules read it
+   */
+  refReads?: RefRead[];
 }
 
 interface ParseAllOptions extends ParseOptions {
@@ -834,6 +870,11 @@ export function parse<T extends CommonSchema>(
       '',
       options?.getAllErrors ? [] : undefined,
       schema[ctxSymbol].meta,
+      // Two positional skips to reach `refReads`: the root `path`, left to the constructor's own
+      // default rather than repeating `[]` here, and `pending`, which a synchronous parse has none of.
+      undefined,
+      undefined,
+      options?.refReads,
     );
 
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;
@@ -946,6 +987,7 @@ export async function parseAsync<T extends CommonSchema>(
       schema[ctxSymbol].meta,
       [],
       pending,
+      options?.refReads,
     );
 
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;

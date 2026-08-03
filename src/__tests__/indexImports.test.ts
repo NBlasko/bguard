@@ -19,6 +19,7 @@ describe('Library exports', () => {
       'toJSONSchema',
       'flattenErrors',
       'treeifyErrors',
+      'readsAffectedBy',
 
       // array
       'array',
