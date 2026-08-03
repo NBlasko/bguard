@@ -39,6 +39,7 @@ Table of contents
  * [Literals](#h3_literals)
  * [Custom (Library Built-in) Assertions](#h3_custom_builtin_assertions)
  * [Create Custom Assertions](#h3_create_custom_assertions)
+ * [Cross-Field Dependencies](#h3_ref_tracking)
  * [Translation](#translation)
     * [Using Translations](#h4_using_translation)
     * [Common and Custom Translations](#common_and_custom_translations)
@@ -958,6 +959,62 @@ const loginSchema = object({
   3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
      For single-language applications, you can override the default message by directly passing your custom message to `addIssue` method.
   4. If we have a nested object { foo: { bar: 'baz' } }, we should use `ctx.ref('foo.bar')` to access the value 'baz' in custom assertions.
+### <a id="h3_ref_tracking"> Cross-Field Dependencies </a>
+
+`ctx.ref` says that one field's rule reads another. Recording those reads is what makes the
+*dependency* visible — that `confirm` depends on `password`, and not the other way round.
+
+A form needs this to avoid a choice between two bad options: re-run the whole schema on every
+keystroke, or leave a stale message under a field whose rule reads a value that just moved.
+
+Pass an array and the reads land in it. Nothing is recorded without one, so a parse that does not
+ask for this does exactly the work it did before.
+
+```typeScript
+import { object, parse, readsAffectedBy } from 'bguard';
+import type { RefRead } from 'bguard';
+import { string } from 'bguard/string';
+import type { ExceptionContext } from 'bguard/core';
+
+const signupSchema = object({
+  password: string(),
+  confirm: string().custom((received: string, ctx: ExceptionContext) => {
+    if (received !== ctx.ref('password')) ctx.addIssue('a match', received, 'u:mismatch');
+  }),
+});
+
+const refReads: RefRead[] = [];
+parse(signupSchema, { password: 'secret', confirm: 'secret' }, { refReads });
+
+// The user edited `password`. Whose rules have to be asked again?
+readsAffectedBy(refReads, 'password').map((read) => read.fromPath); // ['.confirm']
+readsAffectedBy(refReads, 'confirm'); // [] — nothing reads it, so nothing else is stale
+```
+
+Each entry carries both locations in both forms:
+
+| Field | Meaning |
+| --- | --- |
+| `from` | Where the rule that called `ref` was running, as keys: `['confirm']`. Empty at the root. |
+| `fromPath` | The same location as a string, matching `pathToError`: `'.confirm'`. |
+| `to` | The path passed to `ref`, unchanged: `'password'`. |
+| `toPath` | `to` as segments, split the way `ref` walked it: `['password']`. |
+
+`fromPath` and `to` are **not the same convention** — one is leading-dot and bracketed, the other is
+what you wrote in the call. Compare locations by segments and keep the strings for messages.
+
+Three things worth knowing:
+
+- **A read is only recorded from a validation that actually ran.** A rule that returns early on an
+  empty value has read nothing yet. That is why the same array can be handed to many parses: the
+  graph fills in as rules get far enough to matter, and never unlearns an edge.
+- **`readsAffectedBy` counts a parent and a child as related in both directions.** Replacing
+  `address` can change `address.city`, and editing `address.city` changes what reading `address`
+  yields. Being too eager revalidates a field that did not need it; being too narrow leaves a wrong
+  message on screen.
+- **A union member that loses still records its read.** Its errors are discarded, its read is not —
+  a known dependency is safer than a missed one.
+
 ### <a id="translation"> Translation </a>
 
 Bguard provides default translations for error messages, but you can customize them as needed. Each potential error has an `errorKey` and `errorMessage`.

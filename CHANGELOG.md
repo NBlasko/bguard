@@ -1,5 +1,57 @@
 # bguard
 
+## 0.8.0 Cross-field dependencies, recorded
+
+### Added
+
+**`ctx.ref` reads can be recorded, which is what makes a cross-field DEPENDENCY visible.** `ref` has
+always let one field's rule read another — that is how `confirm` is compared to `password`, with the
+issue landing on `confirm` where the user can act on it. What nothing could see is the edge: that
+`confirm` depends on `password`, and not the other way round.
+
+Without it, a consumer rendering a form has one safe option when anything changes, which is to re-run
+the whole schema. The alternative is worse — a stale message under a field whose rule reads a value
+that just moved.
+
+Pass an array and every read lands in it:
+
+```ts
+import { object, parse, readsAffectedBy } from 'bguard';
+import type { RefRead } from 'bguard';
+
+const refReads: RefRead[] = [];
+parse(signupSchema, values, { refReads });
+
+// The user edited `password`. Whose rules have to be asked again?
+readsAffectedBy(refReads, 'password').map((read) => read.fromPath); // ['.confirm']
+readsAffectedBy(refReads, 'confirm'); // [] — nothing reads it
+```
+
+Each entry carries both locations in both forms: `from` / `fromPath` for the rule that called `ref`,
+`to` / `toPath` for what it read. `fromPath` follows `pathToError` (`'.confirm'`) while `to` is the
+string you passed (`'password'`) — two different conventions on purpose, so compare by segments and
+keep the strings for messages.
+
+Available on all four parse functions. **Nothing is recorded without a collector**, so a parse that
+does not ask for this does exactly the work it did before — no allocation, no bookkeeping.
+
+Three behaviours worth knowing, each of them deliberate:
+
+- **A read is only recorded from a validation that actually ran.** A rule that returns early on an
+  empty value has read nothing yet. That is why the same array can be handed to many parses: the
+  graph fills in as rules get far enough to matter, and never unlearns an edge. There is nothing to
+  derive statically — a `custom` is an opaque function, and which paths it reads can depend on the
+  value it was given.
+- **`readsAffectedBy` relates a parent and a child in both directions.** Replacing `address` can
+  change `address.city`, and editing `address.city` changes what reading `address` yields. Erring
+  eager revalidates a field that did not need it; erring narrow leaves a wrong message on screen.
+- **A union member that loses still records its read.** Its errors are discarded, its read is not: a
+  known dependency is safer than a missed one.
+
+Recording happens before the walk rather than after, so a read is known even when the path runs past
+the end of the data — which is the normal state of a form being filled in, and exactly when the graph
+is wanted.
+
 ## 0.7.1 Restore the schema methods coercion was dropping
 
  - **`coerce.string()`, `coerce.number()` and `coerce.boolean()` lost their type-specific methods.**

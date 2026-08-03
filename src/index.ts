@@ -13,6 +13,8 @@ export { toJSONSchema } from './toJSONSchema';
 export type { JSONSchema, ToJSONSchemaOptions } from './toJSONSchema';
 export { flattenErrors, treeifyErrors } from './formatErrors';
 export type { FlatErrors, ErrorTree } from './formatErrors';
+export { readsAffectedBy } from './refTracking';
+export type { RefRead } from './refTracking';
 
 export { array } from './asserts/array/index';
 export { maxArrayLength } from './asserts/array/maxArrayLength';
