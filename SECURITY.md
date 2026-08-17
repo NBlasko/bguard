@@ -82,7 +82,7 @@ wrong is welcome:
 
 ### Automated and bulk reports
 
-Machine-generated reports are welcome, and one of them produced the fix in 0.9.1. Two requests, both
+Machine-generated reports are welcome, and one of them produced the fix in 0.10.0. Two requests, both
 learned from that report:
 
 - Run the reproduction against the **latest** published version before sending it, and through a public
@@ -97,8 +97,9 @@ for one before anything else.
 ## Supported versions
 
 Fixes go into the next release from `main`, which is published automatically. There are no maintenance
-branches, so a fix for an issue found in an older version ships as a patch on the **current** minor
-rather than as a backport — an issue reported against 0.6.0 was fixed in 0.9.1, not 0.6.1.
+branches, so a fix for an issue found in an older version ships in the **next release from the current
+line**, not as a backport — an issue reported against 0.6.0 was fixed in 0.10.0, not 0.6.1. Whether that
+release is a patch or a minor depends on what else it carries, not on the fix being a security one.
 
 Only the latest release is supported. Please upgrade before reporting.
 
@@ -106,4 +107,4 @@ Only the latest release is supported. Please upgrade before reporting.
 
 Thanks to the people who have reported issues here:
 
-- **Madiba Security Lab, Concordia University** — prototype pollution via `setLocale` (fixed in 0.9.1).
+- **Madiba Security Lab, Concordia University** — prototype pollution via `setLocale` (fixed in 0.10.0).

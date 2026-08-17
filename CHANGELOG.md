@@ -1,11 +1,11 @@
 # bguard
 
-## 0.9.1 Security: prototype pollution through a locale name, and a payload key that could replace a parsed object's prototype
+## 0.10.0 Security: prototype pollution through a locale name and through a payload key, and a bound on how deep a parse will go
 
 ### Fixed
 
 **`setLocale` could write onto `Object.prototype`.** Reported by Madiba Security Lab, Concordia
-University, against 0.6.0; present in every release from 0.1.0 onwards.
+University, against 0.6.0; present in every release from 0.1.0 through 0.9.0.
 
 ```js
 setLocale('__proto__', { isAdmin: true });
