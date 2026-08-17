@@ -32,6 +32,29 @@ function replacePlaceholders(template: string, replacements: Record<string, unkn
   });
 }
 
+/**
+ * How deeply a parse will descend before reporting `'c:maxDepth'` instead of going further.
+ *
+ * Validation recurses, so the depth of the *input* decides how much JavaScript stack a parse uses.
+ * Without a limit the ceiling was the runtime's: input nested past roughly 900 levels exhausted the
+ * stack, and the `RangeError` was caught by the parse functions and reported as the generic
+ * 'Something unexpected happened' — an error naming neither the cause nor the location.
+ *
+ * 512 is chosen to sit above anything data plausibly does and below where the stack gives out. Real
+ * payloads nest in the tens; a recursive schema over a comment tree or an AST reaches low hundreds at
+ * the extreme. Raise it with the `maxDepth` parse option if your data genuinely goes further, or lower
+ * it to bound the work a hostile payload can ask for.
+ */
+export const defaultMaxDepth = 512;
+
+/** Shared by the parse functions, so an invalid limit is rejected the same way by each. */
+function resolveMaxDepth(maxDepth?: number): number {
+  if (maxDepth === undefined) return defaultMaxDepth;
+  if (!Number.isInteger(maxDepth) || maxDepth < 1) throw new BuildSchemaError('maxDepth must be a positive integer');
+
+  return maxDepth;
+}
+
 export class ExceptionContext {
   constructor(
     public readonly initialReceived: unknown,
@@ -48,6 +71,9 @@ export class ExceptionContext {
     /** Where `ref` reads are recorded, when a caller asked for them. Absent by default, so a parse
      * that does not want the dependency graph pays nothing for it. See `refTracking.ts`. */
     public readonly refReads?: RefRead[],
+    /** The depth this parse stops at. Carried on the context because `path.length` is the depth, so
+     * the limit belongs next to the thing it is compared against. */
+    public readonly maxDepth: number = defaultMaxDepth,
   ) {}
 
   /**
@@ -67,6 +93,7 @@ export class ExceptionContext {
       this.path,
       this.pending,
       this.refReads,
+      this.maxDepth,
     );
   }
 
@@ -101,6 +128,7 @@ export class ExceptionContext {
       [...this.path, pathSegment],
       this.pending,
       this.refReads,
+      this.maxDepth,
     );
   }
 
@@ -337,6 +365,25 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     receivedValue = schemaData.defaultValue;
   }
 
+  // Checked here, AFTER absence has been dealt with, and that placement is the whole subtlety. An
+  // object schema walks its declared shape, so validating `{ next?: … }` calls innerCheck for `next`
+  // whether or not the input has it. Checking depth at the top of the function therefore reported data
+  // nested exactly to the limit as being one level past it: the culprit was a property the payload did
+  // not contain. Only a value that is actually there can be too deep.
+  //
+  // `path.length` IS the depth. Every descent into a property, an index or a record key adds exactly one
+  // segment, and the recursions that add none — a lazy schema resolving, a union trying a member —
+  // consume no input either, so they must not spend depth. The check needs no counter of its own and
+  // cannot disagree with the path a reported issue carries.
+  if (exCtx.path.length > exCtx.maxDepth) {
+    // Reported rather than thrown, so it behaves like any other finding: it carries the path where the
+    // input got too deep, and `getAllErrors` collects it alongside the rest.
+    exCtx.addIssue(exCtx.maxDepth, exCtx.path.length, 'c:maxDepth');
+
+    // Returned unvalidated. Descending further is exactly what the limit exists to prevent.
+    return receivedValue;
+  }
+
   if (receivedValue === null) {
     if (!schemaData.isNullable) exCtx.addIssue('Not null', receivedValue, 'c:nullable');
     return receivedValue;
@@ -420,6 +467,7 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         // ran, and a member that loses still read what it read — so recording it keeps the graph on
         // the safe side, where a dependency is known rather than missed. See `refTracking.ts`.
         exCtx.refReads,
+        exCtx.maxDepth,
       );
 
       const parsedMember = innerCheck(memberSchema, receivedValue, attemptCtx);
@@ -884,6 +932,7 @@ export function parseOrFail<T extends CommonSchema>(
       undefined,
       undefined,
       options?.refReads,
+      resolveMaxDepth(options?.maxDepth),
     );
     return innerCheck(schema, receivedValue, ctx) as InferType<T>;
   } catch (e) {
@@ -920,6 +969,21 @@ interface ParseOptions {
    * readsAffectedBy(refReads, 'password'); // the fields whose rules read it
    */
   refReads?: RefRead[];
+  /**
+   * How many levels of nesting to descend before reporting `'c:maxDepth'` and stopping.
+   *
+   * Validation recurses, so the depth of the input decides how much stack a parse uses. Left alone,
+   * the limit is 512 — above anything data plausibly does, below where the JavaScript stack gives out.
+   * Lower it to bound the work an untrusted payload can ask for; raise it if your own data genuinely
+   * nests further, keeping in mind that a high enough value puts the runtime's stack back in charge.
+   *
+   * Must be a positive integer; anything else is a `BuildSchemaError`.
+   *
+   * @default 512
+   * @example
+   * parse(commentTree, untrustedPayload, { maxDepth: 20 });
+   */
+  maxDepth?: number;
 }
 
 interface ParseAllOptions extends ParseOptions {
@@ -991,6 +1055,7 @@ export function parse<T extends CommonSchema>(
       undefined,
       undefined,
       options?.refReads,
+      resolveMaxDepth(options?.maxDepth),
     );
 
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;
@@ -1104,6 +1169,7 @@ export async function parseAsync<T extends CommonSchema>(
       [],
       pending,
       options?.refReads,
+      resolveMaxDepth(options?.maxDepth),
     );
 
     const parsedValue = innerCheck(schema, receivedValue, ctx) as InferType<T>;

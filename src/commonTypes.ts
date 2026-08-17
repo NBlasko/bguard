@@ -12,6 +12,7 @@ export interface TranslationErrorMap {
   'c:date': string;
   'c:nan': string;
   'c:union': string;
+  'c:maxDepth': string;
   'c:tupleLength': string;
   [val: string]: string;
 }

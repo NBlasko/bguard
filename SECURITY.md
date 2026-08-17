@@ -69,11 +69,10 @@ wrong is welcome:
 - **`codeGen` output.** `codeGen` returns TypeScript source **as a string**, for you to write to a file.
   bguard contains no `eval` and no `new Function`, and never executes what it emits. If your pipeline
   evaluates generated code from schemas an attacker influenced, the exposure is in that pipeline.
-- **Stack exhaustion from deeply nested input.** Parsing recurses, so input nested past roughly 900 levels
-  exhausts the JavaScript stack. It is caught and surfaced as a thrown error rather than crashing the
-  process, so a request handler returns an error instead of dying. Reports of a **process crash**, or of
-  unbounded CPU or memory that is not bounded by the stack, are in scope; a `RangeError` at extreme depth
-  is a known limit.
+- **Nesting depth beyond the configured limit.** Parsing recurses, so a parse stops at `maxDepth` — 512 by
+  default — and reports `'c:maxDepth'` at the path where the input got too deep. Pass a lower `maxDepth`
+  to bound what an untrusted payload can ask for. Reports of a **process crash**, or of unbounded CPU or
+  memory *within* the limit, are in scope; hitting the limit itself is the limit working.
 - **Anything requiring the application to pass attacker-controlled values as a schema definition.** A
   schema is code. If an attacker chooses your schemas, they already choose your validation.
 - **Vulnerabilities in devDependencies.** bguard has **zero runtime dependencies**, and the published

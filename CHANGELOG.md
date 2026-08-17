@@ -48,6 +48,33 @@ The key is now stored as an own property, which is what the input said: a proper
 `__proto__`. `record` was the reachable case; declared shapes and `toJSONSchema` use the same
 assignment and are covered too.
 
+**Deeply nested input reported a limit instead of exhausting the stack.** Validation recurses, so the
+depth of the input decided how much JavaScript stack a parse used. Past roughly 900 levels the stack gave
+out, and the `RangeError` was caught by the parse functions' catch-all and reported as
+`Error: Something unexpected happened` — naming neither the cause nor the location.
+
+There is now a depth limit of **512**, reported like any other finding:
+
+```js
+const [errors] = parse(commentTree, hostilePayload, { maxDepth: 20 });
+// { code: 'c:maxDepth', expected: 20, received: 21, pathToError: '.next.next…' }
+```
+
+A new `'c:maxDepth'` translation key carries the message, so it is overridable through `setLocale` like
+every other one, and the issue lands at the path where the input got too deep rather than at the root.
+The limit is per-parse through the `maxDepth` option — lower it to bound what an untrusted payload can
+ask for, raise it if your own data genuinely nests further. It must be a positive integer; anything else
+is a `BuildSchemaError`.
+
+Depth is `path.length`, which is what makes it mean the same thing for a property, an array index and a
+record key, and what keeps a lazy schema resolving or a union trying a member from spending depth — those
+recurse without consuming input. A property the schema declares but the payload does not contain is not
+counted either.
+
+**This is the one behaviour change to look at before upgrading.** Input nested deeper than 512 that
+previously parsed will now be rejected with `'c:maxDepth'`. Real payloads nest in the tens, so this is
+unlikely to be you; if it is, pass a higher `maxDepth`.
+
 **Impact.** Reaching the `setLocale` issue requires calling it with an attacker-controlled locale name,
 which is a configuration call rather than a data path, so exposure in practice is narrow. The `record`
 issue is reachable from parsed input, which is exactly what the library is pointed at. Both are fixed;
