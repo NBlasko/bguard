@@ -26,17 +26,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: init
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           # A superset of the default suite. The default one leaves out the prototype-pollution queries
-          # that cover the class of bug fixed in 0.9.1, which is the reason this workflow is written out
+          # that cover the class of bug fixed in 0.10.0, which is the reason this workflow is written out
           # rather than set up through the default configuration.
+          #
+          # Being an ADVANCED configuration, this cannot coexist with repository default setup for code
+          # scanning: GitHub rejects the uploaded SARIF while default setup is enabled. Settings → Code
+          # security → Code scanning → CodeQL analysis → Switch to advanced.
           queries: security-extended
 
       # No `npm ci` and no build step: CodeQL extracts TypeScript sources directly, and the bundled
       # output is not in the tree to begin with — `/lib` is ignored.
       - name: analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript-typescript'
