@@ -20,6 +20,7 @@ import { BuildSchemaError, ValidationError } from './exceptions';
 import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
 import { pickPath } from './helpers/pickPath';
+import { setOwnProperty } from './helpers/setOwnProperty';
 import type { StandardSchemaProps, StandardSchemaResult } from './standardSchema';
 import type { RefRead } from './refTracking';
 
@@ -456,7 +457,11 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
       // Keys are validated too, which is what makes a restricted key type meaningful.
       innerCheck(keySchema, receivedKey, childCtx);
-      parsedRecord[receivedKey] = innerCheck(valueSchema, receivedRecordValue, childCtx);
+
+      // The key comes from the data, so a plain assignment let `__proto__` set the prototype of the
+      // object being returned instead of storing anything under it: the key vanished from the output
+      // and `parsed.isAdmin` answered from a payload-supplied prototype.
+      setOwnProperty(parsedRecord, receivedKey, innerCheck(valueSchema, receivedRecordValue, childCtx));
     }
 
     return parsedRecord;
@@ -552,7 +557,9 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
         parsedReceivedObjectValuePropery !== undefined ||
         Object.prototype.hasOwnProperty.call(receivedObject, keyOfSchema)
       ) {
-        parsedReceivedValue[keyOfSchema] = parsedReceivedObjectValuePropery;
+        // A declared key, but `object({ __proto__: … })` is legal, and assigning it would set the
+        // output's prototype rather than the property the shape asked for.
+        setOwnProperty(parsedReceivedValue, keyOfSchema, parsedReceivedObjectValuePropery);
       }
     }
 

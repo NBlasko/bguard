@@ -1,5 +1,58 @@
 # bguard
 
+## 0.9.1 Security: prototype pollution through a locale name, and a payload key that could replace a parsed object's prototype
+
+### Fixed
+
+**`setLocale` could write onto `Object.prototype`.** Reported by Madiba Security Lab, Concordia
+University, against 0.6.0; present in every release from 0.1.0 onwards.
+
+```js
+setLocale('__proto__', { isAdmin: true });
+({}).isAdmin; // true — every object in the process now reports it
+```
+
+The locale store was an ordinary object, so `data[lng] ??= baseMessages()` for a `lng` of `__proto__`
+read `Object.prototype`, found it truthy, and created no locale. The writes that followed went to
+whatever the read returned, which was the global prototype itself. `'constructor'` reached the `Object`
+function the same way, and a string passed where the message map belongs was iterated by
+`Object.entries` into character-indexed keys — the reported `Object.prototype.0`.
+
+Three things changed, and the first is the one that matters:
+
+- The locale store and every locale in it have **no prototype**, so there is nothing to inherit and
+  nothing to reach. A message key of `__proto__` is now stored as an ordinary message.
+- `__proto__`, `constructor` and `prototype` are **rejected as locale names** with a `BuildSchemaError`,
+  alongside the existing rejection of `'default'`. None of them names a language.
+- A `custom` argument that is not a plain object is **rejected** rather than iterated.
+
+Reading an unknown locale also behaves now: `{ lng: 'toString' }` used to resolve a function off the
+prototype and leave every message unresolved, and falls back to the default locale instead.
+
+**A `__proto__` key in parsed data could replace the prototype of the object handed back.** Not part of
+the report, found while fixing the above, and the more likely of the two to be reached by untrusted
+input:
+
+```js
+const parsed = parseOrFail(record(string(), object({ isAdmin: string() })), JSON.parse('{"__proto__":{"isAdmin":"yes"}}'));
+
+Object.keys(parsed); // [] — the key is nowhere
+parsed.isAdmin; // 'yes' — answered from a prototype the payload supplied
+```
+
+`Object.prototype` was never touched, so this was confined to the returned object — but a caller
+reading `parsed.isAdmin` cannot tell the difference. With a primitive value the key was silently
+dropped from the output instead, which is data loss with no error to say so.
+
+The key is now stored as an own property, which is what the input said: a property literally named
+`__proto__`. `record` was the reachable case; declared shapes and `toJSONSchema` use the same
+assignment and are covered too.
+
+**Impact.** Reaching the `setLocale` issue requires calling it with an attacker-controlled locale name,
+which is a configuration call rather than a data path, so exposure in practice is narrow. The `record`
+issue is reachable from parsed input, which is exactly what the library is pointed at. Both are fixed;
+no API used as documented changes behaviour.
+
 ## 0.9.0 Cross-field references the compiler can check, and narrowed schemas that drop rules that are not theirs
 
 ### Changed

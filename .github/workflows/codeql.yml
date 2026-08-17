@@ -1,0 +1,42 @@
+name: codeql
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  # Re-runs against the current query pack rather than the one that existed at merge time, which is how
+  # a newly published query finds something already in the tree.
+  schedule:
+    - cron: '37 4 * * 1'
+
+jobs:
+  analyze:
+    name: analyze
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # required to upload the results
+      contents: read
+      actions: read
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: init
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # A superset of the default suite. The default one leaves out the prototype-pollution queries
+          # that cover the class of bug fixed in 0.9.1, which is the reason this workflow is written out
+          # rather than set up through the default configuration.
+          queries: security-extended
+
+      # No `npm ci` and no build step: CodeQL extracts TypeScript sources directly, and the bundled
+      # output is not in the tree to begin with — `/lib` is ignored.
+      - name: analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
