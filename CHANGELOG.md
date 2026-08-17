@@ -1,5 +1,85 @@
 # bguard
 
+## 0.10.0 Security: prototype pollution through a locale name and through a payload key, and a bound on how deep a parse will go
+
+### Fixed
+
+**`setLocale` could write onto `Object.prototype`.** Reported by Madiba Security Lab, Concordia
+University, against 0.6.0; present in every release from 0.1.0 through 0.9.0.
+
+```js
+setLocale('__proto__', { isAdmin: true });
+({}).isAdmin; // true — every object in the process now reports it
+```
+
+The locale store was an ordinary object, so `data[lng] ??= baseMessages()` for a `lng` of `__proto__`
+read `Object.prototype`, found it truthy, and created no locale. The writes that followed went to
+whatever the read returned, which was the global prototype itself. `'constructor'` reached the `Object`
+function the same way, and a string passed where the message map belongs was iterated by
+`Object.entries` into character-indexed keys — the reported `Object.prototype.0`.
+
+Three things changed, and the first is the one that matters:
+
+- The locale store and every locale in it have **no prototype**, so there is nothing to inherit and
+  nothing to reach. A message key of `__proto__` is now stored as an ordinary message.
+- `__proto__`, `constructor` and `prototype` are **rejected as locale names** with a `BuildSchemaError`,
+  alongside the existing rejection of `'default'`. None of them names a language.
+- A `custom` argument that is not a plain object is **rejected** rather than iterated.
+
+Reading an unknown locale also behaves now: `{ lng: 'toString' }` used to resolve a function off the
+prototype and leave every message unresolved, and falls back to the default locale instead.
+
+**A `__proto__` key in parsed data could replace the prototype of the object handed back.** Not part of
+the report, found while fixing the above, and the more likely of the two to be reached by untrusted
+input:
+
+```js
+const parsed = parseOrFail(record(string(), object({ isAdmin: string() })), JSON.parse('{"__proto__":{"isAdmin":"yes"}}'));
+
+Object.keys(parsed); // [] — the key is nowhere
+parsed.isAdmin; // 'yes' — answered from a prototype the payload supplied
+```
+
+`Object.prototype` was never touched, so this was confined to the returned object — but a caller
+reading `parsed.isAdmin` cannot tell the difference. With a primitive value the key was silently
+dropped from the output instead, which is data loss with no error to say so.
+
+The key is now stored as an own property, which is what the input said: a property literally named
+`__proto__`. `record` was the reachable case; declared shapes and `toJSONSchema` use the same
+assignment and are covered too.
+
+**Deeply nested input reported a limit instead of exhausting the stack.** Validation recurses, so the
+depth of the input decided how much JavaScript stack a parse used. Past roughly 900 levels the stack gave
+out, and the `RangeError` was caught by the parse functions' catch-all and reported as
+`Error: Something unexpected happened` — naming neither the cause nor the location.
+
+There is now a depth limit of **512**, reported like any other finding:
+
+```js
+const [errors] = parse(commentTree, hostilePayload, { maxDepth: 20 });
+// { code: 'c:maxDepth', expected: 20, received: 21, pathToError: '.next.next…' }
+```
+
+A new `'c:maxDepth'` translation key carries the message, so it is overridable through `setLocale` like
+every other one, and the issue lands at the path where the input got too deep rather than at the root.
+The limit is per-parse through the `maxDepth` option — lower it to bound what an untrusted payload can
+ask for, raise it if your own data genuinely nests further. It must be a positive integer; anything else
+is a `BuildSchemaError`.
+
+Depth is `path.length`, which is what makes it mean the same thing for a property, an array index and a
+record key, and what keeps a lazy schema resolving or a union trying a member from spending depth — those
+recurse without consuming input. A property the schema declares but the payload does not contain is not
+counted either.
+
+**This is the one behaviour change to look at before upgrading.** Input nested deeper than 512 that
+previously parsed will now be rejected with `'c:maxDepth'`. Real payloads nest in the tens, so this is
+unlikely to be you; if it is, pass a higher `maxDepth`.
+
+**Impact.** Reaching the `setLocale` issue requires calling it with an attacker-controlled locale name,
+which is a configuration call rather than a data path, so exposure in practice is narrow. The `record`
+issue is reachable from parsed input, which is exactly what the library is pointed at. Both are fixed;
+no API used as documented changes behaviour.
+
 ## 0.9.0 Cross-field references the compiler can check, and narrowed schemas that drop rules that are not theirs
 
 ### Changed

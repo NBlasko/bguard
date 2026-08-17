@@ -2,6 +2,7 @@ import type { BaseType } from './commonTypes';
 import { CommonSchema, type ValidatorContext } from './core';
 import { BuildSchemaError } from './exceptions';
 import { ctxSymbol } from './helpers/constants';
+import { setOwnProperty } from './helpers/setOwnProperty';
 
 export interface JSONSchema {
   [keyword: string]: unknown;
@@ -118,7 +119,9 @@ function baseOf(schemaData: ValidatorContext, context: Context): JSONSchema {
 
     for (const [key, valueSchema] of Object.entries(schemaData.object)) {
       const valueSchemaData = valueSchema[ctxSymbol];
-      properties[key] = generate(valueSchema, context);
+      // A shape key of `__proto__` would otherwise set the prototype of `properties` and be missing
+      // from the emitted schema, which is how a declared property silently stops being described.
+      setOwnProperty(properties, key, generate(valueSchema, context));
 
       // A default supplies the value, so the caller need not send it — the same rule InferInput follows.
       if (!valueSchemaData.isOptional && valueSchemaData.defaultValue === undefined) required.push(key);

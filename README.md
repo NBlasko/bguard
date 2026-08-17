@@ -1227,6 +1227,7 @@ We have two sets of translations: common errors and specific assertions.
 'c:date': 'The received value is not a valid instance of Date',
 'c:nan': 'The received number is not a valid number',
 'c:union': 'The received value does not match any of the expected types',
+'c:maxDepth': 'The received value is nested deeper than the {{e}} levels allowed',
 'c:tupleLength': 'The received tuple has {{r}} entries but {{e}} were expected',
 ```
 
