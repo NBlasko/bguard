@@ -189,7 +189,18 @@ describe('coerce', () => {
 
     it.each([
       ['a boxed string', new String('abc'), 'abc'],
-      ['a URL', new URL('http://example.com/a'), 'http://example.com/a'],
+      ['a boxed number', new Number(5), '5'],
+      ['a boxed boolean', new Boolean(false), 'false'],
+      ['a boxed bigint', Object(10n), '10'],
+      ['a Date from another realm, as ISO', runInNewContext('new Date(0)'), '1970-01-01T00:00:00.000Z'],
+      ['a boxed string from another realm', runInNewContext('new String("x")'), 'x'],
+    ])('turns %s into %p', (_name, received, expected) => {
+      expect(parseOrFail(coerce.string(), received)).toBe(expected);
+    });
+
+    it.each([
+      // Objects of every kind are rejected, by decision: only the caller knows what text they stand for.
+      ['a URL', new URL('http://example.com/a')],
       [
         'a class instance with its own toString',
         new (class Money {
@@ -197,10 +208,13 @@ describe('coerce', () => {
             return '12.50 EUR';
           }
         })(),
-        '12.50 EUR',
       ],
-    ])('turns %s into the text its toString gives', (_name, received, expected) => {
-      expect(parseOrFail(coerce.string(), received)).toBe(expected);
+      ['an Error, which String turns into its message', new Error('boom')],
+      ['a RegExp', /a/],
+      ['a boxed NaN', new Number(NaN)],
+      ['an invalid Date from another realm', runInNewContext('new Date(NaN)')],
+    ])('rejects %s', (_name, received) => {
+      expect(parse(coerce.string(), received)[0]![0]!.code).toBe('c:invalidType');
     });
 
     it("rejects a plain object from another realm, whose toString is not this realm's", () => {

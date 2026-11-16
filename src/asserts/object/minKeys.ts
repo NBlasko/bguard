@@ -12,6 +12,8 @@ const minKeysErrorKey = 'o:minKeys';
  * least one of these". A key whose value is `undefined` is not counted, since it sends nothing: form
  * libraries and object spreads often fill absent fields with `undefined`, and `{ email: undefined }`
  * would otherwise satisfy `minKeys(1)`. JSON cannot carry `undefined`, so this matches `minProperties`.
+ * It counts the keys that were sent: a property whose `default()` would fill it in does not count,
+ * which is also how a JSON Schema validator reads `minProperties`.
  * @param {number} expected - The minimum number of keys the object must have: a non-negative integer,
  * or a `BuildSchemaError` is thrown.
  * @returns {RequiredValidation} A validation function that takes a received object and an exception context.

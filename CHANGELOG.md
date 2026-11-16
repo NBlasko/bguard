@@ -9,8 +9,8 @@ exists. Every one that maps onto a keyword is checked against `ajv` in the test 
 
 | Assertion | Import | Accepts | JSON Schema |
 |---|---|---|---|
-| `isAlpha()` | `bguard/string/isAlpha` | letters in any script: `Đorđe`, `Ђорђе`, `Zoë` | `pattern` |
-| `isAlphaNumeric()` | `bguard/string/isAlphaNumeric` | letters in any script and decimal digits | `pattern` |
+| `isAlpha()` | `bguard/string/isAlpha` | letters in any script: `Đorđe`, `Ђорђе`, `Zoë` | — (needs `\p{L}`) |
+| `isAlphaNumeric()` | `bguard/string/isAlphaNumeric` | letters in any script and decimal digits | — (needs `\p{L}`) |
 | `isNumeric()` | `bguard/string/isNumeric` | a plain decimal number: `-12.5`, `.5`; no exponent, spaces or separators | `pattern` |
 | `isHexColor()` | `bguard/string/isHexColor` | `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` | `pattern` |
 | `isPhoneNumber()` | `bguard/string/isPhoneNumber` | E.164: `+381641234567`. The format only, not whether the number exists | `pattern` |
@@ -32,25 +32,32 @@ replaces the earlier example, which was never typechecked and described `addIssu
 
 ### Changed
 
-**`coerceString` converts only what stands for text.** `String` turned anything into text —
+**`coerceString` converts only primitives and Dates.** `String` turned anything into text —
 `'[object Object]'` for an object, `''` for an empty array, a function's source code, `'NaN'` — and none
 of it is what anyone sent. Now:
 
-- finite numbers, booleans and bigints are converted as before;
+- finite numbers, booleans and bigints are converted as before, and so are their boxed forms
+  (`new String('a')`);
 - a Date becomes its ISO form, `2021-01-01T00:00:00.000Z`, rather than `String(date)`'s local time with
-  a time-zone name, which read differently on every server;
-- an object whose conversion gives text of its own is converted: `new String('a')`, a URL, a Decimal,
-  an ObjectId;
-- plain objects, arrays, Maps, functions, symbols, NaN, ±Infinity, invalid Dates and binary data
-  (Buffers, typed arrays — only the caller knows their encoding) are rejected by type.
+  a time-zone name, which read differently on every server. A Date from another realm (an iframe, a
+  `vm` context, a worker) is recognised too;
+- every other object — plain objects, arrays, Maps, errors, URLs, Buffers, class instances — and NaN,
+  ±Infinity and invalid Dates are rejected by type. Convert a URL or a Decimal yourself, with
+  `transformBeforeValidation`, where you know what its text should be.
 
 **`maxKeys` refuses a count that is not a non-negative integer**, like the new `minKeys`. `maxKeys(1.5)`
 or `maxKeys(-1)` used to build a schema whose JSON Schema no validator would compile; now it throws a
-`BuildSchemaError`.
+`BuildSchemaError`. `maxKeys(Infinity)` still works and means no limit; it emits no keyword.
 
-**`toJSONSchema` keeps both rules when two assertions set the same keyword.** The second used to replace
-the first, so `string().custom(regExp(/^[A-Z]/), isAlphaNumeric())` emitted only the `isAlphaNumeric`
-pattern and the document accepted `abc`, which bguard rejects. The second now goes into `allOf`.
+**`maxKeys` no longer counts a key whose value is `undefined`**, matching `minKeys` and
+`maxProperties`. `{ a: 'x', b: undefined }` now passes `maxKeys(1)`.
+
+**`toJSONSchema` keeps every rule when two set the same keyword.** An assertion's keyword used to replace
+the one already there: a second `pattern` replaced the first, and `minArrayLength(1)` on a two-element
+tuple replaced its `minItems: 2`, so the document accepted values bguard rejects. The newer one now goes
+into `allOf`. The one exception is `integer()` narrowing `type: 'number'`, so a nullable integer is still
+`type: ['integer', 'null']`. A `default` in the output is now a copy, so editing the document does not
+change the schema's default.
 
 ### Fixed
 
@@ -58,8 +65,8 @@ pattern and the document accepted `abc`, which bguard rejects. The second now go
 `setFullYear` on one result moved the default for every later parse; the same happened with an object
 default under a schema that does not rebuild it, such as `oneOfTypes(['object'])`. And only the top level
 of the value given to `default()` was copied, so changing a nested object afterwards changed the schema.
-A default is now deep-copied when it is set and on every use — plain objects, arrays and Dates; class
-instances are kept as they are, prototype and all.
+A default is now deep-copied when it is set and on every use — plain objects, arrays and Dates, from any
+realm; class instances are kept as they are, prototype and all.
 
 ### Internal
 

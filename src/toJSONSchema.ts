@@ -1,5 +1,6 @@
 import type { BaseType } from './commonTypes';
 import { CommonSchema, type ValidatorContext } from './core';
+import { _cloneValue } from './helpers/cloneValue';
 import { BuildSchemaError } from './exceptions';
 import { ctxSymbol } from './helpers/constants';
 import { setOwnProperty } from './helpers/setOwnProperty';
@@ -59,6 +60,29 @@ function constraintsOf(schemaData: ValidatorContext): JSONSchema {
 
   if (extra.length) constraints.allOf = extra;
   return constraints;
+}
+
+/**
+ * Adds the assertions' keywords to what the schema's structure already says, by the same rule as
+ * `constraintsOf`: a keyword the structure already has with a different value goes into `allOf`. A
+ * tuple's own `minItems: 2` was replaced by a `minArrayLength(1)` on it, so the document accepted a
+ * one-element tuple. The one deliberate replacement is `integer()` narrowing `type: 'number'`, which
+ * keeps a nullable integer expressible as `type: ['integer', 'null']`.
+ */
+function withConstraints(base: JSONSchema, constraints: JSONSchema): JSONSchema {
+  const result: JSONSchema = { ...base };
+  const extra: JSONSchema[] = [];
+
+  for (const [keyword, value] of Object.entries(constraints)) {
+    if (keyword === 'allOf') continue;
+    if (!(keyword in result) || (keyword === 'type' && result.type === 'number' && value === 'integer'))
+      result[keyword] = value;
+    else if (JSON.stringify(result[keyword]) !== JSON.stringify(value)) extra.push({ [keyword]: value });
+  }
+
+  const allOf = [...((constraints.allOf as JSONSchema[] | undefined) ?? []), ...extra];
+  if (allOf.length) result.allOf = allOf;
+  return result;
 }
 
 function literalOf(schemaData: ValidatorContext): JSONSchema | undefined {
@@ -168,7 +192,7 @@ function generate(schema: CommonSchema, context: Context): JSONSchema {
   const literal = literalOf(schemaData);
 
   // A literal already says everything about the value, so the type is redundant beside it.
-  let result: JSONSchema = literal ? { ...base, ...literal } : { ...base, ...constraintsOf(schemaData) };
+  let result: JSONSchema = literal ? { ...base, ...literal } : withConstraints(base, constraintsOf(schemaData));
   if (literal && result.type) delete result.type;
 
   if (schemaData.isNullable) {
@@ -176,7 +200,8 @@ function generate(schema: CommonSchema, context: Context): JSONSchema {
     result = result.$ref || result.anyOf ? { anyOf: [result, { type: 'null' }] } : mergeNull(result);
   }
 
-  if (schemaData.defaultValue !== undefined) result.default = schemaData.defaultValue;
+  // A copy: the document is the caller's to edit, and the schema's own default must not change with it.
+  if (schemaData.defaultValue !== undefined) result.default = _cloneValue(schemaData.defaultValue);
   if (schemaData.meta?.description) result.description = schemaData.meta.description;
 
   return result;

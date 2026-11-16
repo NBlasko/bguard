@@ -1,5 +1,4 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
-import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 
 const isAlphaNumericErrorMessage = 'The received value must contain only letters and digits';
@@ -24,10 +23,14 @@ const alphaNumericPattern = /^(?:\p{L}\p{M}*|\p{Nd})(?:\p{L}\p{M}*|\p{Nd}|[\u200
  *
  * @translation Error Translation Key = 's:isAlphaNumeric'
  */
-export const isAlphaNumeric = (): RequiredValidation<string> =>
-  _constrain({ pattern: alphaNumericPattern.source }, (received: string, ctx: ExceptionContext) => {
+export const isAlphaNumeric =
+  (): RequiredValidation<string> =>
+  // No JSON Schema `pattern`: this one needs Unicode property escapes (`\p{L}`), which only validators
+  // that compile patterns in Unicode mode understand. Python's `jsonschema`, for one, fails to compile
+  // the whole document. Leaving it out lets the document accept more instead of not working at all.
+  (received: string, ctx: ExceptionContext) => {
     if (!alphaNumericPattern.test(received)) ctx.addIssue('letters and digits only', received, isAlphaNumericErrorKey);
-  });
+  };
 
 isAlphaNumeric.key = isAlphaNumericErrorKey;
 isAlphaNumeric.message = isAlphaNumericErrorMessage;

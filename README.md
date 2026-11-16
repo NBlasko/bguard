@@ -811,10 +811,11 @@ anything into a value:
 - `coerceNumber()` and `coerceBigInt()` convert strings, booleans, bigints/numbers and Dates. An empty or
   whitespace-only string is rejected rather than read as `0`, which is what `Number('')` returns — an
   empty form field is not a zero. So are arrays and objects: `Number([])` is `0` and `Number([5])` is `5`.
-- `coerceString()` converts numbers, booleans and bigints, and turns a Date into its ISO form
-  (`2021-01-01T00:00:00.000Z`) rather than the local, time-zone-dependent text `String(date)` gives.
-  Arrays, objects and functions are rejected: `String` makes them `'[object Object]'`, `''` or source
-  code.
+- `coerceString()` converts finite numbers, booleans and bigints (boxed ones too), and turns a Date into
+  its ISO form (`2021-01-01T00:00:00.000Z`) rather than the local, time-zone-dependent text
+  `String(date)` gives. Every other object is rejected — `String` makes them `'[object Object]'`, `''`
+  or source code — and so are NaN and ±Infinity. Convert a URL or a Decimal yourself, with
+  `transformBeforeValidation`.
 - `coerceDate()` converts strings and numbers (a timestamp in milliseconds). A numeric date naming a day
   that does not exist, such as `2021-02-30` or `02/30/2021`, is rejected rather than rolled over into
   March 2nd as `new Date` does. A boolean is rejected too; `new Date(true)` is 1 ms after the epoch.
@@ -918,10 +919,12 @@ toJSONSchema(userSchema, { dialect: null });
 Represented: types, object properties and which are required, arrays, tuples, records, unions, literals
 and enums, nullability, defaults, `description()`, and recursive schemas through `$defs` and `$ref`.
 Assertions that map onto a keyword are included — string lengths, patterns and formats (`regExp`,
-`email`, `validUrl`, `uuid`, the date and time assertions, `isAlpha`, `isAlphaNumeric`, `isNumeric`,
-`isHexColor`, `isPhoneNumber`), numeric bounds, `integer` (as `type: 'integer'`), array lengths, and
-`minKeys`/`maxKeys`. When two assertions set the same keyword, such as two patterns, the second goes into
-`allOf`, so the document requires both, as bguard does.
+`email`, `validUrl`, `uuid`, the date and time assertions, `isNumeric`, `isHexColor`, `isPhoneNumber`),
+numeric bounds, `integer` (as `type: 'integer'`), array lengths, and `minKeys`/`maxKeys`. When an
+assertion sets a keyword that is already there — from another assertion, or from the schema's own
+structure, like a tuple's `minItems` — the new one goes into `allOf`, so the document requires both, as
+bguard does. `isAlpha` and `isAlphaNumeric` are left out: their patterns need Unicode property escapes
+(`\p{L}`), which not every validator compiles.
 
 Assertions with no JSON Schema counterpart are **left out rather than approximated**. `contains('x')`
 has no keyword, so it does not appear; a value the document accepts may still be rejected by bguard.
@@ -2532,7 +2535,8 @@ import { maxKeys } from 'bguard/object/maxKeys';
         
 * _Description_ Ensures that the object has no more than the specified number of keys.
 * _Param_ {number} expected - The maximum number of keys allowed in the object: a non-negative integer,
- or a `BuildSchemaError` is thrown.
+ or `Infinity` for no limit. Anything else throws a `BuildSchemaError`. A key whose value is `undefined`
+ is not counted, as in `minKeys`.
 * _Throws_ {ValidationError} if the number of the received keys is greater than the expected value.
 * _Example_
 ```typescript
@@ -2563,6 +2567,8 @@ import { minKeys } from 'bguard/object/minKeys';
  least one of these". A key whose value is `undefined` is not counted, since it sends nothing: form
  libraries and object spreads often fill absent fields with `undefined`, and `{ email: undefined }`
  would otherwise satisfy `minKeys(1)`. JSON cannot carry `undefined`, so this matches `minProperties`.
+ It counts the keys that were sent: a property whose `default()` would fill it in does not count,
+ which is also how a JSON Schema validator reads `minProperties`.
 * _Param_ {number} expected - The minimum number of keys the object must have: a non-negative integer,
  or a `BuildSchemaError` is thrown.
 * _Throws_ {ValidationError} if the number of the received keys is less than the expected value.

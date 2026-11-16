@@ -1,4 +1,4 @@
-import { BuildSchemaError, parse, parseOrFail } from '../';
+import { BuildSchemaError, parse, parseOrFail, toJSONSchema } from '../';
 import { number } from '../asserts/number';
 import { object } from '../asserts/object';
 import { record } from '../asserts/record';
@@ -225,10 +225,32 @@ describe('review fixes', () => {
       expect(parseOrFail(schema, { email: undefined, phone: '+381641234567' })).toEqual({ phone: '+381641234567' });
     });
 
-    it.each([[-1], [1.5], [NaN], [Infinity]])('refuses %p as a count when the schema is built', (count) => {
+    it.each([[-1], [1.5], [NaN]])('refuses %p as a count when the schema is built', (count) => {
       expect(() => minKeys(count)).toThrow(BuildSchemaError);
       expect(() => maxKeys(count)).toThrow(BuildSchemaError);
       expect(() => minKeys(count)).toThrow('minKeys expects a non-negative integer');
+    });
+
+    it('refuses Infinity as a minimum, which no object can meet', () => {
+      expect(() => minKeys(Infinity)).toThrow(BuildSchemaError);
+    });
+
+    it('takes Infinity as a maximum meaning no limit, and emits no keyword for it', () => {
+      const schema = record(string(), number()).custom(maxKeys(Infinity));
+      expect(parseOrFail(schema, { a: 1, b: 2 })).toEqual({ a: 1, b: 2 });
+      expect(toJSONSchema(schema, { dialect: null })).not.toHaveProperty('maxProperties');
+    });
+
+    it('maxKeys does not count a key whose value is undefined either, as maxProperties would not', () => {
+      const schema = object({ a: string().optional(), b: string().optional() }).custom(maxKeys(1));
+      expect(parseOrFail(schema, { a: 'x', b: undefined })).toEqual({ a: 'x' });
+    });
+
+    it('counts what was sent: a property its default would fill in does not count', () => {
+      // Same as minProperties, which a JSON Schema validator checks against the input.
+      const schema = object({ role: string().default('user'), email: string().optional() }).custom(minKeys(1));
+      expect(codeOf(schema, {})).toBe('o:minKeys');
+      expect(parseOrFail(schema, { email: 'a@b.co' })).toEqual({ role: 'user', email: 'a@b.co' });
     });
 
     it('still takes 0', () => {

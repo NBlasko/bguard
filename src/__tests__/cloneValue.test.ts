@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { _cloneValue } from '../helpers/cloneValue';
 
 describe('_cloneValue', () => {
@@ -66,5 +67,19 @@ describe('_cloneValue', () => {
     const copy = _cloneValue(original);
 
     expect(copy[0]).toBe(copy);
+  });
+
+  it('copies a plain object and a Date made in another realm', () => {
+    // `instanceof Date` and `=== Object.prototype` are false for these, so they used to be shared.
+    const original = runInNewContext('({ nested: { n: 1 }, when: new Date(0) })') as {
+      nested: { n: number };
+      when: Date;
+    };
+    const copy = _cloneValue(original);
+
+    expect(copy).not.toBe(original);
+    expect(copy.nested).not.toBe(original.nested);
+    expect(copy.when).not.toBe(original.when);
+    expect(copy.when.getTime()).toBe(0);
   });
 });

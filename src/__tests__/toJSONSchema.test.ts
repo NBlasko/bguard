@@ -1,4 +1,4 @@
-import { toJSONSchema, BuildSchemaError } from '../';
+import { toJSONSchema, BuildSchemaError, parseOrFail } from '../';
 import { CommonSchema } from '../core';
 import { array } from '../asserts/array';
 import { bigint } from '../asserts/bigint';
@@ -36,6 +36,8 @@ import { isHexColor } from '../asserts/string/isHexColor';
 import { isPhoneNumber } from '../asserts/string/isPhoneNumber';
 import { isCreditCard } from '../asserts/string/isCreditCard';
 import { isJson } from '../asserts/string/isJson';
+import { isAlpha } from '../asserts/string/isAlpha';
+import { isAlphaNumeric } from '../asserts/string/isAlphaNumeric';
 
 /** Most cases read better without the dialect line, which is asserted separately. */
 const bare = (schema: CommonSchema) => toJSONSchema(schema, { dialect: null });
@@ -167,6 +169,31 @@ describe('toJSONSchema', () => {
         minLength: 2,
         allOf: [{ minLength: 5 }],
       });
+    });
+
+    it("keeps a tuple's own length when an assertion sets the same keyword", () => {
+      // minArrayLength(1) used to replace the tuple's minItems: 2, and the document accepted ['a'].
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(1)))).toMatchObject({
+        minItems: 2,
+        allOf: [{ minItems: 1 }],
+      });
+    });
+
+    it("does not repeat a keyword an assertion sets to the tuple's own value", () => {
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(2)))).not.toHaveProperty('allOf');
+    });
+
+    it.each([
+      ['isAlpha', isAlpha()],
+      ['isAlphaNumeric', isAlphaNumeric()],
+    ])('leaves out %s, whose pattern needs Unicode property escapes', (_name, assert) => {
+      expect(bare(string().custom(assert))).toEqual({ type: 'string' });
+    });
+
+    it('emits a copy of the default, so editing the document does not change the schema', () => {
+      const schema = object({ tags: array(string()).default(['a']) });
+      (bare(schema).properties as Record<string, { default: string[] }>).tags!.default.push('changed');
+      expect(parseOrFail(schema, {})).toEqual({ tags: ['a'] });
     });
 
     it('turns an integer with nullable into an integer-or-null type', () => {

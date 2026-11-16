@@ -219,20 +219,29 @@ describe('agreement with JSON Schema validators', () => {
     });
   });
 
+  describe('isAlpha and isAlphaNumeric, which emit no pattern', () => {
+    // Their regex needs Unicode property escapes, which not every validator compiles, so the document
+    // leaves them out and accepts more. What remains to check is the one direction that matters.
+    const letters = 'aZđĐжЖωé\u0301中\u200C';
+    const words = randomStrings(23, 3000, (pick, int) => run(pick, int, letters + "0129١ -_.+#½Ⅻ'", 8));
+
+    it.each([
+      ['isAlpha', string().custom(isAlpha())],
+      ['isAlphaNumeric', string().custom(isAlphaNumeric())],
+    ])('%s accepts nothing the document rejects', (_name, schema) => {
+      expect(toJSONSchema(schema, { dialect: null })).toEqual({ type: 'string' });
+      expect(bguardOnly(schema, words)).toEqual([]);
+      expect(acceptedCount(schema, words)).toBeGreaterThan(50);
+    });
+  });
+
   describe('the pattern-based character assertions, which agree in both directions', () => {
-    // The pattern is the assertion's own regex, so ajv (which compiles patterns with the `u` flag) has to
-    // read it exactly as bguard does, `\p{L}` included.
-    const letters = 'aZđĐжЖωé\u0301中';
-    const values = randomStrings(11, 6000, (pick, int) =>
-      run(pick, int, int(2) ? letters + '0129١' : letters + "0129١ -_.+#½Ⅻ'\n", 8),
-    );
+    // The pattern is the assertion's own regex, so ajv has to read it exactly as bguard does.
     const numeric = randomStrings(13, 6000, (pick, int) => run(pick, int, int(2) ? '0123.+-' : '0123.+-e ,x', 7));
     const colors = randomStrings(17, 6000, (pick, int) => (int(4) ? '#' : '') + run(pick, int, '0aF9g', 10));
     const phones = randomStrings(19, 6000, (pick, int) => (int(4) ? '+' : '') + run(pick, int, '0123456789 -', 18));
 
     it.each([
-      ['isAlpha', string().custom(isAlpha()), values],
-      ['isAlphaNumeric', string().custom(isAlphaNumeric()), values],
       ['isNumeric', string().custom(isNumeric()), numeric],
       ['isHexColor', string().custom(isHexColor()), colors],
       ['isPhoneNumber', string().custom(isPhoneNumber()), phones],
@@ -246,8 +255,8 @@ describe('agreement with JSON Schema validators', () => {
   describe('two assertions that set the same keyword', () => {
     it('both hold in the document, as both hold in bguard', () => {
       // The second pattern used to replace the first, so the document accepted what regExp rejected.
-      const schema = string().custom(regExp(/^[A-Z]/), isAlphaNumeric());
-      const values = ['Abc1', 'abc1', 'A_b', 'Ž1', 'ABC', ''];
+      const schema = string().custom(regExp(/^#[0-9]/), isHexColor());
+      const values = ['#123', '#1234ab', '#abc', '123', '#12', ''];
       const validate = ajv.compile(toJSONSchema(schema));
       expect(values.filter((value) => (parse(schema, value)[0] === null) !== validate(value))).toEqual([]);
       expect(acceptedCount(schema, values)).toBe(2);
