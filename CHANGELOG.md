@@ -77,6 +77,13 @@ with or without a time after it. A date with a month name (`Feb 30 2021`) is sti
 `new Date([5])` is May 2001 and `new Date(['2021-01-01'])` is that day; booleans, arrays and objects are
 now rejected.
 
+**Message placeholders are filled in linear time, and only from `{{e}}`, `{{r}}` and `{{p}}`.** The
+placeholder pattern `{{(.*?)}}` searched the rest of the message from every `{{`, which is quadratic: two
+seconds for a 120,000-character message of repeated `{{a` (flagged by CodeQL). Placeholders are now
+matched without crossing a brace. And a placeholder was looked up with `in`, so `{{constructor}}` in a
+message was replaced with the source of the `Object` function; unknown names are now left as they are.
+`{{{e}}}` now gives the value in braces, where it used to be left untouched.
+
 **No coercion throws.** `coerceNumber(Symbol())`, `coerceDate(1n)`, `coerceDate(Symbol())` and
 `coerceString(Object.create(null))` threw inside the conversion, and the parse reported 'Something
 unexpected happened' instead of a validation error. They are now rejected by type.

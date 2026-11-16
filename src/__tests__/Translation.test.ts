@@ -149,4 +149,38 @@ describe('Translation', () => {
       expect(message()).toBe('The received value length is less than expected');
     });
   });
+
+  describe('placeholders', () => {
+    const message = (template: string) => {
+      setLocale('placeholders', { 's:minLength': template });
+      return parse(string().custom(minLength(3)), 'ab', { lng: 'placeholders' })[0]![0]!.message;
+    };
+
+    it('replaces the expected value, the received value and the path', () => {
+      expect(message('{{r}} is shorter than {{e}} at "{{p}}"')).toBe('ab is shorter than 3 at ""');
+    });
+
+    it('leaves an unknown placeholder as it is', () => {
+      expect(message('{{x}} and {{e}}')).toBe('{{x}} and 3');
+    });
+
+    it.each([['constructor'], ['toString'], ['__proto__']])(
+      'leaves {{%s}} alone rather than reading it off the prototype',
+      (key) => {
+        expect(message(`{{${key}}}`)).toBe(`{{${key}}}`);
+      },
+    );
+
+    it('fills a placeholder wrapped in literal braces', () => {
+      expect(message('{{{e}}}')).toBe('{3}');
+    });
+
+    it('takes linear time on a message full of unclosed placeholders', () => {
+      // `{{(.*?)}}` took about two seconds on this; CodeQL flagged it as a polynomial regular expression.
+      const hostile = '{{' + '{{a'.repeat(40_000);
+      const started = performance.now();
+      expect(message(hostile)).toBe(hostile);
+      expect(performance.now() - started).toBeLessThan(200);
+    });
+  });
 });

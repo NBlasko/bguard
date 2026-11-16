@@ -24,12 +24,18 @@ import { setOwnProperty } from './helpers/setOwnProperty';
 import type { BguardStandardIssue, BguardStandardProps, BguardStandardResult } from './standardSchema';
 import type { RefRead } from './refTracking';
 
-const replacePlaceholdersRegex = /{{(.*?)}}/g;
+// A placeholder holds no braces. This used to be `{{(.*?)}}`, which from every `{{` scanned the rest of
+// the message for a closing `}}`: quadratic in the length, two seconds for a 120,000-character message
+// made of `{{a` repeated (CodeQL: polynomial regular expression). A message is usually the library's or
+// the application's own text, but it is also whatever key a custom assertion passes.
+const replacePlaceholdersRegex = /{{([^{}]*)}}/g;
 
 function replacePlaceholders(template: string, replacements: Record<string, unknown>): string {
-  return template.replace(replacePlaceholdersRegex, (_, key) => {
-    return key in replacements ? `${replacements[key] as string}` : `{{${key}}}`;
-  });
+  return template.replace(replacePlaceholdersRegex, (_, key: string) =>
+    // An own-property check: `in` also found `constructor` and `toString` on the prototype, so a message
+    // containing `{{constructor}}` had the source of the Object function spliced into it.
+    Object.prototype.hasOwnProperty.call(replacements, key) ? `${replacements[key] as string}` : `{{${key}}}`,
+  );
 }
 
 /**
