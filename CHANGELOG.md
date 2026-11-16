@@ -1,5 +1,81 @@
 # bguard
 
+## 0.11.0 Date and time assertions that check the calendar and the clock, and string formats that mean what their JSON Schema says
+
+Some values that used to pass are now rejected. Every one of them was invalid by the assertion's own
+documentation, but a schema that relied on the old behaviour will see new errors, which is why this is a
+minor release rather than a patch.
+
+### Fixed
+
+**`isValidDate` accepted days that do not exist, and rejected years that do.** Reported by
+`trackoor` (UCSB PLSE) in #21.
+
+```js
+const schema = string().custom(isValidDate());
+parse(schema, '2021-02-29'); // accepted — 2021 is not a leap year
+parse(schema, '2020-04-31'); // accepted — April has 30 days
+parse(schema, '1800-01-01'); // rejected — the year was limited to 1900–2099
+```
+
+The day was checked against 01–31 whatever the month. It is now checked against the month and year,
+with leap years following the Gregorian rules: 2000 is a leap year, 1900 is not. Any four-digit year is
+accepted, as RFC 3339 allows.
+
+**`isValidDateTime` only checked how many digits each part had.** `9999-99-99T99:99:99Z` passed, and so
+did `+25:60` as an offset. Hours are now 00–23, minutes and seconds 00–59, the offset hours and minutes
+the same, and the day has to exist. The `+HHMM` and `+HH` offset forms are still accepted. Leap seconds
+(`23:59:60`) are rejected, since a JavaScript `Date` cannot hold one.
+
+**`precision: 0` accepted a bare dot.** `isValidTime({ precision: 0 })` took `12:00:00.` and
+`isValidDateTime({ precision: 0 })` took `2020-01-01T00:00:00.Z`. A precision of 0 now means no fraction.
+A precision that is not a non-negative integer throws a `BuildSchemaError` when the schema is built; `-1`
+or `1.5` used to end up as literal text inside the regex.
+
+**`isValidTime` reported one problem twice.** With a `precision` set, a malformed value added two issues
+under `getAllErrors`.
+
+**`regExp` with a `g` or `y` flag gave alternating answers.** `RegExp.prototype.test` resumes from
+`lastIndex` on such a regex, so the same value passed, then failed, then passed:
+
+```js
+const schema = string().custom(regExp(/a/g));
+[1, 2, 3, 4].map(() => parse(schema, 'a')[0] === null); // [true, false, true, false]
+```
+
+Every value is now tested from the start. The assertion tests its own copy of the regex, so the caller's
+`lastIndex` is left alone.
+
+**`email` accepted whitespace and line breaks.** `a b@c.d` and `a\n@b.c` passed, as did `a@b..c` and a
+local part starting or ending with a dot. All of these are now rejected. The pattern is otherwise as
+loose as before, and non-ASCII addresses are still accepted.
+
+**`validUrl` accepted hosts that are not hostnames, and treated the protocol as a regex.**
+
+- `http://...`, `http://-` and `http://a-.com` passed. A host is now dot-separated labels of letters,
+  digits and inner hyphens.
+- A port above 65535 passed. It is now range-checked.
+- `validUrl('a.b')` also accepted `axb://host`, because the protocol was spliced into a regex without
+  escaping. It is now matched literally.
+- `http://a.com?x=1` and `https://a.com#top` were rejected because the rest of the URL had to start with
+  `/`. It may now start with `?` or `#` too.
+
+### `toJSONSchema`
+
+**`isValidTime` is emitted as a `pattern` instead of `format: 'time'`.** JSON Schema's `time` is RFC
+3339 `full-time`, which requires an offset, and an offset is exactly what `isValidTime` rejects. The
+generated document therefore rejected every value bguard accepted.
+
+**A `regExp` whose flags change the match is left out.** A JSON Schema `pattern` cannot carry flags, so
+`/abc/i` became `pattern: "abc"` and rejected `ABC`, which bguard accepts. Regexes with only `g`, `d` or
+`u` are still emitted.
+
+The README's claim that the output was verified against `ajv` was based on a check that only used valid
+values. It now says what was actually checked: `isValidDate` agrees with `format: 'date'` on more than a
+million year/month/day combinations, and none of 300,000 random date-times passes bguard while failing
+`format: 'date-time'`. It also says where the two still differ. `email` and `validUrl` remain looser
+than `format: 'email'` and `format: 'uri'`, and that is tracked separately.
+
 ## 0.10.0 Security: prototype pollution through a locale name and through a payload key, and a bound on how deep a parse will go
 
 ### Fixed

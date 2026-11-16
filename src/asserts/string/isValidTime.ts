@@ -1,3 +1,4 @@
+import { _fractionPattern } from '../../helpers/calendar';
 import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
 import type { ExceptionContext, RequiredValidation } from '../../core';
@@ -12,6 +13,8 @@ interface IsValidTimeOptions {
 /**
  * @description Asserts that a string is a valid time in the format HH:mm:ss, with optional fractional seconds.
  * @param {IsValidTimeOptions} options Optional settings to configure the validation.
+ * - `precision`: the exact number of fractional second digits required. `0` forbids a fraction. Anything
+ *   but a non-negative integer throws a `BuildSchemaError`.
  * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
  * @throws {ValidationError} if the received string is not a valid time.
  * @example
@@ -27,24 +30,14 @@ interface IsValidTimeOptions {
  * @translation Error Translation Key = 's:isValidTime'
  */
 export const isValidTime = (options: IsValidTimeOptions = {}): RequiredValidation<string> => {
-  return _constrain({ format: 'time' }, (received: string, ctx: ExceptionContext) => {
-    const { precision } = options;
+  // HH:mm:ss with an optional fraction, or with exactly `precision` fractional digits when one is given.
+  const timeRegex = new RegExp(`^(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d${_fractionPattern(options.precision)}$`);
 
-    // Base regex for HH:mm:ss format
-    let timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d+)?$/;
-
-    // If precision is specified, enforce exact number of digits in fractional seconds
-    if (precision !== undefined) {
-      timeRegex = new RegExp(`^([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)(\\.\\d{${precision}})?$`);
-    }
-
-    // Check if the string is a valid time
+  // Emitted as a `pattern`, not `format: 'time'`. JSON Schema's `time` is RFC 3339 `full-time`, which
+  // requires an offset — the one thing this assertion rejects — so the two accepted disjoint sets and the
+  // generated document rejected every value bguard accepted.
+  return _constrain({ pattern: timeRegex.source }, (received: string, ctx: ExceptionContext) => {
     if (!timeRegex.test(received)) {
-      ctx.addIssue('valid time', received, timeErrorKey);
-    }
-
-    // Additional check for precision if it's specified and the time does not have fractional seconds
-    if (precision !== undefined && !received.includes('.')) {
       ctx.addIssue('valid time', received, timeErrorKey);
     }
   });
