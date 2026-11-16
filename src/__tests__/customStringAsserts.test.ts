@@ -281,6 +281,24 @@ describe('Custom String Asserts', () => {
       ['a port above 65535', 'http://a.com:65536'],
       ['a port of six digits', 'http://a.com:100000'],
       ['whitespace in the path', 'http://a.com/a b'],
+      // #23: accepted until 0.12.0, rejected by JSON Schema's format: 'uri'.
+      ['non-ASCII text in the path', 'http://a.com/ü'],
+      ['an angle bracket in the path', 'http://a.com/<x>'],
+      ['a brace in the path', 'http://a.com/a{b}'],
+      ['a pipe in the path', 'http://a.com/a|b'],
+      ['a backslash in the path', 'http://a.com/a\\b'],
+      ['a caret in the path', 'http://a.com/a^b'],
+      ['a double quote in the query', 'http://a.com/?q="x"'],
+      ['a malformed percent escape', 'http://a.com/%zz'],
+      ['a truncated percent escape', 'http://a.com/%a'],
+      ['a second # in the fragment', 'http://a.com/#a#b'],
+      // Deliberately rejected: it reads as bank.com but goes to evil.com.
+      ['userinfo', 'http://bank.com@evil.com/'],
+      ['an IPv6 address with two ::', 'http://[1::2::3]/'],
+      ['an IPv6 address with a five-digit group', 'http://[12345::]/'],
+      ['an IPv6 address with nine groups', 'http://[1:2:3:4:5:6:7:8:9]/'],
+      ['an IPv6 address without brackets', 'http://::1/'],
+      ['an embedded IPv4 octet above 255', 'http://[::ffff:1.2.3.256]/'],
     ])('rejects %s', (_name, value) => {
       expect(() => parseOrFail(string().custom(validUrl()), value)).toThrow('The received value is not a valid URL');
     });
@@ -292,6 +310,14 @@ describe('Custom String Asserts', () => {
       ['a hyphen inside a label', 'https://my-site.example.com/'],
       ['a fully qualified name', 'http://example.com./'],
       ['a single label', 'http://localhost:3000/'],
+      ['a percent-encoded non-ASCII path', 'http://a.com/%C3%BC'],
+      ['every sub-delimiter RFC 3986 allows in a path', "http://a.com/!$&'()*+,;=:@-._~"],
+      ['a slash and question mark in the query', 'http://a.com/?next=/a?b'],
+      ['IPv6 loopback', 'http://[::1]/'],
+      ['IPv6 with a port', 'http://[2001:db8::1]:8080/path'],
+      ['a full IPv6 address', 'http://[2001:0db8:0000:0000:0000:ff00:0042:8329]/'],
+      ['IPv6 with an embedded IPv4', 'http://[::ffff:192.168.0.1]/'],
+      ['the unspecified IPv6 address', 'http://[::]/'],
     ])('accepts %s', (_name, value) => {
       expect(parseOrFail(string().custom(validUrl()), value)).toBe(value);
     });
@@ -321,13 +347,29 @@ describe('Custom String Asserts', () => {
       ['a leading dot in the domain', 'a@.b.c'],
       ['two @ signs', 'a@b@c.d'],
       ['no dot in the domain', 'a@b'],
+      // #23: accepted until 0.12.0, rejected by JSON Schema's format: 'email'.
+      ['a non-ASCII local part', 'ünï@example.com'],
+      ['a non-ASCII domain', 'a@ü.com'],
+      ['a parenthesis', 'a(b@c.d'],
+      ['a double quote', 'a"b@c.d'],
+      ['an angle bracket', 'a<b@c.d'],
+      ['a domain label starting with a hyphen', 'a@-b.com'],
+      ['a domain label ending with a hyphen', 'a@b-.com'],
+      ['an underscore in the domain', 'a@b_c.com'],
     ])('rejects %s', (_name, value) => {
       expect(() => parseOrFail(string().custom(email()), value)).toThrow(
         'The received value does not match the required email pattern',
       );
     });
 
-    it.each([['a@b.c'], ['first.last+tag@sub.example.co.uk'], ['ünïcødé@example.com']])('accepts %s', (value) => {
+    it.each([
+      ['a@b.c'],
+      ['first.last+tag@sub.example.co.uk'],
+      ["o'brien@example.com"],
+      ['x!#$%&*/=?^_`{|}~-y@example.com'],
+      ['UPPER@EXAMPLE.COM'],
+      ['a@my-host.example.com'],
+    ])('accepts %s', (value) => {
       expect(parseOrFail(string().custom(email()), value)).toBe(value);
     });
   });

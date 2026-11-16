@@ -17,13 +17,18 @@ import { number } from '../number/index';
  * already a number is passed through `Number`.
  *
  * A value `Number` cannot read becomes `NaN`, which `number()` rejects, so `'abc'` fails validation
- * rather than passing as a number.
+ * rather than passing as a number. An empty or whitespace-only string is treated the same way, rather
+ * than becoming the `0` that `Number('')` returns.
  *
  * @returns A number schema that accepts `unknown` as its input type.
  * @example
  * parseOrFail(coerceNumber(), '42'); // 42
  */
 export const coerceNumber = () =>
-  number().transformBeforeValidation<unknown>((received) =>
-    received === null || typeof received === 'number' ? (received as number) : Number(received),
-  );
+  number().transformBeforeValidation<unknown>((received) => {
+    if (received === null || typeof received === 'number') return received as number;
+    // `Number('')` and `Number('  ')` are 0, so an empty form field used to arrive as a real zero. A
+    // string with nothing in it holds no number, and becomes NaN like any other unreadable string.
+    if (typeof received === 'string' && received.trim() === '') return NaN;
+    return Number(received);
+  });

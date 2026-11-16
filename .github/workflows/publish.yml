@@ -5,12 +5,19 @@ on:
     branches:
       - main
 
+# Two jobs, so that the right to publish never shares a machine with third-party code.
+#
+# `build` runs `npm ci`, which installs every devDependency and runs their install scripts, then builds
+# and tests. Any of those packages could be compromised, and a job holding `id-token: write` would let
+# one of them request an OIDC token and publish its own version of bguard. So `build` cannot publish:
+# it hands over a tarball and nothing else.
+#
+# `publish` holds `id-token: write`, installs nothing from the project, and publishes that tarball.
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # trusted publishing: the job proves its identity to npm over OIDC, so no token exists
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -20,7 +27,6 @@ jobs:
         with:
           node-version: 22.x
           cache: 'npm'
-          registry-url: https://registry.npmjs.org
 
       - name: ci
         run: npm ci
@@ -37,13 +43,42 @@ jobs:
       - name: test:coverage
         run: npm run test:coverage
 
+      # `--ignore-scripts`: the build has already run, and the tarball should be exactly what was tested.
+      - name: pack
+        run: npm pack --ignore-scripts
+
+      - name: upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: bguard-*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # trusted publishing: the job proves its identity to npm over OIDC, so no token exists
+    steps:
+      - name: node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: https://registry.npmjs.org
+
       # Trusted publishing needs npm 11.5.1+, and Node 22 ships npm 10.
       - name: npm with trusted publishing
         run: npm install -g npm@^11.5.1
 
-      # Publishes over OIDC, with no token to expire or leak. An npm token used to live here; write tokens
-      # now expire after 90 days, and one did, failing the 0.11.0 release. Provenance is attached
-      # automatically. The trusted publisher on npmjs.com has to allow `npm publish`, not only
-      # `npm stage publish`, or this step is rejected.
+      - name: download tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+
+      # Publishes over OIDC, with no token to expire or leak; write tokens now expire after 90 days, and
+      # one did, failing the 0.11.0 release. Provenance is attached automatically. The trusted publisher
+      # on npmjs.com has to allow `npm publish`, not only `npm stage publish`.
       - name: publish
-        run: npm publish --access public
+        run: npm publish ./bguard-*.tgz --access public

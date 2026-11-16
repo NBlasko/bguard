@@ -648,11 +648,21 @@ const result = schema['~standard'].validate({ name: 'a', age: 3 });
 // { value: { name: 'a', age: 3 } }
 
 const failed = schema['~standard'].validate({ name: 'a', age: 'x' });
-// { issues: [{ message: 'Invalid type of data', path: ['age'] }] }
+// { issues: [{ message: 'Invalid type of data', path: ['age'], code: 'c:invalidType', expected: ['number'], pathToError: '.age' }] }
 ```
 
 `validate` collects every issue rather than stopping at the first, since a consumer rendering a form
 needs them all at once. Issue paths are arrays of keys, with numbers for array and tuple positions.
+
+Beyond the `message` and `path` the spec requires, each issue carries what `parse` reports about the
+failure: the `code` (such as `s:minLength`, stable across languages, so a form can translate or branch
+on it), the `expected` value, the dotted `pathToError`, and `meta` when the schema has an `id` or
+`description`. The type is `BguardStandardIssue`. The `received` value is deliberately left out, since
+it may be a password and Standard Schema issues are often logged or sent back to a client; `parse`
+still reports it.
+
+`validate` takes only a value, so it cannot be given an `lng`. Its messages follow the language set
+with [`setDefaultLanguage`](#h4_using_translation).
 
 ### <a id="h3_error_shape"> Error Shape </a>
 
@@ -892,20 +902,18 @@ The document is a faithful description of what it can express, not a complete on
 Pass `dialect: null` to leave out `$schema`, which is what you want when embedding the result in an
 OpenAPI `components.schemas` entry.
 
-For dates, times and patterns, where the two cannot agree exactly, bguard is the stricter side: a value
-bguard accepts passes the generated document too. `isValidDateTime` rejects leap seconds and a lowercase `t`/`z`,
-which `format: 'date-time'` allows. `isValidTime` is emitted as a `pattern`, because JSON Schema's
+Where the two cannot agree exactly, bguard is the stricter side: a value bguard accepts passes the
+generated document too. `isValidDateTime` rejects leap seconds and a lowercase `t`/`z`, which
+`format: 'date-time'` allows. `isValidTime` is emitted as a `pattern`, because JSON Schema's
 `format: 'time'` requires an offset that `isValidTime` rejects. A `regExp` with an `i`, `m`, `s`, `y` or
-`v` flag is left out, since a `pattern` cannot carry flags.
+`v` flag is left out, since a `pattern` cannot carry flags. `validUrl` takes only `http`/`https` (or the
+protocol you name), hostnames and IPv6 hosts, and no userinfo, where `format: 'uri'` takes any URI.
+`email` uses the same pattern as `format: 'email'`.
 
-`email` and `validUrl` are the exception: they are looser than `format: 'email'` and `format: 'uri'`.
-Both accept non-ASCII text, and `email` accepts characters such as `(` or `<` in the local part, all of
-which those formats reject.
-
-> **Verified against a real validator:** the generated documents are cross-checked with `ajv` and
-> `ajv-formats`. `isValidDate` agrees with `format: 'date'` on every year/month/day combination tried
-> (over a million), and no `isValidDateTime` value out of 300,000 random ones passes bguard while
-> failing `format: 'date-time'`.
+> **Verified against a real validator, in the test suite:** every assertion that maps onto a keyword is
+> checked against `ajv` with `ajv-formats` on thousands of mostly invalid inputs — out-of-range dates and
+> times, and random strings over the characters each format is picky about — and no value bguard accepts
+> may fail the generated document. `isValidDate` and `email` agree with their formats in both directions.
 
 ### <a id="h3_literals"> Literals </a>
 
@@ -1220,6 +1228,29 @@ parseOrFail(testSchema, { foo: 4 }, { lng: 'SR' });
 parse(testSchema, { foo: 4 }, { lng: 'SR' });
 ```
 
+To use a language everywhere, without passing `lng` to each parse, set it once with
+`setDefaultLanguage`. It also applies to validation through [Standard Schema](#h3_standard_schema),
+which has no way to receive an `lng` — so a form library calling the schema that way shows translated
+messages too:
+
+```typeScript
+import { parse, setDefaultLanguage, setLocale, string } from 'bguard';
+import { minLength } from 'bguard/string/minLength';
+
+setLocale('SR', { 's:minLength': 'Tekst mora imati bar {{e}} znakova' });
+setDefaultLanguage('SR');
+
+const schema = string().custom(minLength(3));
+parse(schema, 'ab'); // message: 'Tekst mora imati bar 3 znakova'
+parse(schema, 'ab', { lng: 'default' }); // an lng passed to parse still wins
+schema['~standard'].validate('ab'); // message: 'Tekst mora imati bar 3 znakova'
+```
+
+The locale has to be registered with `setLocale` first; an unknown name throws a `BuildSchemaError`
+rather than silently leaving every message in English. `setDefaultLanguage('default')` restores the
+built-in messages, and `clearLocales()` does too. The setting is process-wide, so a server answering
+each request in its own language should keep passing `lng` instead.
+
 #### <a id="common_and_custom_translations"> Common and Custom Translations </a>
 
 We have two sets of translations: common errors and specific assertions.
@@ -1238,6 +1269,7 @@ We have two sets of translations: common errors and specific assertions.
 'c:isBoolean': 'The received value is not {{e}}',
 'c:date': 'The received value is not a valid instance of Date',
 'c:nan': 'The received number is not a valid number',
+'c:infinity': 'The received number is not finite',
 'c:union': 'The received value does not match any of the expected types',
 'c:maxDepth': 'The received value is nested deeper than the {{e}} levels allowed',
 'c:tupleLength': 'The received tuple has {{r}} entries but {{e}} were expected',
@@ -1422,8 +1454,10 @@ import { contains } from 'bguard/string/contains';
 import { email } from 'bguard/string/email';
 ```
         
-* _Description_ Asserts that a string value matches the email pattern. The pattern checks for a basic email format:
- no whitespace, exactly one `@`, a domain with at least one dot, and no empty or dot-edged parts.
+* _Description_ Asserts that a string value matches the email pattern, the same one JSON Schema's
+ `format: 'email'` uses. ASCII only: letters, digits and ``!#$%&'*+/=?^_`{|}~-`` in the local part,
+ separated by single dots, then `@` and a domain of at least two hostname labels. Non-ASCII addresses
+ such as `ünï@test.org` are rejected; use `regExp` for a different rule.
 * _Throws_ {ValidationError} if the received value does not match the email pattern.
 * _Example_
 ```typescript
@@ -1753,6 +1787,9 @@ import { validUrl } from 'bguard/string/validUrl';
 ```
         
 * _Description_ Asserts that the string value is a valid URL with optional protocol validation.
+ The host is a hostname or a bracketed IPv6 address, and the path, query and fragment may only contain
+ characters RFC 3986 allows (non-ASCII text has to be percent-encoded). Userinfo such as
+ `http://user@host.test/` is rejected.
 * _Param_ {string} [protocol] The protocol that the URL must start with (e.g., 'http'). If not provided, any URL starting with 'http://' or 'https://' is considered valid.
 * _Throws_ {ValidationError} if the received value does not match the expected URL pattern.
 * _Example_
@@ -1762,6 +1799,8 @@ import { validUrl } from 'bguard/string/validUrl';
  parseOrFail(schema, 'https://example.com'); // Valid
  parseOrFail(schema, 'ftp://example.com');   // Throws an error
  parseOrFail(schema, 'http:example.com');    // Throws an error
+ parseOrFail(schema, 'http://[::1]:8080/');  // Valid
+ parseOrFail(schema, 'http://example.com/ü'); // Throws an error: encode it as /%C3%BC
 ```
 * _See_ Error Translation Key = 's:validUrl'
         

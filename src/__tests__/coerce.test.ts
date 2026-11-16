@@ -68,7 +68,8 @@ describe('coerce', () => {
       ['3', 3],
       [3, 3],
       ['3.5', 3.5],
-      ['', 0],
+      [' 3 ', 3],
+      ['0', 0],
       [true, 1],
     ])('turns %p into %p', (received, expected) => {
       expect(parseOrFail(coerce.number(), received)).toBe(expected);
@@ -77,6 +78,15 @@ describe('coerce', () => {
     it('rejects a value Number cannot read, rather than passing NaN', () => {
       // Number('abc') is NaN, which number() rejects, so this fails validation instead of parsing.
       expect(parse(coerce.number(), 'abc')[0]![0]!.code).toBe('c:nan');
+    });
+
+    it.each([[''], [' '], ['\t\n']])('rejects the empty string %p rather than reading it as 0', (received) => {
+      // Number('') is 0, so an empty form field used to arrive as a real zero.
+      expect(parse(coerce.number(), received)[0]![0]!.code).toBe('c:nan');
+    });
+
+    it('rejects Infinity, which Number reads from the string', () => {
+      expect(parse(coerce.number(), 'Infinity')[0]![0]!.code).toBe('c:infinity');
     });
 
     it('leaves null for nullable to decide', () => {
@@ -166,6 +176,33 @@ describe('coerce', () => {
 
     it('rejects a string that is not a date', () => {
       expect(parse(coerce.date(), 'nonsense')[0]![0]!.code).toBe('c:date');
+    });
+
+    it.each([
+      ['2021-02-30'],
+      ['2021-02-29'],
+      ['2021-04-31'],
+      ['2021-2-30'],
+      ['2021-02-30T10:00:00Z'],
+      ['2021-04-31T00:00'],
+      ['02/30/2021'],
+      ['2/29/2021'],
+      ['2021-00-10'],
+      ['13/01/2021'],
+    ])('rejects %p, a day that does not exist, rather than rolling it into the next month', (received) => {
+      // new Date('2021-02-30') is March 2nd.
+      expect(parse(coerce.date(), received)[0]![0]!.code).toBe('c:date');
+    });
+
+    it.each([
+      ['2020-02-29', '2020-02-29T00:00:00.000Z'],
+      ['2021-12-31T23:59:59Z', '2021-12-31T23:59:59.000Z'],
+      ['2021-2-3', null],
+      ['02/28/2021', null],
+    ])('still reads %p, a day that exists', (received, iso) => {
+      const parsed = parseOrFail(coerce.date(), received);
+      expect(parsed.getTime()).toBe(new Date(received).getTime());
+      if (iso) expect(parsed.toISOString()).toBe(iso);
     });
 
     it('leaves null for nullable to decide', () => {

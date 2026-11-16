@@ -21,7 +21,7 @@ import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
 import { pickPath } from './helpers/pickPath';
 import { setOwnProperty } from './helpers/setOwnProperty';
-import type { StandardSchemaProps, StandardSchemaResult } from './standardSchema';
+import type { BguardStandardIssue, BguardStandardProps, BguardStandardResult } from './standardSchema';
 import type { RefRead } from './refTracking';
 
 const replacePlaceholdersRegex = /{{(.*?)}}/g;
@@ -400,6 +400,11 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     // NaN is a number by typeof, and every comparison against it is false, so it slipped past
     // min, max, positive and negative alike.
     else if (typeOfVal === 'number' && Number.isNaN(receivedValue)) exCtx.addIssue('number', receivedValue, 'c:nan');
+    // ±Infinity is rejected too. JSON cannot carry it, so it never arrives in a payload honestly, and a
+    // value that passes `number()` is expected to be usable in arithmetic. `oneOfTypes(['number'])` and
+    // `coerceNumber()` (for `'Infinity'`) share this check.
+    else if (typeOfVal === 'number' && !Number.isFinite(receivedValue))
+      exCtx.addIssue('finite number', receivedValue, 'c:infinity');
   }
 
   if (schemaData.lazy) {
@@ -698,7 +703,7 @@ export class CommonSchema {
    * as type-only. Input and output are reported separately, so a consumer generating a form asks for
    * what the schema takes rather than what it returns.
    */
-  public get '~standard'(): StandardSchemaProps<InferInput<this>, InferType<this>> {
+  public get '~standard'(): BguardStandardProps<InferInput<this>, InferType<this>> {
     return {
       version: 1,
       vendor: 'bguard',
@@ -1084,11 +1089,26 @@ export function parse<T extends CommonSchema>(
  * They are awaited together rather than in sequence, so several slow checks across one schema cost one
  * round of waiting. Each keeps the context it was reached with, so an issue lands on the right path.
  */
-/** Shapes a parse result the way Standard Schema expects it. */
-function toStandardResult<T>(result: [ValidationErrorData[], null] | [null, T]): StandardSchemaResult<T> {
+/**
+ * Shapes a parse result the way Standard Schema expects it, keeping what a consumer needs to translate
+ * or branch on an issue. `received` is dropped: see `BguardStandardIssue`.
+ */
+function toStandardResult<T>(result: [ValidationErrorData[], null] | [null, T]): BguardStandardResult<T> {
   const [errors, parsedValue] = result;
 
-  if (errors) return { issues: errors.map((error) => ({ message: error.message, path: error.path })) };
+  if (errors)
+    return {
+      issues: errors.map((error): BguardStandardIssue => {
+        const issue = {
+          message: error.message,
+          path: error.path,
+          code: error.code,
+          expected: error.expected,
+          pathToError: error.pathToError,
+        };
+        return error.meta ? { ...issue, meta: error.meta } : issue;
+      }),
+    };
 
   return { value: parsedValue as T };
 }

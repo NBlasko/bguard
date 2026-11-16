@@ -4,10 +4,13 @@ export type {
   StandardSchemaProps,
   StandardSchemaResult,
   StandardSchemaIssue,
+  BguardStandardIssue,
+  BguardStandardProps,
+  BguardStandardResult,
 } from './standardSchema';
 export { parseOrFail, parse, parseOrFailAsync, parseAsync, ExceptionContext } from './core';
 export { ValidationError, BuildSchemaError } from './exceptions';
-export { setLocale, setToDefaultLocale, clearLocales } from './translationMap';
+export { setLocale, setToDefaultLocale, clearLocales, setDefaultLanguage } from './translationMap';
 export { codeGen, codeGenWithName } from './codeGen';
 export { toJSONSchema } from './toJSONSchema';
 export type { JSONSchema, ToJSONSchemaOptions } from './toJSONSchema';

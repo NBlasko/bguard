@@ -20,6 +20,7 @@ const defaultErrorMap: TranslationErrorMap = {
   'c:isBoolean': 'The received value is not {{e}}',
   'c:date': 'The received value is not a valid instance of Date',
   'c:nan': 'The received number is not a valid number',
+  'c:infinity': 'The received number is not finite',
   'c:union': 'The received value does not match any of the expected types',
   'c:maxDepth': 'The received value is nested deeper than the {{e}} levels allowed',
   'c:tupleLength': 'The received tuple has {{r}} entries but {{e}} were expected',
@@ -65,6 +66,13 @@ function newLocaleStore(): Record<string, Record<string, string>> {
 }
 
 let data = newLocaleStore();
+
+/**
+ * The locale a parse uses when it is not given an `lng`. Global on purpose: `~standard.validate` takes
+ * only a value, so a form library calling a schema through Standard Schema has no way to pass one, and
+ * used to get English whatever the application had set up.
+ */
+let defaultLanguage = 'default';
 
 /** Own-property lookup, so an inherited name is not mistaken for a registered message. */
 function ownMessage(source: Record<string, string>, key: string): string | undefined {
@@ -124,13 +132,41 @@ export function setLocale(lng: string, custom: Partial<TranslationErrorMap>) {
  */
 export function clearLocales() {
   data = newLocaleStore();
+  // The locale it named is gone, so the default language goes back to the built-in messages too.
+  defaultLanguage = 'default';
+}
+
+/**
+ * Sets the language every parse uses when it is not given an `lng`, including validation through
+ * Standard Schema (`~standard.validate`), which has no way to receive one.
+ *
+ * An `lng` passed to `parse` still wins. `'default'` restores the built-in messages. The locale has to
+ * be registered with `setLocale` first, so a misspelt name fails here rather than silently leaving every
+ * message in English; `clearLocales` resets this to `'default'`.
+ *
+ * The setting is process-wide. A server answering in several languages per request should keep passing
+ * `lng` to each parse instead.
+ *
+ * @throws {BuildSchemaError} if no locale with that name has been registered.
+ * @example
+ * setLocale('sr', { 's:minLength': 'Tekst mora imati bar {{e}} znakova' });
+ * setDefaultLanguage('sr');
+ * parse(string().custom(minLength(3)), 'ab'); // message: 'Tekst mora imati bar 3 znakova'
+ */
+export function setDefaultLanguage(lng: string) {
+  // `data` has no prototype, so `__proto__` or `toString` is simply not found here.
+  if (typeof lng !== 'string' || data[lng] === undefined)
+    throw new BuildSchemaError(`Unknown language '${String(lng)}': register it with setLocale first`);
+
+  defaultLanguage = lng;
 }
 
 export function getTranslationByLocale(lng?: string): TranslationErrorMap {
-  if (!lng) return data['default'] as TranslationErrorMap;
+  const fallback = data[defaultLanguage] as TranslationErrorMap;
+  if (!lng) return fallback;
 
   // No own-property guard needed: the store has no prototype, so an unregistered name — including
   // `toString`, which used to come back as a function and leave every message unresolved — misses
-  // and falls back to the default locale.
-  return (data[lng] ?? data['default']) as TranslationErrorMap;
+  // and falls back to the default language.
+  return (data[lng] ?? fallback) as TranslationErrorMap;
 }

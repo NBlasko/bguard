@@ -10,6 +10,9 @@ import { string } from '../asserts/string';
 import { tuple } from '../asserts/tuple';
 import { union } from '../asserts/union';
 import { email } from '../asserts/string/email';
+import { minLength } from '../asserts/string/minLength';
+import { BguardStandardIssue } from '../standardSchema';
+import { clearLocales, setDefaultLanguage, setLocale } from '../translationMap';
 
 type AnyResult = ReturnType<StandardSchemaV1['~standard']['validate']>;
 
@@ -165,6 +168,71 @@ describe('Standard Schema', () => {
 
       expect(validateWith(string(), 'x')).toEqual({ value: 'x' });
       expect(issuesOf(validateWith(string(), 1))).toHaveLength(1);
+    });
+  });
+
+  describe('what an issue carries beyond the spec', () => {
+    // A form validating through Standard Schema used to get only `message` and `path`, so it had no stable
+    // key to translate a message by, and built-in messages always came out in English.
+    const schema = object({ name: string().custom(minLength(3)) });
+
+    it('carries the code, the expectation and the display path', () => {
+      const [issue] = issuesOf(schema['~standard'].validate({ name: 'ab' })) as readonly BguardStandardIssue[];
+
+      expect(issue).toEqual({
+        message: 'The received value length is less than expected',
+        path: ['name'],
+        code: 's:minLength',
+        expected: 3,
+        pathToError: '.name',
+      });
+    });
+
+    it('leaves out the received value, which may be a password', () => {
+      const issue = issuesOf(schema['~standard'].validate({ name: 'ab' }))[0]!;
+
+      expect(Object.keys(issue)).not.toContain('received');
+    });
+
+    it('carries meta when the failing schema has some', () => {
+      const described = object({ name: string().custom(minLength(3)).id('userName').description('Your name') });
+      const issue = issuesOf(described['~standard'].validate({ name: 'ab' }))[0] as BguardStandardIssue;
+
+      expect(issue.meta).toEqual({ id: 'userName', description: 'Your name' });
+    });
+
+    it('omits meta entirely when there is none', () => {
+      expect(Object.keys(issuesOf(schema['~standard'].validate({ name: 'ab' }))[0]!)).not.toContain('meta');
+    });
+
+    it('is typed, so a consumer reads the code without a cast', () => {
+      const result = schema['~standard'].validate({ name: 'ab' });
+      if (result instanceof Promise || !result.issues) throw new Error('expected a synchronous failure');
+
+      expectEqualTypes<string, (typeof result.issues)[number]['code']>(true);
+      expect(result.issues[0]!.code).toBe('s:minLength');
+    });
+  });
+
+  describe('language', () => {
+    afterEach(() => clearLocales());
+
+    it('follows setDefaultLanguage, since validate cannot be given an lng', () => {
+      setLocale('sr', { 's:minLength': 'Tekst je prekratak' });
+      setDefaultLanguage('sr');
+
+      const issue = issuesOf(object({ name: string().custom(minLength(3)) })['~standard'].validate({ name: 'ab' }))[0]!;
+
+      expect(issue.message).toBe('Tekst je prekratak');
+      expect((issue as BguardStandardIssue).code).toBe('s:minLength');
+    });
+
+    it('is English by default', () => {
+      setLocale('sr', { 's:minLength': 'Tekst je prekratak' });
+
+      expect(issuesOf(string().custom(minLength(3))['~standard'].validate('ab'))[0]!.message).toBe(
+        'The received value length is less than expected',
+      );
     });
   });
 

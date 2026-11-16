@@ -9,6 +9,8 @@ import { min } from '../asserts/number/min';
 import { negative } from '../asserts/number/negative';
 import { positive } from '../asserts/number/positive';
 import { ExceptionContext } from '../core';
+import { oneOfTypes } from '../asserts/mix';
+import { setLocale } from '../translationMap';
 
 const firstMessage = (result: ReturnType<typeof parse>) => result[0]?.[0]?.message;
 
@@ -100,14 +102,39 @@ describe('NaN', () => {
     expect(hasErrors(parse(number().custom(assert), NaN))).toBe(true);
   });
 
-  it('leaves Infinity alone, which compares correctly', () => {
-    expect(parseOrFail(number().custom(min(5)), Infinity)).toBe(Infinity);
-    expect(hasErrors(parse(number().custom(max(5)), Infinity))).toBe(true);
-    expect(parseOrFail(number().custom(negative()), -Infinity)).toBe(-Infinity);
-  });
-
   it('still accepts ordinary numbers', () => {
     expect(parseOrFail(number().custom(min(5)), 7)).toBe(7);
+  });
+});
+
+describe('Infinity', () => {
+  // JSON cannot carry Infinity, and a value that passed number() used to be one that broke arithmetic.
+  it.each([[Infinity], [-Infinity]])('rejects %p with its own code and message', (value) => {
+    const [errors] = parse(number(), value);
+    expect(errors).toHaveLength(1);
+    expect(errors![0]!.code).toBe('c:infinity');
+    expect(errors![0]!.message).toBe('The received number is not finite');
+  });
+
+  it.each([
+    ['min', min(5), Infinity],
+    ['negative', negative(), -Infinity],
+  ])('is rejected even where the %s assert would have accepted it', (_name, assert, value) => {
+    expect(hasErrors(parse(number().custom(assert), value))).toBe(true);
+  });
+
+  it('is rejected wherever a type list names number', () => {
+    expect(hasErrors(parse(oneOfTypes(['number', 'string']), Infinity))).toBe(true);
+  });
+
+  it('leaves the largest finite numbers alone', () => {
+    expect(parseOrFail(number(), Number.MAX_VALUE)).toBe(Number.MAX_VALUE);
+    expect(parseOrFail(number(), -Number.MAX_VALUE)).toBe(-Number.MAX_VALUE);
+  });
+
+  it('can be translated', () => {
+    setLocale('infinityLng', { 'c:infinity': 'Broj nije konačan' });
+    expect(parse(number(), Infinity, { lng: 'infinityLng' })[0]![0]!.message).toBe('Broj nije konačan');
   });
 });
 

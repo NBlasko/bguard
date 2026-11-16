@@ -1,5 +1,77 @@
 # bguard
 
+## 0.12.0 Translated messages through Standard Schema, issue codes for forms, and `email`/`validUrl` that agree with their JSON Schema formats
+
+### Added
+
+**`setDefaultLanguage(lng)` sets the language of every parse that is not given an `lng`.** That
+includes validation through Standard Schema, which takes only a value and so had no way to receive one:
+a form library calling `~standard.validate` got English messages whatever locales the application had
+registered.
+
+```js
+setLocale('sr', { 's:minLength': 'Tekst mora imati bar {{e}} znakova' });
+setDefaultLanguage('sr');
+
+parse(string().custom(minLength(3)), 'ab'); // 'Tekst mora imati bar 3 znakova'
+string().custom(minLength(3))['~standard'].validate('ab'); // the same message
+```
+
+An `lng` passed to `parse` still wins, and an unknown `lng` now falls back to the default language
+rather than straight to English. The locale has to be registered with `setLocale` first: an unknown name
+throws a `BuildSchemaError`, so a typo does not silently leave everything in English.
+`setDefaultLanguage('default')` and `clearLocales()` restore the built-in messages. The setting is
+process-wide; a server answering each request in its own language should keep passing `lng`.
+
+**Standard Schema issues carry the `code`, `expected`, `pathToError` and `meta` of the failure.**
+Before, `~standard.validate` passed on only `message` and `path`, so a consumer had no stable key to
+translate or branch on. The new type is `BguardStandardIssue`, and `~standard` is typed as
+`BguardStandardProps`, a narrower `StandardSchemaProps`, so the fields are readable without a cast.
+
+`received` is left out of these issues on purpose. It is the raw input, which may be a password, and
+Standard Schema issues are routinely logged or returned to clients. `parse` still reports it.
+
+### Changed
+
+Each of these rejects values that used to pass.
+
+**`email` uses the same pattern as JSON Schema's `format: 'email'`** (#23). It accepted non-ASCII
+addresses and characters such as `(`, `"` or `<`, all of which the format rejects, so a value bguard
+accepted could fail the document `toJSONSchema` generated. It is ASCII-only now: `ünï@test.org` and
+`a@b_c.com` are rejected. Use `regExp` for a different rule.
+
+**`validUrl` follows RFC 3986** (#23). The path, query and fragment used to take anything but
+whitespace, including non-ASCII text, `<`, `>`, `{`, `}`, `|`, `\`, `^`, `"` and a malformed `%zz`.
+They now take only the characters RFC 3986 allows, with `%` only as a `%XX` escape, so non-ASCII text has
+to be percent-encoded. In the other direction, **IPv6 hosts are accepted** (`http://[::1]:8080/`).
+Userinfo (`http://user@host/`) is still rejected, deliberately: `http://bank.com@evil.com` goes to
+evil.com.
+
+**`number()` rejects `Infinity` and `-Infinity`**, with the new code `c:infinity` ('The received number
+is not finite'). JSON cannot carry either, and a value that passed `number()` is expected to be usable
+in arithmetic. This applies wherever a type list names `number`, including `oneOfTypes` and
+`coerceNumber('Infinity')`.
+
+**`coerceNumber` rejects an empty or whitespace-only string.** `Number('')` is `0`, so an empty form
+field used to arrive as a real zero. It now fails like any other unreadable string, with `c:nan`.
+
+**`coerceDate` rejects a day that does not exist.** `new Date('2021-02-30')` is March 2nd, and that is
+what `coerceDate` returned. A string in `YYYY-MM-DD` form (with or without a time after it) or the US
+`MM/DD/YYYY` form now has to name a real day. Other formats are still read exactly as `new Date` reads
+them.
+
+### Internal
+
+- The `ajv` cross-check is part of the test suite now (`jsonSchemaAgreement.test.ts`), with `ajv` and
+  `ajv-formats` as devDependencies. Every assertion that maps onto a JSON Schema keyword is run against
+  thousands of mostly invalid inputs from a seeded generator, and no value bguard accepts may fail the
+  generated document. Run against the 0.10.0 validators, it fails ten of its nineteen tests.
+- The publish workflow is split into two jobs. `build` runs `npm ci`, the build and the tests, and hands
+  over a tarball. `publish` is the only job that can publish, and it installs nothing from the project.
+  A compromised devDependency can no longer request the token that publishes bguard.
+- README notes about `toJSONSchema` that 0.11.0 added straight to `README.md` were moved into its source,
+  `scripts/readmeStart.md`; regenerating the README would otherwise have reverted them.
+
 ## 0.11.0 Date and time assertions that check the calendar and the clock, and string formats that mean what their JSON Schema says
 
 Some values that used to pass are now rejected. Every one of them was invalid by the assertion's own
