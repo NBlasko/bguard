@@ -16,7 +16,8 @@ import { bigint } from '../bigint/index';
  * @description Coerces the received value to a bigint before validating it.
  *
  * `BigInt` throws on a value it cannot read, so the original is kept for validation to reject rather
- * than the error escaping.
+ * than the error escaping. An empty or whitespace-only string, an array or an object is not converted
+ * either: `BigInt('')` and `BigInt([])` are `0n`.
  *
  * @returns A bigint schema that accepts `unknown` as its input type.
  * @example
@@ -25,10 +26,19 @@ import { bigint } from '../bigint/index';
 export const coerceBigInt = () =>
   bigint().transformBeforeValidation<unknown>((received) => {
     if (received === null || typeof received === 'bigint') return received as bigint;
-
+    // `BigInt('')`, `BigInt('  ')` and `BigInt([])` are all 0n, so an empty field became a real zero. Only
+    // non-blank strings, numbers, booleans and Dates are converted, as in coerceNumber; anything else
+    // passes through for bigint() to reject by type.
+    const convertible =
+      (typeof received === 'string' && received.trim() !== '') ||
+      typeof received === 'number' ||
+      typeof received === 'boolean' ||
+      received instanceof Date;
+    if (!convertible) return received as bigint;
     try {
-      return BigInt(received as string | number);
+      return BigInt(received instanceof Date ? received.getTime() : (received as string | number | boolean));
     } catch {
-      return received as bigint;
+      // A fraction, NaN, an invalid Date or an unreadable string: bigint() reports the type.
+      return received as unknown as bigint;
     }
   });

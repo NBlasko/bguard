@@ -1,5 +1,113 @@
 # bguard
 
+## 0.12.0 Translated messages through Standard Schema, issue codes for forms, and `email`/`validUrl` that agree with their JSON Schema formats
+
+### Added
+
+**`setDefaultLanguage(lng)` sets the language of every parse that is not given an `lng`.** That
+includes validation through Standard Schema, which takes only a value and so had no way to receive one:
+a form library calling `~standard.validate` got English messages whatever locales the application had
+registered.
+
+```js
+setLocale('sr', { 's:minLength': 'Tekst mora imati bar {{e}} znakova' });
+setDefaultLanguage('sr');
+
+parse(string().custom(minLength(3)), 'ab'); // 'Tekst mora imati bar 3 znakova'
+string().custom(minLength(3))['~standard'].validate('ab'); // the same message
+```
+
+An `lng` passed to `parse` still wins, and an unknown `lng` now falls back to the default language
+rather than straight to English. The locale has to be registered with `setLocale` first: an unknown name
+throws a `BuildSchemaError`, so a typo does not silently leave everything in English.
+`setDefaultLanguage('default')` and `clearLocales()` restore the built-in messages. The setting is
+process-wide; a server answering each request in its own language should keep passing `lng`.
+
+**Standard Schema issues carry the `code`, `expected`, `pathToError` and `meta` of the failure.**
+Before, `~standard.validate` passed on only `message` and `path`, so a consumer had no stable key to
+translate or branch on. The new type is `BguardStandardIssue`, and `~standard` is typed as
+`BguardStandardProps`, a narrower `StandardSchemaProps`, so the fields are readable without a cast.
+
+`received` is left out of these issues on purpose. It is the raw input, which may be a password, and
+Standard Schema issues are routinely logged or returned to clients. `parse` still reports it. This only
+covers what bguard adds: a custom rule decides what goes into `expected` and its message. The README's
+password-confirmation example used to report the password itself as `expected`, and now reports
+`'the same password'` instead.
+
+**An issue no longer shares objects with its schema.** `expected` was often the schema's own state — the
+type list of `number()`, the array given to `oneOfValues`, the Date given to `dateMax` — and `meta` was
+the schema's own object. Changing them on an issue changed the schema: pushing `'string'` onto a
+`number()` issue's `expected` made that schema accept strings. This was true of `parse` before 0.12.0
+too, and would have reached every Standard Schema consumer with this release. Issues now get copies.
+
+### Changed
+
+Each of these rejects values that used to pass.
+
+**`email` uses the same pattern as JSON Schema's `format: 'email'`** (#23). It accepted non-ASCII
+addresses and characters such as `(`, `"` or `<`, all of which the format rejects, so a value bguard
+accepted could fail the document `toJSONSchema` generated. It is ASCII-only now: `ünï@test.org` and
+`a@b_c.com` are rejected. Use `regExp` for a different rule.
+
+**`validUrl` follows RFC 3986** (#23). The path, query and fragment used to take anything but
+whitespace, including non-ASCII text, `<`, `>`, `{`, `}`, `|`, `\`, `^`, `"` and a malformed `%zz`.
+They now take only the characters RFC 3986 allows, with `%` only as a `%XX` escape, so non-ASCII text has
+to be percent-encoded. In the other direction, **IPv6 hosts are accepted** (`http://[::1]:8080/`).
+Userinfo (`http://user@host/`) is still rejected, deliberately: `http://bank.com@evil.com` goes to
+evil.com.
+
+**`number()` rejects `Infinity` and `-Infinity`**, with the new code `c:infinity` ('The received number
+is not finite'). JSON cannot carry either, and a value that passed `number()` is expected to be usable
+in arithmetic. This applies wherever a type list names `number`, including `oneOfTypes` and
+`coerceNumber('Infinity')`.
+
+**`coerceNumber` and `coerceBigInt` convert only what holds a number.** `Number('')` is `0`, so an
+empty form field used to arrive as a real zero; `Number([])` and `Number([''])` are `0` and `Number([5])`
+is `5`, and `BigInt` reads `''` and `[]` as `0n`. An empty or whitespace-only string, an array or an
+object is now rejected (`c:nan` for a blank string to `coerceNumber`, `c:invalidType` otherwise). Strings,
+booleans, numbers, bigints and Dates are still converted.
+
+**`coerceDate` rejects a day that does not exist.** `new Date('2021-02-30')` is March 2nd, and that is
+what `coerceDate` returned. A numeric date now has to name a real day, whether year-first
+(`2021-02-30`, `2021/02/30`, `2021.02.30`, `+002021-02-30`) or month-first (`02/30/2021`, `02-30-2021`),
+with or without a time after it. A date with a month name (`Feb 30 2021`) is still read exactly as
+`new Date` reads it.
+
+**`coerceDate` converts only strings and numbers.** `new Date(true)` is 1 ms after the epoch,
+`new Date([5])` is May 2001 and `new Date(['2021-01-01'])` is that day; booleans, arrays and objects are
+now rejected.
+
+**Message placeholders are filled in linear time, and only from `{{e}}`, `{{r}}` and `{{p}}`.** The
+placeholder pattern `{{(.*?)}}` searched the rest of the message from every `{{`, which is quadratic: two
+seconds for a 120,000-character message of repeated `{{a` (flagged by CodeQL). Placeholders are now
+matched without crossing a brace. And a placeholder was looked up with `in`, so `{{constructor}}` in a
+message was replaced with the source of the `Object` function; unknown names are now left as they are.
+`{{{e}}}` now gives the value in braces, where it used to be left untouched.
+
+**No coercion throws.** `coerceNumber(Symbol())`, `coerceDate(1n)`, `coerceDate(Symbol())` and
+`coerceString(Object.create(null))` threw inside the conversion, and the parse reported 'Something
+unexpected happened' instead of a validation error. They are now rejected by type.
+
+### Internal
+
+- The `ajv` cross-check is part of the test suite now (`jsonSchemaAgreement.test.ts`), with `ajv` and
+  `ajv-formats` as devDependencies. Every assertion that maps onto a JSON Schema keyword is run against
+  thousands of mostly invalid inputs from a seeded generator, and no value bguard accepts may fail the
+  generated document. Run against the 0.10.0 validators, it fails ten of its nineteen tests.
+- The publish workflow is split into two jobs. `build` runs `npm ci`, the build and the tests, and hands
+  over a tarball. `publish` is the only job that can publish, installs nothing from the project, and uses
+  an exact npm version. A compromised devDependency can no longer request the token and publish a
+  version of its choosing. It can still tamper with the build output before it is packed, which this
+  does not prevent.
+- A merge to `main` that does not bump the version no longer fails the publish workflow. The build job
+  checks whether the version is already on npm, and the publish job is skipped if it is.
+- `npm audit fix` (without `--force`) cleared the critical and high findings, all in devDependencies.
+  What remains is moderate and low, in jest's and typescript-eslint's dependencies, where npm's suggested
+  fix is a downgrade to years-old majors. None of it is installed with bguard, which has no runtime
+  dependencies.
+- README notes about `toJSONSchema` that 0.11.0 added straight to `README.md` were moved into its source,
+  `scripts/readmeStart.md`; regenerating the README would otherwise have reverted them.
+
 ## 0.11.0 Date and time assertions that check the calendar and the clock, and string formats that mean what their JSON Schema says
 
 Some values that used to pass are now rejected. Every one of them was invalid by the assertion's own

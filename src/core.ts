@@ -21,15 +21,21 @@ import { getTranslationByLocale } from './translationMap';
 import { ctxSymbol } from './helpers/constants';
 import { pickPath } from './helpers/pickPath';
 import { setOwnProperty } from './helpers/setOwnProperty';
-import type { StandardSchemaProps, StandardSchemaResult } from './standardSchema';
+import type { BguardStandardIssue, BguardStandardProps, BguardStandardResult } from './standardSchema';
 import type { RefRead } from './refTracking';
 
-const replacePlaceholdersRegex = /{{(.*?)}}/g;
+// A placeholder holds no braces. This used to be `{{(.*?)}}`, which from every `{{` scanned the rest of
+// the message for a closing `}}`: quadratic in the length, two seconds for a 120,000-character message
+// made of `{{a` repeated (CodeQL: polynomial regular expression). A message is usually the library's or
+// the application's own text, but it is also whatever key a custom assertion passes.
+const replacePlaceholdersRegex = /{{([^{}]*)}}/g;
 
 function replacePlaceholders(template: string, replacements: Record<string, unknown>): string {
-  return template.replace(replacePlaceholdersRegex, (_, key) => {
-    return key in replacements ? `${replacements[key] as string}` : `{{${key}}}`;
-  });
+  return template.replace(replacePlaceholdersRegex, (_, key: string) =>
+    // An own-property check: `in` also found `constructor` and `toString` on the prototype, so a message
+    // containing `{{constructor}}` had the source of the Object function spliced into it.
+    Object.prototype.hasOwnProperty.call(replacements, key) ? `${replacements[key] as string}` : `{{${key}}}`,
+  );
 }
 
 /**
@@ -260,7 +266,13 @@ export class ExceptionContext {
     return ref;
   }
 
-  public addIssue(expected: unknown, received: unknown, messageKey: string): never | void {
+  public addIssue(expectedValue: unknown, received: unknown, messageKey: string): never | void {
+    // An issue is handed to the caller, and from Standard Schema to whatever library asked. The expected
+    // value is often the schema's own state — the type list of `number()`, the array given to
+    // `oneOfValues`, the Date given to `dateMax` — and so was `meta`. Changing them on an issue changed
+    // the schema: pushing `'string'` onto a `number()` issue's `expected` made it accept strings.
+    const expected = snapshot(expectedValue);
+    const meta = this.meta && { ...this.meta };
     const rawMessage = this.t[messageKey] ?? messageKey;
     const message = replacePlaceholders(rawMessage, { e: expected, r: received, p: this.pathToError });
 
@@ -272,13 +284,13 @@ export class ExceptionContext {
         path: this.path,
         code: messageKey,
         message,
-        meta: this.meta,
+        meta,
       });
 
       return;
     }
 
-    throw new ValidationError(expected, received, this.pathToError, message, this.meta, this.path, messageKey);
+    throw new ValidationError(expected, received, this.pathToError, message, meta, this.path, messageKey);
   }
 }
 
@@ -400,6 +412,11 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
     // NaN is a number by typeof, and every comparison against it is false, so it slipped past
     // min, max, positive and negative alike.
     else if (typeOfVal === 'number' && Number.isNaN(receivedValue)) exCtx.addIssue('number', receivedValue, 'c:nan');
+    // ±Infinity is rejected too. JSON cannot carry it, so it never arrives in a payload honestly, and a
+    // value that passes `number()` is expected to be usable in arithmetic. `oneOfTypes(['number'])` and
+    // `coerceNumber()` (for `'Infinity'`) share this check.
+    else if (typeOfVal === 'number' && !Number.isFinite(receivedValue))
+      exCtx.addIssue('finite number', receivedValue, 'c:infinity');
   }
 
   if (schemaData.lazy) {
@@ -698,7 +715,7 @@ export class CommonSchema {
    * as type-only. Input and output are reported separately, so a consumer generating a form asks for
    * what the schema takes rather than what it returns.
    */
-  public get '~standard'(): StandardSchemaProps<InferInput<this>, InferType<this>> {
+  public get '~standard'(): BguardStandardProps<InferInput<this>, InferType<this>> {
     return {
       version: 1,
       vendor: 'bguard',
@@ -1079,16 +1096,41 @@ export function parse<T extends CommonSchema>(
 }
 
 /**
+ * A copy of the mutable values asserts report as `expected`, so an issue does not share them with the
+ * schema. Arrays and Dates are what the built-in asserts pass; anything else is returned as it is.
+ */
+function snapshot(value: unknown): unknown {
+  if (Array.isArray(value)) return [...value];
+  if (value instanceof Date) return new Date(value.getTime());
+  return value;
+}
+
+/**
  * Awaits the collected async validations and merges whatever they report.
  *
  * They are awaited together rather than in sequence, so several slow checks across one schema cost one
  * round of waiting. Each keeps the context it was reached with, so an issue lands on the right path.
  */
-/** Shapes a parse result the way Standard Schema expects it. */
-function toStandardResult<T>(result: [ValidationErrorData[], null] | [null, T]): StandardSchemaResult<T> {
+/**
+ * Shapes a parse result the way Standard Schema expects it, keeping what a consumer needs to translate
+ * or branch on an issue. `received` is dropped: see `BguardStandardIssue`.
+ */
+function toStandardResult<T>(result: [ValidationErrorData[], null] | [null, T]): BguardStandardResult<T> {
   const [errors, parsedValue] = result;
 
-  if (errors) return { issues: errors.map((error) => ({ message: error.message, path: error.path })) };
+  if (errors)
+    return {
+      issues: errors.map((error): BguardStandardIssue => {
+        const issue = {
+          message: error.message,
+          path: error.path,
+          code: error.code,
+          expected: error.expected,
+          pathToError: error.pathToError,
+        };
+        return error.meta ? { ...issue, meta: error.meta } : issue;
+      }),
+    };
 
   return { value: parsedValue as T };
 }

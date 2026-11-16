@@ -21,6 +21,13 @@ import { string } from '../string/index';
  * parseOrFail(coerceString(), 42); // '42'
  */
 export const coerceString = () =>
-  string().transformBeforeValidation<unknown>((received) =>
-    received === null || typeof received === 'string' ? (received as string) : String(received),
-  );
+  string().transformBeforeValidation<unknown>((received) => {
+    if (received === null || typeof received === 'string') return received as string;
+    try {
+      return String(received);
+    } catch {
+      // An object with no prototype has no toString, and String() throws on it. The value passes through
+      // for string() to reject by type, rather than the parse failing with an unexplained error.
+      return received as string;
+    }
+  });

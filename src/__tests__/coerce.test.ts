@@ -62,13 +62,47 @@ describe('each helper is its own module', () => {
   });
 });
 
+describe('a coercion never throws', () => {
+  // A throwing transform is reported as 'Something unexpected happened' instead of a validation error.
+  // Number(Symbol()), new Date(1n) and new Date(Symbol()) all threw.
+  const awkward: unknown[] = [
+    Symbol('x'),
+    1n,
+    -1n,
+    () => 1,
+    {},
+    [],
+    [''],
+    [5],
+    Object.create(null),
+    new Date(NaN),
+    NaN,
+    -0,
+    ' ',
+  ];
+
+  it.each([
+    ['number', coerceNumber],
+    ['bigint', coerceBigInt],
+    ['date', coerceDate],
+    ['string', coerceString],
+    ['boolean', coerceBoolean],
+  ])('coerce.%s reports a validation error or a value for every awkward input', (_name, factory) => {
+    for (const received of awkward) {
+      const [errors] = parse(factory(), received);
+      expect(errors?.map((error) => error.message) ?? []).not.toContain('Something unexpected happened');
+    }
+  });
+});
+
 describe('coerce', () => {
   describe('number', () => {
     it.each([
       ['3', 3],
       [3, 3],
       ['3.5', 3.5],
-      ['', 0],
+      [' 3 ', 3],
+      ['0', 0],
       [true, 1],
     ])('turns %p into %p', (received, expected) => {
       expect(parseOrFail(coerce.number(), received)).toBe(expected);
@@ -77,6 +111,35 @@ describe('coerce', () => {
     it('rejects a value Number cannot read, rather than passing NaN', () => {
       // Number('abc') is NaN, which number() rejects, so this fails validation instead of parsing.
       expect(parse(coerce.number(), 'abc')[0]![0]!.code).toBe('c:nan');
+    });
+
+    it.each([[''], [' '], ['\t\n']])('rejects the empty string %p rather than reading it as 0', (received) => {
+      // Number('') is 0, so an empty form field used to arrive as a real zero.
+      expect(parse(coerce.number(), received)[0]![0]!.code).toBe('c:nan');
+    });
+
+    it.each([
+      ['an empty array', []],
+      ['an array holding an empty string', ['']],
+      ['an array holding a number', [5]],
+      ['an object', {}],
+      ['a function', () => 5],
+      ['a symbol', Symbol('x')],
+    ])('rejects %s by type rather than handing it to Number', (_name, received) => {
+      // Number([]) and Number(['']) are 0, Number([5]) is 5, and Number(Symbol()) throws.
+      expect(parse(coerce.number(), received)[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it.each([
+      [false, 0],
+      [10n, 10],
+      [new Date(1234), 1234],
+    ])('still converts %p, a primitive or a Date, to %p', (received, expected) => {
+      expect(parseOrFail(coerce.number(), received)).toBe(expected);
+    });
+
+    it('rejects Infinity, which Number reads from the string', () => {
+      expect(parse(coerce.number(), 'Infinity')[0]![0]!.code).toBe('c:infinity');
     });
 
     it('leaves null for nullable to decide', () => {
@@ -94,6 +157,10 @@ describe('coerce', () => {
   });
 
   describe('string', () => {
+    it('rejects an object with no prototype, which String throws on', () => {
+      expect(parse(coerce.string(), Object.create(null))[0]![0]!.code).toBe('c:invalidType');
+    });
+
     it.each([
       [3, '3'],
       ['x', 'x'],
@@ -142,6 +209,27 @@ describe('coerce', () => {
       expect(parseOrFail(coerce.bigint(), received)).toBe(expected);
     });
 
+    it.each([
+      ['an empty string', ''],
+      ['a whitespace-only string', '  '],
+      ['an empty array', []],
+      ['an array holding an empty string', ['']],
+      ['an array holding a number', [5]],
+      ['an object', {}],
+      ['a symbol', Symbol('x')],
+    ])('rejects %s rather than reading it as a bigint', (_name, received) => {
+      // BigInt(''), BigInt('  ') and BigInt([]) are all 0n.
+      expect(parse(coerce.bigint(), received)[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it.each([
+      [true, 1n],
+      [false, 0n],
+      [new Date(1234), 1234n],
+    ])('still converts %p to %p', (received, expected) => {
+      expect(parseOrFail(coerce.bigint(), received)).toBe(expected);
+    });
+
     it.each(['abc', 1.5])('rejects %p, which BigInt throws on', (received) => {
       // The transform catches and passes the value through, so validation reports the type problem.
       expect(hasErrors(parse(coerce.bigint(), received))).toBe(true);
@@ -158,6 +246,22 @@ describe('coerce', () => {
       expect(parseOrFail(coerce.date(), '2024-01-01')).toEqual(new Date('2024-01-01'));
     });
 
+    it('turns a number into the Date at that timestamp', () => {
+      expect(parseOrFail(coerce.date(), 86_400_000)).toEqual(new Date('1970-01-02T00:00:00Z'));
+    });
+
+    it.each([
+      ['true, which new Date read as 1 ms after the epoch', true],
+      ['false', false],
+      ['an array holding a number, read as May 2001', [5]],
+      ['an array holding a date string', ['2021-01-01']],
+      ['a bigint, which new Date throws on', 1n],
+      ['a symbol, which new Date throws on', Symbol('x')],
+      ['an object', {}],
+    ])('rejects %s', (_name, received) => {
+      expect(parse(coerce.date(), received)[0]![0]!.code).toBe('c:date');
+    });
+
     it('leaves a Date alone', () => {
       const received = new Date('2024-01-01');
 
@@ -166,6 +270,45 @@ describe('coerce', () => {
 
     it('rejects a string that is not a date', () => {
       expect(parse(coerce.date(), 'nonsense')[0]![0]!.code).toBe('c:date');
+    });
+
+    it.each([
+      ['2021-02-30'],
+      ['2021-02-29'],
+      ['2021-04-31'],
+      ['2021-2-30'],
+      ['2021-02-30T10:00:00Z'],
+      ['2021-04-31T00:00'],
+      ['02/30/2021'],
+      ['2/29/2021'],
+      ['2021-00-10'],
+      ['13/01/2021'],
+      // Found in review: the same rollover through other separators and shapes.
+      ['2021/02/30'],
+      ['2021.02.30'],
+      [' 2021-02-30'],
+      ['+002021-02-30'],
+      ['02-30-2021'],
+      ['02.30.2021'],
+      ['2021/02/30 10:00'],
+    ])('rejects %p, a day that does not exist, rather than rolling it into the next month', (received) => {
+      // new Date('2021-02-30') is March 2nd.
+      expect(parse(coerce.date(), received)[0]![0]!.code).toBe('c:date');
+    });
+
+    it.each([
+      ['2020-02-29', '2020-02-29T00:00:00.000Z'],
+      ['2021-12-31T23:59:59Z', '2021-12-31T23:59:59.000Z'],
+      ['2021-2-3', null],
+      ['02/28/2021', null],
+      ['2021/02/28', null],
+      [' 2021-02-28', null],
+      ['02-28-2021', null],
+      ['+002020-02-29', '2020-02-29T00:00:00.000Z'],
+    ])('still reads %p, a day that exists', (received, iso) => {
+      const parsed = parseOrFail(coerce.date(), received);
+      expect(parsed.getTime()).toBe(new Date(received).getTime());
+      if (iso) expect(parsed.toISOString()).toBe(iso);
     });
 
     it('leaves null for nullable to decide', () => {

@@ -37,8 +37,8 @@ const bare = (schema: CommonSchema) => toJSONSchema(schema, { dialect: null });
 
 /**
  * The output is only worth anything if a JSON Schema validator reads it the same way bguard does. That
- * agreement is checked against ajv outside the suite; these tests pin the shape, and in particular the
- * places where the mapping had to make a decision.
+ * agreement is checked against ajv in jsonSchemaAgreement.test.ts; these tests pin the shape, and in
+ * particular the places where the mapping had to make a decision.
  */
 describe('toJSONSchema', () => {
   describe('primitives', () => {

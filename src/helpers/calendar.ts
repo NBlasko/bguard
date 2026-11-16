@@ -8,9 +8,11 @@ function isLeapYear(year: number): boolean {
  * Whether the day exists in that month of that year, by the proleptic Gregorian calendar RFC 3339 uses.
  *
  * A regex can bound a day to 01–31 but cannot know that April has 30 days or that 2021 has no
- * February 29th, which is how `2021-02-29` used to pass. The month is expected to be 1–12 already.
+ * February 29th, which is how `2021-02-29` used to pass. A month outside 1–12 is not a calendar day
+ * either, so callers need not check it first.
  */
 export function _isCalendarDay(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12) return false;
   const last =
     month === 2 ? (isLeapYear(year) ? 29 : 28) : month === 4 || month === 6 || month === 9 || month === 11 ? 30 : 31;
   return day >= 1 && day <= last;

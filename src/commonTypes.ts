@@ -11,6 +11,7 @@ export interface TranslationErrorMap {
   'c:isBoolean': string;
   'c:date': string;
   'c:nan': string;
+  'c:infinity': string;
   'c:union': string;
   'c:maxDepth': string;
   'c:tupleLength': string;

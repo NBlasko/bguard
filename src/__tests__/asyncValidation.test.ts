@@ -232,7 +232,11 @@ describe('async validation', () => {
       const result = schema['~standard'].validate({ name: 'ana' });
 
       expect(result).toBeInstanceOf(Promise);
-      expect(await result).toEqual({ issues: [{ message: 'u:taken', path: ['name'] }] });
+      expect(await result).toEqual({
+        issues: [
+          { message: 'u:taken', path: ['name'], code: 'u:taken', expected: 'an unused name', pathToError: '.name' },
+        ],
+      });
     });
 
     it('stays synchronous for a schema that does not', () => {

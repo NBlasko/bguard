@@ -1,4 +1,14 @@
-import { parseOrFail, BuildSchemaError, setToDefaultLocale, setLocale, clearLocales, ExceptionContext } from '../';
+import {
+  parse,
+  parseOrFail,
+  BuildSchemaError,
+  setToDefaultLocale,
+  setLocale,
+  clearLocales,
+  setDefaultLanguage,
+  ExceptionContext,
+} from '../';
+import { minLength } from '../asserts/string/minLength';
 
 import { object } from '../asserts/object';
 import { string } from '../asserts/string';
@@ -91,5 +101,86 @@ describe('Translation', () => {
   it('should not use setLocale on "default" namespace', () => {
     expect(() => setLocale('default', { foo: 'bar' })).toThrow('Invalid language');
     expect(() => setLocale('default', { foo: 'bar' })).toThrow(BuildSchemaError);
+  });
+
+  describe('setDefaultLanguage', () => {
+    const schema = string().custom(minLength(3));
+    const message = (options?: { lng?: string }) => parse(schema, 'ab', options)[0]![0]!.message;
+
+    beforeEach(() => {
+      setLocale('sr', { 's:minLength': 'Tekst mora imati bar {{e}} znakova' });
+      setLocale('de', { 's:minLength': 'Mindestens {{e}} Zeichen' });
+    });
+
+    it('translates a parse that is given no lng', () => {
+      setDefaultLanguage('sr');
+      expect(message()).toBe('Tekst mora imati bar 3 znakova');
+    });
+
+    it('yields to an lng passed to parse', () => {
+      setDefaultLanguage('sr');
+      expect(message({ lng: 'de' })).toBe('Mindestens 3 Zeichen');
+    });
+
+    it('is what an unknown lng falls back to', () => {
+      setDefaultLanguage('sr');
+      expect(message({ lng: 'fr' })).toBe('Tekst mora imati bar 3 znakova');
+    });
+
+    it("goes back to the built-in messages with 'default'", () => {
+      setDefaultLanguage('sr');
+      setDefaultLanguage('default');
+      expect(message()).toBe('The received value length is less than expected');
+    });
+
+    it('falls back to the built-in message for a key the locale does not translate', () => {
+      setDefaultLanguage('sr');
+      expect(parse(string(), 1)[0]![0]!.message).toBe('Invalid type of data');
+    });
+
+    it.each([['fr'], ['__proto__'], ['toString'], ['']])('refuses %p, which is not a registered locale', (lng) => {
+      expect(() => setDefaultLanguage(lng)).toThrow(BuildSchemaError);
+      expect(() => setDefaultLanguage(lng)).toThrow('register it with setLocale first');
+    });
+
+    it('is reset by clearLocales, which removes the locale it named', () => {
+      setDefaultLanguage('sr');
+      clearLocales();
+      expect(message()).toBe('The received value length is less than expected');
+    });
+  });
+
+  describe('placeholders', () => {
+    const message = (template: string) => {
+      setLocale('placeholders', { 's:minLength': template });
+      return parse(string().custom(minLength(3)), 'ab', { lng: 'placeholders' })[0]![0]!.message;
+    };
+
+    it('replaces the expected value, the received value and the path', () => {
+      expect(message('{{r}} is shorter than {{e}} at "{{p}}"')).toBe('ab is shorter than 3 at ""');
+    });
+
+    it('leaves an unknown placeholder as it is', () => {
+      expect(message('{{x}} and {{e}}')).toBe('{{x}} and 3');
+    });
+
+    it.each([['constructor'], ['toString'], ['__proto__']])(
+      'leaves {{%s}} alone rather than reading it off the prototype',
+      (key) => {
+        expect(message(`{{${key}}}`)).toBe(`{{${key}}}`);
+      },
+    );
+
+    it('fills a placeholder wrapped in literal braces', () => {
+      expect(message('{{{e}}}')).toBe('{3}');
+    });
+
+    it('takes linear time on a message full of unclosed placeholders', () => {
+      // `{{(.*?)}}` took about two seconds on this; CodeQL flagged it as a polynomial regular expression.
+      const hostile = '{{' + '{{a'.repeat(40_000);
+      const started = performance.now();
+      expect(message(hostile)).toBe(hostile);
+      expect(performance.now() - started).toBeLessThan(200);
+    });
   });
 });
