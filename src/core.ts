@@ -1,4 +1,6 @@
 import { isValidDateInner } from './helpers/isValidDateInner';
+import { _cloneValue } from './helpers/cloneValue';
+import { _timeOf } from './helpers/intrinsics';
 import {
   BaseType,
   MetaContext,
@@ -373,8 +375,9 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
     // Carry on with the default as the received value rather than returning it. Returning it handed
     // every parse the same array or object, so mutating one result changed what later parses gave
-    // back; going through validation rebuilds containers and yields a fresh value each time.
-    receivedValue = schemaData.defaultValue;
+    // back. Validation rebuilds the containers a schema declares, but not a Date, nor anything under a
+    // schema that does not walk it, so the default is copied here; see `_cloneValue`.
+    receivedValue = _cloneValue(schemaData.defaultValue);
   }
 
   // Checked here, AFTER absence has been dealt with, and that placement is the whole subtlety. An
@@ -822,7 +825,8 @@ export class CommonSchema {
     }
 
     const next = this.clone();
-    next[ctxSymbol].defaultValue = defaultValue;
+    // Copied, so changing the value passed in afterwards — at any depth — does not change the schema.
+    next[ctxSymbol].defaultValue = _cloneValue(defaultValue);
     return next as WithDefault<this>;
   }
 
@@ -1101,8 +1105,8 @@ export function parse<T extends CommonSchema>(
  */
 function snapshot(value: unknown): unknown {
   if (Array.isArray(value)) return [...value];
-  if (value instanceof Date) return new Date(value.getTime());
-  return value;
+  const time = _timeOf(value);
+  return time === undefined ? value : new Date(time);
 }
 
 /**

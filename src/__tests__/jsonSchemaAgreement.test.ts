@@ -19,6 +19,15 @@ import { minExcluded } from '../asserts/number/minExcluded';
 import { maxExcluded } from '../asserts/number/maxExcluded';
 import { positive } from '../asserts/number/positive';
 import { negative } from '../asserts/number/negative';
+import { integer } from '../asserts/number/integer';
+import { object } from '../asserts/object';
+import { record } from '../asserts/record';
+import { minKeys } from '../asserts/object/minKeys';
+import { isAlpha } from '../asserts/string/isAlpha';
+import { isAlphaNumeric } from '../asserts/string/isAlphaNumeric';
+import { isNumeric } from '../asserts/string/isNumeric';
+import { isHexColor } from '../asserts/string/isHexColor';
+import { isPhoneNumber } from '../asserts/string/isPhoneNumber';
 
 /**
  * Whether a real JSON Schema validator reads the generated document the way bguard reads the schema.
@@ -203,9 +212,68 @@ describe('agreement with JSON Schema validators', () => {
       ['maxExcluded', number().custom(maxExcluded(5)), numbers],
       ['positive', number().custom(positive()), numbers],
       ['negative', number().custom(negative()), numbers],
+      ['integer', number().custom(integer()), [...numbers, 1e21, -0, 2.5, Number.MAX_SAFE_INTEGER]],
     ])('%s accepts nothing the document rejects', (_name, schema, values: readonly unknown[]) => {
       expect(bguardOnly(schema, values)).toEqual([]);
       expect(acceptedCount(schema, values)).toBeGreaterThan(0);
+    });
+  });
+
+  describe('isAlpha and isAlphaNumeric, which emit no pattern', () => {
+    // Their regex needs Unicode property escapes, which not every validator compiles, so the document
+    // leaves them out and accepts more. What remains to check is the one direction that matters.
+    const letters = 'aZđĐжЖωé\u0301中\u200C';
+    const words = randomStrings(23, 3000, (pick, int) => run(pick, int, letters + "0129١ -_.+#½Ⅻ'", 8));
+
+    it.each([
+      ['isAlpha', string().custom(isAlpha())],
+      ['isAlphaNumeric', string().custom(isAlphaNumeric())],
+    ])('%s accepts nothing the document rejects', (_name, schema) => {
+      expect(toJSONSchema(schema, { dialect: null })).toEqual({ type: 'string' });
+      expect(bguardOnly(schema, words)).toEqual([]);
+      expect(acceptedCount(schema, words)).toBeGreaterThan(50);
+    });
+  });
+
+  describe('the pattern-based character assertions, which agree in both directions', () => {
+    // The pattern is the assertion's own regex, so ajv has to read it exactly as bguard does.
+    const numeric = randomStrings(13, 6000, (pick, int) => run(pick, int, int(2) ? '0123.+-' : '0123.+-e ,x', 7));
+    const colors = randomStrings(17, 6000, (pick, int) => (int(4) ? '#' : '') + run(pick, int, '0aF9g', 10));
+    const phones = randomStrings(19, 6000, (pick, int) => (int(4) ? '+' : '') + run(pick, int, '0123456789 -', 18));
+
+    it.each([
+      ['isNumeric', string().custom(isNumeric()), numeric],
+      ['isHexColor', string().custom(isHexColor()), colors],
+      ['isPhoneNumber', string().custom(isPhoneNumber()), phones],
+    ])('%s', (_name, schema, inputs: readonly string[]) => {
+      const validate = ajv.compile(toJSONSchema(schema));
+      expect(inputs.filter((value) => (parse(schema, value)[0] === null) !== validate(value))).toEqual([]);
+      expect(acceptedCount(schema, inputs)).toBeGreaterThan(50);
+    });
+  });
+
+  describe('two assertions that set the same keyword', () => {
+    it('both hold in the document, as both hold in bguard', () => {
+      // The second pattern used to replace the first, so the document accepted what regExp rejected.
+      const schema = string().custom(regExp(/^#[0-9]/), isHexColor());
+      const values = ['#123', '#1234ab', '#abc', '123', '#12', ''];
+      const validate = ajv.compile(toJSONSchema(schema));
+      expect(values.filter((value) => (parse(schema, value)[0] === null) !== validate(value))).toEqual([]);
+      expect(acceptedCount(schema, values)).toBe(2);
+    });
+  });
+
+  describe('minKeys and minProperties', () => {
+    it('agree on objects of every size around the limit', () => {
+      const schema = record(string(), number()).custom(minKeys(2));
+      const values = [{}, { a: 1 }, { a: 1, b: 2 }, { a: 1, b: 2, c: 3 }];
+      expect(bguardOnly(schema, values)).toEqual([]);
+      expect(acceptedCount(schema, values)).toBe(2);
+    });
+
+    it('agree on an object of optional properties', () => {
+      const schema = object({ a: string().optional(), b: string().optional() }).custom(minKeys(1));
+      expect(bguardOnly(schema, [{}, { a: 'x' }, { a: 'x', b: 'y' }])).toEqual([]);
     });
   });
 });

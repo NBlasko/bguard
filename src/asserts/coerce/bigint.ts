@@ -1,3 +1,4 @@
+import { _timeOf } from '../../helpers/intrinsics';
 import { bigint } from '../bigint/index';
 
 /**
@@ -29,14 +30,16 @@ export const coerceBigInt = () =>
     // `BigInt('')`, `BigInt('  ')` and `BigInt([])` are all 0n, so an empty field became a real zero. Only
     // non-blank strings, numbers, booleans and Dates are converted, as in coerceNumber; anything else
     // passes through for bigint() to reject by type.
+    // A Date counts by its timestamp, read from the engine so one from another realm is recognised.
+    const time = _timeOf(received);
     const convertible =
       (typeof received === 'string' && received.trim() !== '') ||
       typeof received === 'number' ||
       typeof received === 'boolean' ||
-      received instanceof Date;
+      time !== undefined;
     if (!convertible) return received as bigint;
     try {
-      return BigInt(received instanceof Date ? received.getTime() : (received as string | number | boolean));
+      return BigInt(time ?? (received as string | number | boolean));
     } catch {
       // A fraction, NaN, an invalid Date or an unreadable string: bigint() reports the type.
       return received as unknown as bigint;

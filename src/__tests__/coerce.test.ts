@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { expectEqualTypes, hasErrors } from '../../jest/setup';
 import { parse, parseOrFail, coerce, BuildSchemaError } from '../';
 import { coerceBigInt } from '../asserts/coerce/bigint';
@@ -165,8 +166,74 @@ describe('coerce', () => {
       [3, '3'],
       ['x', 'x'],
       [true, 'true'],
+      [10n, '10'],
+      [new Date(Date.UTC(2021, 0, 1)), '2021-01-01T00:00:00.000Z'],
     ])('turns %p into %p', (received, expected) => {
       expect(parseOrFail(coerce.string(), received)).toBe(expected);
+    });
+
+    it.each([
+      ['an object, which String makes [object Object]', { a: 1 }],
+      ['an empty array, which String makes the empty string', []],
+      ['an array, which String joins with commas', ['a', 'b']],
+      ['a function, which String turns into its source code', () => 1],
+      ['a symbol', Symbol('x')],
+      ['an invalid Date, on which toISOString throws', new Date(NaN)],
+      ['NaN, which String makes the text NaN', NaN],
+      ['Infinity', Infinity],
+      ['a Map, whose toString is the generic one', new Map()],
+      ['a typed array, which String joins with commas', new Uint8Array([1, 2])],
+    ])('rejects %s', (_name, received) => {
+      expect(parse(coerce.string(), received)[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it.each([
+      ['a boxed string', new String('abc'), 'abc'],
+      ['a boxed number', new Number(5), '5'],
+      ['a boxed boolean', new Boolean(false), 'false'],
+      ['a boxed bigint', Object(10n), '10'],
+      ['a Date from another realm, as ISO', runInNewContext('new Date(0)'), '1970-01-01T00:00:00.000Z'],
+      ['a boxed string from another realm', runInNewContext('new String("x")'), 'x'],
+    ])('turns %s into %p', (_name, received, expected) => {
+      expect(parseOrFail(coerce.string(), received)).toBe(expected);
+    });
+
+    it.each([
+      // Objects of every kind are rejected, by decision: only the caller knows what text they stand for.
+      ['a URL', new URL('http://example.com/a')],
+      [
+        'a class instance with its own toString',
+        new (class Money {
+          toString() {
+            return '12.50 EUR';
+          }
+        })(),
+      ],
+      ['an Error, which String turns into its message', new Error('boom')],
+      ['a RegExp', /a/],
+      ['a boxed NaN', new Number(NaN)],
+      ['an invalid Date from another realm', runInNewContext('new Date(NaN)')],
+    ])('rejects %s', (_name, received) => {
+      expect(parse(coerce.string(), received)[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it("rejects a plain object from another realm, whose toString is not this realm's", () => {
+      // Comparing toString with Object.prototype.toString let such an object through as '[object Object]'.
+      const foreign: unknown = runInNewContext('({ a: 1 })');
+      expect(parse(coerce.string(), foreign)[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it('rejects a Buffer, whose encoding only the caller knows', () => {
+      expect(parse(coerce.string(), Buffer.from('hi'))[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it('rejects an object whose own toString throws, rather than throwing', () => {
+      const awkward = {
+        toString: () => {
+          throw new Error('no');
+        },
+      };
+      expect(parse(coerce.string(), awkward)[0]![0]!.code).toBe('c:invalidType');
     });
 
     it('leaves null for nullable to decide', () => {

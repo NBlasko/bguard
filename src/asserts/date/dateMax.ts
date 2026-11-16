@@ -2,6 +2,7 @@ import { setToDefaultLocale } from '../../translationMap';
 import { BuildSchemaError } from '../../exceptions';
 import type { ExceptionContext, RequiredValidation } from '../../core';
 import { isValidDateInner } from '../../helpers/isValidDateInner';
+import { _timeOf } from '../../helpers/intrinsics';
 
 const dateMaxErrorMessage = 'The received value is greater than expected';
 const dateMaxErrorKey = 'dt:max';
@@ -21,8 +22,15 @@ const dateMaxErrorKey = 'dt:max';
 export const dateMax = (expected: Date | string): RequiredValidation<Date> => {
   const transformedExpected = typeof expected === 'string' ? new Date(expected) : expected;
   if (!isValidDateInner(transformedExpected)) throw new BuildSchemaError('Invalid date in Date assertion');
+  // Compared as timestamps read from the engine, not with `<`, which calls each Date's own `valueOf`: a
+  // real Date given a fake `valueOf` passed `date()` and then faked the bound. The bound is read once,
+  // here, so changing the Date passed in afterwards does not move it.
+  const expectedTime = _timeOf(transformedExpected)!;
   return (received: Date, ctx: ExceptionContext) => {
-    if (transformedExpected < received) ctx.addIssue(transformedExpected, received, dateMaxErrorKey);
+    const receivedTime = _timeOf(received);
+    // Not a Date at all: date() has already reported that.
+    if (receivedTime === undefined) return;
+    if (expectedTime < receivedTime) ctx.addIssue(new Date(expectedTime), received, dateMaxErrorKey);
   };
 };
 

@@ -1,5 +1,6 @@
 import type { BaseType } from './commonTypes';
 import { CommonSchema, type ValidatorContext } from './core';
+import { _cloneValue } from './helpers/cloneValue';
 import { BuildSchemaError } from './exceptions';
 import { ctxSymbol } from './helpers/constants';
 import { setOwnProperty } from './helpers/setOwnProperty';
@@ -37,15 +38,47 @@ interface Context {
   inProgress: Set<string>;
 }
 
-function constraintsOf(schemaData: ValidatorContext): JSONSchema {
-  const constraints: JSONSchema = {};
+/**
+ * Adds one keyword to a schema under construction, where every rule has to hold, as it does in bguard.
+ *
+ * `Object.assign` let a keyword that was already there be replaced: a second `pattern` replaced the
+ * first, and `minArrayLength(1)` on a two-element tuple replaced its `minItems: 2`, so the document
+ * accepted values bguard rejects. A keyword already present with a different value goes into `allOf`
+ * instead, unless that exact entry is there already.
+ *
+ * The one replacement is `integer()` narrowing a numeric type. It has to stay in `type`, not `allOf`:
+ * `nullable()` adds `'null'` to `type`, and an `allOf: [{ type: 'integer' }]` beside it would still
+ * reject null. A number type list such as `oneOfTypes(['number', 'string'])` narrows to `'integer'`
+ * too, since `integer()` rejects anything that is not one.
+ */
+function addKeyword(target: JSONSchema, allOf: JSONSchema[], keyword: string, value: unknown): void {
+  const current = target[keyword];
+  const numeric = current === 'number' || (Array.isArray(current) && current.includes('number'));
+
+  if (!(keyword in target) || (keyword === 'type' && value === 'integer' && numeric)) {
+    target[keyword] = value;
+    return;
+  }
+
+  const entry = JSON.stringify(value);
+  if (JSON.stringify(current) === entry) return;
+  if (allOf.some((existing) => JSON.stringify(existing[keyword]) === entry)) return;
+  allOf.push({ [keyword]: value });
+}
+
+/** The schema's own structure with the keywords its assertions carry added; see `addKeyword`. */
+function withConstraints(base: JSONSchema, schemaData: ValidatorContext): JSONSchema {
+  const result: JSONSchema = { ...base };
+  const allOf: JSONSchema[] = [];
 
   for (const validation of schemaData.requiredValidations) {
     const carried = (validation as ConstrainedValidation).jsonSchema;
-    if (carried) Object.assign(constraints, carried);
+    if (!carried) continue;
+    for (const [keyword, value] of Object.entries(carried)) addKeyword(result, allOf, keyword, value);
   }
 
-  return constraints;
+  if (allOf.length) result.allOf = allOf;
+  return result;
 }
 
 function literalOf(schemaData: ValidatorContext): JSONSchema | undefined {
@@ -155,7 +188,7 @@ function generate(schema: CommonSchema, context: Context): JSONSchema {
   const literal = literalOf(schemaData);
 
   // A literal already says everything about the value, so the type is redundant beside it.
-  let result: JSONSchema = literal ? { ...base, ...literal } : { ...base, ...constraintsOf(schemaData) };
+  let result: JSONSchema = literal ? { ...base, ...literal } : withConstraints(base, schemaData);
   if (literal && result.type) delete result.type;
 
   if (schemaData.isNullable) {
@@ -163,7 +196,8 @@ function generate(schema: CommonSchema, context: Context): JSONSchema {
     result = result.$ref || result.anyOf ? { anyOf: [result, { type: 'null' }] } : mergeNull(result);
   }
 
-  if (schemaData.defaultValue !== undefined) result.default = schemaData.defaultValue;
+  // A copy: the document is the caller's to edit, and the schema's own default must not change with it.
+  if (schemaData.defaultValue !== undefined) result.default = _cloneValue(schemaData.defaultValue);
   if (schemaData.meta?.description) result.description = schemaData.meta.description;
 
   return result;

@@ -1,5 +1,106 @@
 # bguard
 
+## 0.13.0 New string, number and object assertions, a guide to writing your own, and stricter `coerceString`
+
+### Added
+
+Nine assertions, each with a translation key, a default message, and a JSON Schema mapping where one
+exists. Every one that maps onto a keyword is checked against `ajv` in the test suite.
+
+| Assertion | Import | Accepts | JSON Schema |
+|---|---|---|---|
+| `isAlpha()` | `bguard/string/isAlpha` | letters in any script: `Đorđe`, `Ђорђе`, `Zoë` | — (needs `\p{L}`) |
+| `isAlphaNumeric()` | `bguard/string/isAlphaNumeric` | letters in any script and decimal digits | — (needs `\p{L}`) |
+| `isNumeric()` | `bguard/string/isNumeric` | a plain decimal number: `-12.5`, `.5`; no exponent, spaces or separators | `pattern` |
+| `isHexColor()` | `bguard/string/isHexColor` | `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` | `pattern` |
+| `isPhoneNumber()` | `bguard/string/isPhoneNumber` | E.164: `+381641234567`. The format only, not whether the number exists | `pattern` |
+| `isCreditCard()` | `bguard/string/isCreditCard` | 12–19 digits, optionally grouped by spaces or hyphens, not all zeros, with a valid Luhn check digit | — |
+| `isJson()` | `bguard/string/isJson` | any JSON text `JSON.parse` reads, primitives included | — |
+| `integer()` | `bguard/number/integer` | a number with no fractional part | `type: 'integer'` |
+| `minKeys(n)` | `bguard/object/minKeys` | an object with at least `n` keys that have a value; the counterpart of `maxKeys` | `minProperties` |
+
+`isAlpha` and `isAlphaNumeric` take combining marks after a letter, so `é` written as `e` + U+0301 is a
+letter, and the zero-width non-joiner and joiner between letters that Persian and several Indic scripts
+need inside words. Marks do not attach to digits. `isAlphaNumeric` takes decimal digits in any script
+(`١٢٣`) but not other numerals such as `½` or `Ⅻ`. `isCreditCard` keeps the number out of its issue's
+`expected` and default message. `minKeys` does not count a key whose value is `undefined`: form libraries
+and object spreads fill absent fields with it, and `{ email: undefined }` sends nothing.
+
+**A guide to writing a custom assertion** that takes part in everything the built-in ones do: a key, a
+default message, translations, `setDefaultLanguage`, the `code` on each issue, and Standard Schema. It
+replaces the earlier example, which was never typechecked and described `addIssue` as always throwing.
+
+### Changed
+
+**`coerceString` converts only primitives and Dates.** `String` turned anything into text —
+`'[object Object]'` for an object, `''` for an empty array, a function's source code, `'NaN'` — and none
+of it is what anyone sent. Now:
+
+- finite numbers, booleans and bigints are converted as before, and so are their boxed forms
+  (`new String('a')`);
+- a Date becomes its ISO form, `2021-01-01T00:00:00.000Z`, rather than `String(date)`'s local time with
+  a time-zone name, which read differently on every server. A Date from another realm (an iframe, a
+  `vm` context, a worker) is recognised too;
+- every other object — plain objects, arrays, Maps, errors, URLs, Buffers, class instances — and NaN,
+  ±Infinity and invalid Dates are rejected by type. Convert a URL or a Decimal yourself, with
+  `transformBeforeValidation`, where you know what its text should be.
+
+**`maxKeys` refuses a count that is not a non-negative integer**, like the new `minKeys`. `maxKeys(1.5)`
+or `maxKeys(-1)` used to build a schema whose JSON Schema no validator would compile; now it throws a
+`BuildSchemaError`. `maxKeys(Infinity)` still works and means no limit; it emits no keyword.
+
+**`maxKeys` no longer counts a key whose value is `undefined`**, matching `minKeys` and
+`maxProperties`. `{ a: 'x', b: undefined }` now passes `maxKeys(1)`.
+
+**`toJSONSchema` keeps every rule when two set the same keyword.** An assertion's keyword used to replace
+the one already there: a second `pattern` replaced the first, and `minArrayLength(1)` on a two-element
+tuple replaced its `minItems: 2`, so the document accepted values bguard rejects. The newer one now goes
+into `allOf`, once. The one exception is `integer()` narrowing a numeric type — `'number'`, or a list
+such as `oneOfTypes(['number', 'string'])` — so a nullable integer is still `type: ['integer', 'null']`. A `default` in the output is now a copy, so editing the document does not
+change the schema's default.
+
+### Fixed
+
+**A default could be one shared object.** `date().default(new Date(0))` handed out one instance, so
+`setFullYear` on one result moved the default for every later parse; the same happened with an object
+default under a schema that does not rebuild it, such as `oneOfTypes(['object'])`. And only the top level
+of the value given to `default()` was copied, so changing a nested object afterwards changed the schema.
+A default is now deep-copied when it is set and on every use — plain objects, arrays and Dates, from any
+realm, symbol keys included; class instances are kept as they are, prototype and all.
+
+**`date()` accepted an object that only claimed to be a Date.** Its check trusted
+`Object.prototype.toString`, which `Symbol.toStringTag` can set to anything, and then called the object's
+own `getTime`, so `{ [Symbol.toStringTag]: 'Date', getTime: () => 0 }` passed. What a value is — a Date,
+a boxed string — is now asked of the engine (`Date.prototype.getTime.call` and the like), which checks
+an internal slot no object can fake and which works for values from any realm. Every coercion, the
+copying of defaults and of issue values use the same checks, so such an object no longer makes any of
+them throw, and `coerceNumber` and `coerceBigInt` now read a Date from another realm too.
+
+**`dateMin` and `dateMax` compared with `<` and `>`**, which call each Date's own `valueOf`: a real Date
+given a fake `valueOf` passed `date()` and then faked the bound. They now compare timestamps read from the
+engine. The bound is read once, when the schema is built, so changing the Date passed to `dateMin`
+afterwards no longer moves it.
+
+### Internal
+
+- Thirty tests for `default()`: which values it replaces (and that `null` is not one of them), where it
+  applies — properties, array holes, tuples, records, unions — how it meets transforms and coercion, when
+  the default itself is refused, and the types it produces.
+- The test that every assertion has a translation case used to compare against a hand-kept count. It
+  now finds every exported function with a `key` and names the one that is missing.
+
+- The package is built with tsup 9 (was 8). The JavaScript output is the same apart from chunk names and
+  import order. Declaration files now re-export types as `export type { X }` instead of
+  `export { type X }`, which TypeScript has read since 3.8 rather than 4.5.
+- CI runs on Node 22 and 24; releases are built and published on Node 24. GitHub Actions are on their
+  current majors (checkout v7, setup-node v7, upload-artifact v7, download-artifact v8), which run on
+  Node 24 rather than the deprecated Node 20.
+- The publish workflow pins its actions to commit SHAs, does not use the npm cache (setup-node's advice
+  for publishing, since a poisoned cache would end up in the tarball), and does not leave the git token
+  on disk after checkout.
+- `@changesets/cli` and the `release:package` and `change:*` scripts are removed. They were never used:
+  a release is a merge to `main` with a new version.
+
 ## 0.12.0 Translated messages through Standard Schema, issue codes for forms, and `email`/`validUrl` that agree with their JSON Schema formats
 
 ### Added

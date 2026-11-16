@@ -1,4 +1,4 @@
-import { toJSONSchema, BuildSchemaError } from '../';
+import { toJSONSchema, BuildSchemaError, parseOrFail } from '../';
 import { CommonSchema } from '../core';
 import { array } from '../asserts/array';
 import { bigint } from '../asserts/bigint';
@@ -31,6 +31,13 @@ import { maxArrayLength } from '../asserts/array/maxArrayLength';
 import { minArrayLength } from '../asserts/array/minArrayLength';
 import { maxKeys } from '../asserts/object/maxKeys';
 import { contains } from '../asserts/string/contains';
+import { integer } from '../asserts/number/integer';
+import { isHexColor } from '../asserts/string/isHexColor';
+import { isPhoneNumber } from '../asserts/string/isPhoneNumber';
+import { isCreditCard } from '../asserts/string/isCreditCard';
+import { isJson } from '../asserts/string/isJson';
+import { isAlpha } from '../asserts/string/isAlpha';
+import { isAlphaNumeric } from '../asserts/string/isAlphaNumeric';
 
 /** Most cases read better without the dialect line, which is asserted separately. */
 const bare = (schema: CommonSchema) => toJSONSchema(schema, { dialect: null });
@@ -96,6 +103,13 @@ describe('toJSONSchema', () => {
       ['maxExcluded', number().custom(maxExcluded(9)), { type: 'number', exclusiveMaximum: 9 }],
       ['positive', number().custom(positive()), { type: 'number', exclusiveMinimum: 0 }],
       ['negative', number().custom(negative()), { type: 'number', exclusiveMaximum: 0 }],
+      ['integer', number().custom(integer()), { type: 'integer' }],
+      [
+        'isHexColor',
+        string().custom(isHexColor()),
+        { type: 'string', pattern: '^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$' },
+      ],
+      ['isPhoneNumber', string().custom(isPhoneNumber()), { type: 'string', pattern: '^\\+[1-9]\\d{1,14}$' }],
       [
         'minArrayLength',
         array(string()).custom(minArrayLength(2)),
@@ -135,6 +149,79 @@ describe('toJSONSchema', () => {
         minLength: 2,
         maxLength: 9,
       });
+    });
+
+    it('keeps both patterns when two assertions set one, rather than letting the second replace the first', () => {
+      expect(bare(string().custom(regExp(/^[A-Z]/), isHexColor()))).toEqual({
+        type: 'string',
+        pattern: '^[A-Z]',
+        allOf: [{ pattern: '^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$' }],
+      });
+    });
+
+    it('does not repeat a keyword two assertions set to the same value', () => {
+      expect(bare(number().custom(integer(), integer()))).toEqual({ type: 'integer' });
+    });
+
+    it('keeps both bounds when the same bound is set twice', () => {
+      expect(bare(string().custom(minLength(2), minLength(5)))).toEqual({
+        type: 'string',
+        minLength: 2,
+        allOf: [{ minLength: 5 }],
+      });
+    });
+
+    it("keeps a tuple's own length when an assertion sets the same keyword", () => {
+      // minArrayLength(1) used to replace the tuple's minItems: 2, and the document accepted ['a'].
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(1)))).toMatchObject({
+        minItems: 2,
+        allOf: [{ minItems: 1 }],
+      });
+    });
+
+    it('does not repeat a pattern that two assertions both add', () => {
+      // regExp(/b/) twice gave allOf: [{ pattern: 'b' }, { pattern: 'b' }].
+      expect(bare(string().custom(regExp(/a/), regExp(/b/), regExp(/b/)))).toEqual({
+        type: 'string',
+        pattern: 'a',
+        allOf: [{ pattern: 'b' }],
+      });
+    });
+
+    it('does not repeat an allOf entry that is already there', () => {
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(1), minArrayLength(1)))).toMatchObject({
+        minItems: 2,
+        allOf: [{ minItems: 1 }],
+      });
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(1), minArrayLength(1))).allOf).toHaveLength(1);
+    });
+
+    it("does not repeat a keyword an assertion sets to the tuple's own value", () => {
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(2)))).not.toHaveProperty('allOf');
+    });
+
+    it.each([
+      ['isAlpha', isAlpha()],
+      ['isAlphaNumeric', isAlphaNumeric()],
+    ])('leaves out %s, whose pattern needs Unicode property escapes', (_name, assert) => {
+      expect(bare(string().custom(assert))).toEqual({ type: 'string' });
+    });
+
+    it('emits a copy of the default, so editing the document does not change the schema', () => {
+      const schema = object({ tags: array(string()).default(['a']) });
+      (bare(schema).properties as Record<string, { default: string[] }>).tags!.default.push('changed');
+      expect(parseOrFail(schema, {})).toEqual({ tags: ['a'] });
+    });
+
+    it('turns an integer with nullable into an integer-or-null type', () => {
+      expect(bare(number().custom(integer()).nullable())).toEqual({ type: ['integer', 'null'] });
+    });
+
+    it.each([
+      ['isCreditCard', isCreditCard()],
+      ['isJson', isJson()],
+    ])('leaves out %s, which no keyword can express', (_name, assert) => {
+      expect(bare(string().custom(assert))).toEqual({ type: 'string' });
     });
 
     it('leaves out an assertion with no equivalent', () => {
