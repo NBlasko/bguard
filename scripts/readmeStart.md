@@ -696,6 +696,18 @@ Anything a helper cannot convert is left alone, so validation reports the type p
 succeeding: `coerceNumber()` on `'abc'` fails, because `Number('abc')` is `NaN` and `number()` rejects
 that.
 
+What counts as convertible is deliberately narrow, because the JavaScript conversions turn almost
+anything into a value:
+
+- `coerceNumber()` and `coerceBigInt()` convert strings, booleans, bigints/numbers and Dates. An empty or
+  whitespace-only string is rejected rather than read as `0`, which is what `Number('')` returns — an
+  empty form field is not a zero. So are arrays and objects: `Number([])` is `0` and `Number([5])` is `5`.
+- `coerceDate()` converts strings and numbers (a timestamp in milliseconds). A numeric date naming a day
+  that does not exist, such as `2021-02-30` or `02/30/2021`, is rejected rather than rolled over into
+  March 2nd as `new Date` does. A boolean is rejected too; `new Date(true)` is 1 ms after the epoch.
+- No helper throws. A value its conversion cannot handle — a symbol, a bigint for `new Date`, an object
+  with no prototype for `String` — is passed through and rejected by type.
+
 `null` is never coerced, so `nullable()` still decides whether it is allowed instead of it becoming the
 string `'null'` or the number `0`.
 

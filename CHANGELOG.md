@@ -61,13 +61,25 @@ is not finite'). JSON cannot carry either, and a value that passed `number()` is
 in arithmetic. This applies wherever a type list names `number`, including `oneOfTypes` and
 `coerceNumber('Infinity')`.
 
-**`coerceNumber` rejects an empty or whitespace-only string.** `Number('')` is `0`, so an empty form
-field used to arrive as a real zero. It now fails like any other unreadable string, with `c:nan`.
+**`coerceNumber` and `coerceBigInt` convert only what holds a number.** `Number('')` is `0`, so an
+empty form field used to arrive as a real zero; `Number([])` and `Number([''])` are `0` and `Number([5])`
+is `5`, and `BigInt` reads `''` and `[]` as `0n`. An empty or whitespace-only string, an array or an
+object is now rejected (`c:nan` for a blank string to `coerceNumber`, `c:invalidType` otherwise). Strings,
+booleans, numbers, bigints and Dates are still converted.
 
 **`coerceDate` rejects a day that does not exist.** `new Date('2021-02-30')` is March 2nd, and that is
-what `coerceDate` returned. A string in `YYYY-MM-DD` form (with or without a time after it) or the US
-`MM/DD/YYYY` form now has to name a real day. Other formats are still read exactly as `new Date` reads
-them.
+what `coerceDate` returned. A numeric date now has to name a real day, whether year-first
+(`2021-02-30`, `2021/02/30`, `2021.02.30`, `+002021-02-30`) or month-first (`02/30/2021`, `02-30-2021`),
+with or without a time after it. A date with a month name (`Feb 30 2021`) is still read exactly as
+`new Date` reads it.
+
+**`coerceDate` converts only strings and numbers.** `new Date(true)` is 1 ms after the epoch,
+`new Date([5])` is May 2001 and `new Date(['2021-01-01'])` is that day; booleans, arrays and objects are
+now rejected.
+
+**No coercion throws.** `coerceNumber(Symbol())`, `coerceDate(1n)`, `coerceDate(Symbol())` and
+`coerceString(Object.create(null))` threw inside the conversion, and the parse reported 'Something
+unexpected happened' instead of a validation error. They are now rejected by type.
 
 ### Internal
 
@@ -80,6 +92,12 @@ them.
   an exact npm version. A compromised devDependency can no longer request the token and publish a
   version of its choosing. It can still tamper with the build output before it is packed, which this
   does not prevent.
+- A merge to `main` that does not bump the version no longer fails the publish workflow. The build job
+  checks whether the version is already on npm, and the publish job is skipped if it is.
+- `npm audit fix` (without `--force`) cleared the critical and high findings, all in devDependencies.
+  What remains is moderate and low, in jest's and typescript-eslint's dependencies, where npm's suggested
+  fix is a downgrade to years-old majors. None of it is installed with bguard, which has no runtime
+  dependencies.
 - README notes about `toJSONSchema` that 0.11.0 added straight to `README.md` were moved into its source,
   `scripts/readmeStart.md`; regenerating the README would otherwise have reverted them.
 

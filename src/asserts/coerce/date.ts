@@ -40,6 +40,9 @@ function namesMissingDay(received: string): boolean {
  * roll over into March 2nd. A date written with a month name (`Feb 30 2021`) is read exactly as
  * `new Date` reads it.
  *
+ * Only strings and numbers (a timestamp in milliseconds) are converted. A boolean, array, object, bigint
+ * or symbol is rejected rather than handed to `new Date`, which read `true` as 1 ms after the epoch.
+ *
  * @returns A date schema that accepts `unknown` as its input type.
  * @example
  * parseOrFail(coerceDate(), '2024-01-01'); // Date
@@ -47,6 +50,10 @@ function namesMissingDay(received: string): boolean {
 export const coerceDate = () =>
   date().transformBeforeValidation<unknown>((received) => {
     if (received === null || received instanceof Date) return received as Date;
-    if (typeof received === 'string' && namesMissingDay(received)) return new Date(NaN);
-    return new Date(received as string);
+    if (typeof received === 'string') return namesMissingDay(received) ? new Date(NaN) : new Date(received);
+    if (typeof received === 'number') return new Date(received);
+    // Anything else passes through for date() to reject. `new Date` read `true` as 1 ms after the epoch,
+    // `[5]` as May 2001 and `['2021-01-01']` as that day, and threw on a bigint or a Symbol, which a
+    // coercion must never do.
+    return received as Date;
   });

@@ -20,6 +20,10 @@ import { number } from '../number/index';
  * rather than passing as a number. An empty or whitespace-only string is treated the same way, rather
  * than becoming the `0` that `Number('')` returns.
  *
+ * Only strings, booleans, bigints and Dates are converted. Arrays, objects, functions and symbols are
+ * passed through and rejected by type: `Number([])` is `0` and `Number([5])` is `5`, neither of which is
+ * a number someone sent.
+ *
  * @returns A number schema that accepts `unknown` as its input type.
  * @example
  * parseOrFail(coerceNumber(), '42'); // 42
@@ -29,6 +33,11 @@ export const coerceNumber = () =>
     if (received === null || typeof received === 'number') return received as number;
     // `Number('')` and `Number('  ')` are 0, so an empty form field used to arrive as a real zero. A
     // string with nothing in it holds no number, and becomes NaN like any other unreadable string.
-    if (typeof received === 'string' && received.trim() === '') return NaN;
-    return Number(received);
+    if (typeof received === 'string') return received.trim() === '' ? NaN : Number(received);
+    // A boolean is 0 or 1, a bigint its value, a Date its timestamp.
+    if (typeof received === 'boolean' || typeof received === 'bigint' || received instanceof Date)
+      return Number(received);
+    // Anything else passes through for number() to reject by type. `Number` read `[]` and `['']` as 0 and
+    // `[5]` as 5, and threw on a Symbol, which a coercion must never do.
+    return received as number;
   });
