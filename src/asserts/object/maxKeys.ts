@@ -1,13 +1,15 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
 import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
+import { _checkKeyCount } from '../../helpers/checkKeyCount';
 
 const maxKeysErrorMessage = 'The received number of keys is greater than expected';
 const maxKeysErrorKey = 'o:maxKeys';
 
 /**
  * @description Ensures that the object has no more than the specified number of keys.
- * @param {number} expected - The maximum number of keys allowed in the object.
+ * @param {number} expected - The maximum number of keys allowed in the object: a non-negative integer,
+ * or a `BuildSchemaError` is thrown.
  * @returns {RequiredValidation} A validation function that takes a received object and an exception context.
  * @throws {ValidationError} if the number of the received keys is greater than the expected value.
  * @example
@@ -26,13 +28,15 @@ const maxKeysErrorKey = 'o:maxKeys';
  *
  * @translation Error Translation Key = 'o:maxKeys'
  */
-export const maxKeys = (expected: number): RequiredValidation<Record<string, unknown>> =>
-  _constrain({ maxProperties: expected }, (receivedObject: Record<string, unknown>, ctx: ExceptionContext) => {
+export const maxKeys = (expected: number): RequiredValidation<Record<string, unknown>> => {
+  _checkKeyCount('maxKeys', expected);
+  return _constrain({ maxProperties: expected }, (receivedObject: Record<string, unknown>, ctx: ExceptionContext) => {
     const keysCount = Object.keys(receivedObject).length;
     if (keysCount > expected) {
       ctx.addIssue(expected, keysCount, maxKeysErrorKey);
     }
   });
+};
 
 maxKeys.key = maxKeysErrorKey;
 maxKeys.message = maxKeysErrorMessage;

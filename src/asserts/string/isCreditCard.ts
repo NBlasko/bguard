@@ -24,7 +24,7 @@ function passesLuhn(digits: string): boolean {
 
 /**
  * @description Asserts that a string is a plausible payment card number: 12 to 19 digits, optionally
- * grouped by spaces or hyphens, whose last digit is the correct Luhn check digit. This catches typos; it
+ * grouped by spaces or hyphens, not all zeros, whose last digit is the correct Luhn check digit. This catches typos; it
  * does not say that the card exists, nor which network issued it. The value is returned as received, with
  * its separators.
  * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
@@ -39,7 +39,8 @@ function passesLuhn(digits: string): boolean {
 export const isCreditCard = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
   // No JSON Schema mapping: a pattern can describe the shape but not the checksum.
   const digits = cardShape.test(received) ? received.replace(/[ -]/g, '') : '';
-  if (digits.length < 12 || digits.length > 19 || !passesLuhn(digits)) {
+  // All zeros passes Luhn (the sum is 0) and is a common placeholder; no card number is all zeros.
+  if (digits.length < 12 || digits.length > 19 || /^0+$/.test(digits) || !passesLuhn(digits)) {
     // The number itself is left out of `expected`, and the default message does not repeat it.
     ctx.addIssue('valid card number', received, isCreditCardErrorKey);
   }

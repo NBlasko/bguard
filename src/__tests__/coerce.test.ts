@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { expectEqualTypes, hasErrors } from '../../jest/setup';
 import { parse, parseOrFail, coerce, BuildSchemaError } from '../';
 import { coerceBigInt } from '../asserts/coerce/bigint';
@@ -178,8 +179,47 @@ describe('coerce', () => {
       ['a function, which String turns into its source code', () => 1],
       ['a symbol', Symbol('x')],
       ['an invalid Date, on which toISOString throws', new Date(NaN)],
+      ['NaN, which String makes the text NaN', NaN],
+      ['Infinity', Infinity],
+      ['a Map, whose toString is the generic one', new Map()],
+      ['a typed array, which String joins with commas', new Uint8Array([1, 2])],
     ])('rejects %s', (_name, received) => {
       expect(parse(coerce.string(), received)[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it.each([
+      ['a boxed string', new String('abc'), 'abc'],
+      ['a URL', new URL('http://example.com/a'), 'http://example.com/a'],
+      [
+        'a class instance with its own toString',
+        new (class Money {
+          toString() {
+            return '12.50 EUR';
+          }
+        })(),
+        '12.50 EUR',
+      ],
+    ])('turns %s into the text its toString gives', (_name, received, expected) => {
+      expect(parseOrFail(coerce.string(), received)).toBe(expected);
+    });
+
+    it("rejects a plain object from another realm, whose toString is not this realm's", () => {
+      // Comparing toString with Object.prototype.toString let such an object through as '[object Object]'.
+      const foreign: unknown = runInNewContext('({ a: 1 })');
+      expect(parse(coerce.string(), foreign)[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it('rejects a Buffer, whose encoding only the caller knows', () => {
+      expect(parse(coerce.string(), Buffer.from('hi'))[0]![0]!.code).toBe('c:invalidType');
+    });
+
+    it('rejects an object whose own toString throws, rather than throwing', () => {
+      const awkward = {
+        toString: () => {
+          throw new Error('no');
+        },
+      };
+      expect(parse(coerce.string(), awkward)[0]![0]!.code).toBe('c:invalidType');
     });
 
     it('leaves null for nullable to decide', () => {

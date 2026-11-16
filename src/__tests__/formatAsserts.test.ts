@@ -1,10 +1,11 @@
-import { parse, parseOrFail } from '../';
+import { BuildSchemaError, parse, parseOrFail } from '../';
 import { number } from '../asserts/number';
 import { object } from '../asserts/object';
 import { record } from '../asserts/record';
 import { string } from '../asserts/string';
 import { integer } from '../asserts/number/integer';
 import { minKeys } from '../asserts/object/minKeys';
+import { maxKeys } from '../asserts/object/maxKeys';
 import { isAlpha } from '../asserts/string/isAlpha';
 import { isAlphaNumeric } from '../asserts/string/isAlphaNumeric';
 import { isCreditCard } from '../asserts/string/isCreditCard';
@@ -210,5 +211,58 @@ describe('minKeys', () => {
     expect(issue.code).toBe('o:minKeys');
     expect(issue.expected).toBe(2);
     expect(issue.received).toBe(1);
+  });
+});
+
+// Found in review of 0.13.0.
+describe('review fixes', () => {
+  describe('minKeys', () => {
+    const schema = object({ email: string().optional(), phone: string().optional() }).custom(minKeys(1));
+
+    it('does not count a key whose value is undefined, which sends nothing', () => {
+      // Form libraries and spreads fill absent fields with undefined; this used to pass with nothing sent.
+      expect(codeOf(schema, { email: undefined, phone: undefined })).toBe('o:minKeys');
+      expect(parseOrFail(schema, { email: undefined, phone: '+381641234567' })).toEqual({ phone: '+381641234567' });
+    });
+
+    it.each([[-1], [1.5], [NaN], [Infinity]])('refuses %p as a count when the schema is built', (count) => {
+      expect(() => minKeys(count)).toThrow(BuildSchemaError);
+      expect(() => maxKeys(count)).toThrow(BuildSchemaError);
+      expect(() => minKeys(count)).toThrow('minKeys expects a non-negative integer');
+    });
+
+    it('still takes 0', () => {
+      expect(parseOrFail(object({}).custom(minKeys(0), maxKeys(0)), {})).toEqual({});
+    });
+  });
+
+  describe('isCreditCard', () => {
+    it.each([['000000000000'], ['0000 0000 0000 0000']])('rejects %p, which passes Luhn but is all zeros', (value) => {
+      expect(codeOf(string().custom(isCreditCard()), value)).toBe('s:isCreditCard');
+    });
+  });
+
+  describe('isAlpha and isAlphaNumeric', () => {
+    it.each([
+      ['a zero-width non-joiner inside a Persian word', 'می‌خواهم'],
+      ['a zero-width joiner inside a Devanagari word', 'क्‍ष'],
+    ])('accept %s', (_name, value) => {
+      expect(parseOrFail(string().custom(isAlpha()), value)).toBe(value);
+      expect(parseOrFail(string().custom(isAlphaNumeric()), value)).toBe(value);
+    });
+
+    it.each([
+      ['a leading joiner', '‌ab'],
+      ['a trailing joiner', 'ab‌'],
+      ['a joiner before a digit', 'a‌1'],
+    ])('reject %s', (_name, value) => {
+      expect(codeOf(string().custom(isAlphaNumeric()), value)).toBe('s:isAlphaNumeric');
+    });
+
+    it('isAlphaNumeric does not let accents stack on a digit', () => {
+      expect(codeOf(string().custom(isAlphaNumeric()), '1́')).toBe('s:isAlphaNumeric');
+      expect(codeOf(string().custom(isAlphaNumeric()), '1' + '́'.repeat(20))).toBe('s:isAlphaNumeric');
+      expect(parseOrFail(string().custom(isAlphaNumeric()), 'café')).toBe('café');
+    });
   });
 });

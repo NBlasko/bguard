@@ -5,14 +5,17 @@ import { setToDefaultLocale } from '../../translationMap';
 const isAlphaErrorMessage = 'The received value must contain only letters';
 const isAlphaErrorKey = 's:isAlpha';
 
-// A letter in any script, followed by letters or combining marks. The marks are what make `é` written as
-// `e` + U+0301 count as a letter, and the first character has to be a letter so a string of bare marks
-// does not.
-const alphaPattern = /^\p{L}[\p{L}\p{M}]*$/u;
+// Letters in any script, each followed by any combining marks: the marks are what make `é` written as
+// `e` + U+0301 count as a letter. A zero-width non-joiner or joiner (U+200C, U+200D) may sit between
+// letters, where Persian and several Indic scripts need it inside ordinary words (`می‌خواهم`). The
+// string starts with a letter, so bare marks or a leading joiner do not pass. Every alternative starts
+// with a different kind of character, so the match cannot backtrack.
+const alphaPattern = /^\p{L}\p{M}*(?:\p{L}\p{M}*|[\u200C\u200D](?=\p{L}))*$/u;
 
 /**
  * @description Asserts that a string is made of letters only, in any script: `Đorđe`, `Ђорђе` and
- * `Zoë` pass, while digits, spaces, hyphens and punctuation do not. The empty string is rejected.
+ * `Zoë` pass, while digits, spaces, hyphens and punctuation do not. Combining accents after a letter and
+ * the zero-width joiners some scripts use between letters are allowed. The empty string is rejected.
  * @returns {RequiredValidation} A validation function that takes a received string and an exception context.
  * @throws {ValidationError} if the received string contains anything other than letters.
  * @example

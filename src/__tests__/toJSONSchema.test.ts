@@ -149,6 +149,26 @@ describe('toJSONSchema', () => {
       });
     });
 
+    it('keeps both patterns when two assertions set one, rather than letting the second replace the first', () => {
+      expect(bare(string().custom(regExp(/^[A-Z]/), isHexColor()))).toEqual({
+        type: 'string',
+        pattern: '^[A-Z]',
+        allOf: [{ pattern: '^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$' }],
+      });
+    });
+
+    it('does not repeat a keyword two assertions set to the same value', () => {
+      expect(bare(number().custom(integer(), integer()))).toEqual({ type: 'integer' });
+    });
+
+    it('keeps both bounds when the same bound is set twice', () => {
+      expect(bare(string().custom(minLength(2), minLength(5)))).toEqual({
+        type: 'string',
+        minLength: 2,
+        allOf: [{ minLength: 5 }],
+      });
+    });
+
     it('turns an integer with nullable into an integer-or-null type', () => {
       expect(bare(number().custom(integer()).nullable())).toEqual({ type: ['integer', 'null'] });
     });

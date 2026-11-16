@@ -14,14 +14,17 @@ exists. Every one that maps onto a keyword is checked against `ajv` in the test 
 | `isNumeric()` | `bguard/string/isNumeric` | a plain decimal number: `-12.5`, `.5`; no exponent, spaces or separators | `pattern` |
 | `isHexColor()` | `bguard/string/isHexColor` | `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` | `pattern` |
 | `isPhoneNumber()` | `bguard/string/isPhoneNumber` | E.164: `+381641234567`. The format only, not whether the number exists | `pattern` |
-| `isCreditCard()` | `bguard/string/isCreditCard` | 12–19 digits, optionally grouped by spaces or hyphens, with a valid Luhn check digit | — |
+| `isCreditCard()` | `bguard/string/isCreditCard` | 12–19 digits, optionally grouped by spaces or hyphens, not all zeros, with a valid Luhn check digit | — |
 | `isJson()` | `bguard/string/isJson` | any JSON text `JSON.parse` reads, primitives included | — |
 | `integer()` | `bguard/number/integer` | a number with no fractional part | `type: 'integer'` |
-| `minKeys(n)` | `bguard/object/minKeys` | an object with at least `n` keys; the counterpart of `maxKeys` | `minProperties` |
+| `minKeys(n)` | `bguard/object/minKeys` | an object with at least `n` keys that have a value; the counterpart of `maxKeys` | `minProperties` |
 
 `isAlpha` and `isAlphaNumeric` take combining marks after a letter, so `é` written as `e` + U+0301 is a
-letter. `isAlphaNumeric` takes decimal digits in any script (`١٢٣`) but not other numerals such as `½` or
-`Ⅻ`. `isCreditCard` keeps the number out of its issue's `expected` and default message.
+letter, and the zero-width non-joiner and joiner between letters that Persian and several Indic scripts
+need inside words. Marks do not attach to digits. `isAlphaNumeric` takes decimal digits in any script
+(`١٢٣`) but not other numerals such as `½` or `Ⅻ`. `isCreditCard` keeps the number out of its issue's
+`expected` and default message. `minKeys` does not count a key whose value is `undefined`: form libraries
+and object spreads fill absent fields with it, and `{ email: undefined }` sends nothing.
 
 **A guide to writing a custom assertion** that takes part in everything the built-in ones do: a key, a
 default message, translations, `setDefaultLanguage`, the `code` on each issue, and Standard Schema. It
@@ -29,18 +32,34 @@ replaces the earlier example, which was never typechecked and described `addIssu
 
 ### Changed
 
-**`coerceString` converts only numbers, booleans, bigints and Dates.** `String` turned anything into
-text — `'[object Object]'` for an object, `''` for an empty array, a function's source code — and none
-of it is what anyone sent. Arrays, objects, functions, symbols and invalid Dates are now rejected by
-type. A Date becomes its ISO form, `2021-01-01T00:00:00.000Z`, rather than `String(date)`'s local time
-with a time-zone name, which read differently on every server.
+**`coerceString` converts only what stands for text.** `String` turned anything into text —
+`'[object Object]'` for an object, `''` for an empty array, a function's source code, `'NaN'` — and none
+of it is what anyone sent. Now:
+
+- finite numbers, booleans and bigints are converted as before;
+- a Date becomes its ISO form, `2021-01-01T00:00:00.000Z`, rather than `String(date)`'s local time with
+  a time-zone name, which read differently on every server;
+- an object whose conversion gives text of its own is converted: `new String('a')`, a URL, a Decimal,
+  an ObjectId;
+- plain objects, arrays, Maps, functions, symbols, NaN, ±Infinity, invalid Dates and binary data
+  (Buffers, typed arrays — only the caller knows their encoding) are rejected by type.
+
+**`maxKeys` refuses a count that is not a non-negative integer**, like the new `minKeys`. `maxKeys(1.5)`
+or `maxKeys(-1)` used to build a schema whose JSON Schema no validator would compile; now it throws a
+`BuildSchemaError`.
+
+**`toJSONSchema` keeps both rules when two assertions set the same keyword.** The second used to replace
+the first, so `string().custom(regExp(/^[A-Z]/), isAlphaNumeric())` emitted only the `isAlphaNumeric`
+pattern and the document accepted `abc`, which bguard rejects. The second now goes into `allOf`.
 
 ### Fixed
 
-**A Date default came back as the same object on every parse.** `date().default(new Date(0))` handed out
-one instance, so `setFullYear` on one result moved the default for every later parse; changing the Date
-passed to `default` afterwards did the same. Objects and arrays were already rebuilt on each parse, and a
-Date is now copied.
+**A default could be one shared object.** `date().default(new Date(0))` handed out one instance, so
+`setFullYear` on one result moved the default for every later parse; the same happened with an object
+default under a schema that does not rebuild it, such as `oneOfTypes(['object'])`. And only the top level
+of the value given to `default()` was copied, so changing a nested object afterwards changed the schema.
+A default is now deep-copied when it is set and on every use — plain objects, arrays and Dates; class
+instances are kept as they are, prototype and all.
 
 ### Internal
 

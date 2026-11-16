@@ -243,6 +243,17 @@ describe('agreement with JSON Schema validators', () => {
     });
   });
 
+  describe('two assertions that set the same keyword', () => {
+    it('both hold in the document, as both hold in bguard', () => {
+      // The second pattern used to replace the first, so the document accepted what regExp rejected.
+      const schema = string().custom(regExp(/^[A-Z]/), isAlphaNumeric());
+      const values = ['Abc1', 'abc1', 'A_b', 'Ž1', 'ABC', ''];
+      const validate = ajv.compile(toJSONSchema(schema));
+      expect(values.filter((value) => (parse(schema, value)[0] === null) !== validate(value))).toEqual([]);
+      expect(acceptedCount(schema, values)).toBe(2);
+    });
+  });
+
   describe('minKeys and minProperties', () => {
     it('agree on objects of every size around the limit', () => {
       const schema = record(string(), number()).custom(minKeys(2));

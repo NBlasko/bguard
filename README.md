@@ -917,8 +917,11 @@ toJSONSchema(userSchema, { dialect: null });
 
 Represented: types, object properties and which are required, arrays, tuples, records, unions, literals
 and enums, nullability, defaults, `description()`, and recursive schemas through `$defs` and `$ref`.
-Assertions that map onto a keyword are included — string lengths, patterns and formats, numeric bounds,
-array lengths, `maxKeys`.
+Assertions that map onto a keyword are included — string lengths, patterns and formats (`regExp`,
+`email`, `validUrl`, `uuid`, the date and time assertions, `isAlpha`, `isAlphaNumeric`, `isNumeric`,
+`isHexColor`, `isPhoneNumber`), numeric bounds, `integer` (as `type: 'integer'`), array lengths, and
+`minKeys`/`maxKeys`. When two assertions set the same keyword, such as two patterns, the second goes into
+`allOf`, so the document requires both, as bguard does.
 
 Assertions with no JSON Schema counterpart are **left out rather than approximated**. `contains('x')`
 has no keyword, so it does not appear; a value the document accepts may still be rejected by bguard.
@@ -1559,7 +1562,8 @@ import { isAlpha } from 'bguard/string/isAlpha';
 ```
         
 * _Description_ Asserts that a string is made of letters only, in any script: `Đorđe`, `Ђорђе` and
- `Zoë` pass, while digits, spaces, hyphens and punctuation do not. The empty string is rejected.
+ `Zoë` pass, while digits, spaces, hyphens and punctuation do not. Combining accents after a letter and
+ the zero-width joiners some scripts use between letters are allowed. The empty string is rejected.
 * _Throws_ {ValidationError} if the received string contains anything other than letters.
 * _Example_
 ```typescript
@@ -1596,7 +1600,7 @@ import { isCreditCard } from 'bguard/string/isCreditCard';
 ```
         
 * _Description_ Asserts that a string is a plausible payment card number: 12 to 19 digits, optionally
- grouped by spaces or hyphens, whose last digit is the correct Luhn check digit. This catches typos; it
+ grouped by spaces or hyphens, not all zeros, whose last digit is the correct Luhn check digit. This catches typos; it
  does not say that the card exists, nor which network issued it. The value is returned as received, with
  its separators.
 * _Throws_ {ValidationError} if the received string is not a valid card number.
@@ -2527,7 +2531,8 @@ import { maxKeys } from 'bguard/object/maxKeys';
 ```
         
 * _Description_ Ensures that the object has no more than the specified number of keys.
-* _Param_ {number} expected - The maximum number of keys allowed in the object.
+* _Param_ {number} expected - The maximum number of keys allowed in the object: a non-negative integer,
+ or a `BuildSchemaError` is thrown.
 * _Throws_ {ValidationError} if the number of the received keys is greater than the expected value.
 * _Example_
 ```typescript
@@ -2555,8 +2560,11 @@ import { minKeys } from 'bguard/object/minKeys';
         
 * _Description_ Ensures that the object has at least the specified number of keys. The counterpart of
  `maxKeys`, and most useful on an object whose properties are all optional, or on a `record`: "send at
- least one of these".
-* _Param_ {number} expected - The minimum number of keys the object must have.
+ least one of these". A key whose value is `undefined` is not counted, since it sends nothing: form
+ libraries and object spreads often fill absent fields with `undefined`, and `{ email: undefined }`
+ would otherwise satisfy `minKeys(1)`. JSON cannot carry `undefined`, so this matches `minProperties`.
+* _Param_ {number} expected - The minimum number of keys the object must have: a non-negative integer,
+ or a `BuildSchemaError` is thrown.
 * _Throws_ {ValidationError} if the number of the received keys is less than the expected value.
 * _Example_
 ```typescript

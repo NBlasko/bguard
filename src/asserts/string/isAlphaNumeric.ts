@@ -5,9 +5,12 @@ import { setToDefaultLocale } from '../../translationMap';
 const isAlphaNumericErrorMessage = 'The received value must contain only letters and digits';
 const isAlphaNumericErrorKey = 's:isAlphaNumeric';
 
-// Letters in any script and decimal digits, with combining marks after them. `\p{Nd}` rather than `\p{N}`:
-// the latter also takes fractions and Roman numerals such as `½` and `Ⅻ`.
-const alphaNumericPattern = /^[\p{L}\p{Nd}][\p{L}\p{M}\p{Nd}]*$/u;
+// Letters in any script, each with any combining marks after it, and decimal digits. Marks attach to
+// letters only, so `1` followed by a stack of accents does not pass. A zero-width non-joiner or joiner
+// may come before a letter, as in `isAlpha`. `\p{Nd}` rather than `\p{N}`: the latter also takes
+// fractions and Roman numerals such as `½` and `Ⅻ`. Every alternative starts with a different kind of
+// character, so the match cannot backtrack.
+const alphaNumericPattern = /^(?:\p{L}\p{M}*|\p{Nd})(?:\p{L}\p{M}*|\p{Nd}|[\u200C\u200D](?=\p{L}))*$/u;
 
 /**
  * @description Asserts that a string is made of letters and digits only. Letters may be in any script,

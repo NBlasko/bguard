@@ -37,14 +37,27 @@ interface Context {
   inProgress: Set<string>;
 }
 
+/**
+ * The keywords the schema's assertions carry, combined. Two assertions can carry the same keyword — a
+ * `regExp` and an `isAlphaNumeric` both set `pattern` — and `Object.assign` let the second silently
+ * replace the first, so the document dropped a rule bguard enforced. A keyword that is already taken
+ * with a different value goes into `allOf` instead, where every entry has to hold, as in bguard.
+ */
 function constraintsOf(schemaData: ValidatorContext): JSONSchema {
   const constraints: JSONSchema = {};
+  const extra: JSONSchema[] = [];
 
   for (const validation of schemaData.requiredValidations) {
     const carried = (validation as ConstrainedValidation).jsonSchema;
-    if (carried) Object.assign(constraints, carried);
+    if (!carried) continue;
+
+    for (const [keyword, value] of Object.entries(carried)) {
+      if (!(keyword in constraints)) constraints[keyword] = value;
+      else if (JSON.stringify(constraints[keyword]) !== JSON.stringify(value)) extra.push({ [keyword]: value });
+    }
   }
 
+  if (extra.length) constraints.allOf = extra;
   return constraints;
 }
 

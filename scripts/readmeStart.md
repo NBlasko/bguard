@@ -808,8 +808,11 @@ toJSONSchema(userSchema, { dialect: null });
 
 Represented: types, object properties and which are required, arrays, tuples, records, unions, literals
 and enums, nullability, defaults, `description()`, and recursive schemas through `$defs` and `$ref`.
-Assertions that map onto a keyword are included — string lengths, patterns and formats, numeric bounds,
-array lengths, `maxKeys`.
+Assertions that map onto a keyword are included — string lengths, patterns and formats (`regExp`,
+`email`, `validUrl`, `uuid`, the date and time assertions, `isAlpha`, `isAlphaNumeric`, `isNumeric`,
+`isHexColor`, `isPhoneNumber`), numeric bounds, `integer` (as `type: 'integer'`), array lengths, and
+`minKeys`/`maxKeys`. When two assertions set the same keyword, such as two patterns, the second goes into
+`allOf`, so the document requires both, as bguard does.
 
 Assertions with no JSON Schema counterpart are **left out rather than approximated**. `contains('x')`
 has no keyword, so it does not appear; a value the document accepts may still be rejected by bguard.

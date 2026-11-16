@@ -11,6 +11,7 @@ import { record } from '../asserts/record';
 import { string } from '../asserts/string';
 import { tuple } from '../asserts/tuple';
 import { union } from '../asserts/union';
+import { oneOfTypes } from '../asserts/mix';
 import { min } from '../asserts/number/min';
 
 /**
@@ -147,6 +148,30 @@ describe('default()', () => {
       const schema = date().default(new Date(0));
       parseOrFail(schema, undefined).setFullYear(2030);
       expect(parseOrFail(schema, undefined).toISOString()).toBe('1970-01-01T00:00:00.000Z');
+    });
+
+    it('does not follow later changes, at any depth, to the value it was given', () => {
+      // Only the top level used to be copied, so changing a nested object made a later parse fail.
+      const given = [{ a: 1 }];
+      const schema = array(object({ a: number() })).default(given);
+      (given[0] as { a: unknown }).a = 'x';
+      expect(parseOrFail(schema, undefined)).toEqual([{ a: 1 }]);
+    });
+
+    it('is fresh on every parse even where validation does not rebuild it', () => {
+      // oneOfTypes(['object']) checks the type and walks nothing, so the default object came back as
+      // one shared instance.
+      const schema = oneOfTypes(['object']).default({ a: 1 } as object);
+      (parseOrFail(schema, undefined) as { a: number }).a = 99;
+      expect(parseOrFail(schema, undefined)).toEqual({ a: 1 });
+    });
+
+    it('keeps a class instance as it is, prototype and all', () => {
+      class Money {
+        constructor(public cents: number) {}
+      }
+      const schema = oneOfTypes(['object']).default(new Money(5) as object);
+      expect(parseOrFail(schema, undefined)).toBeInstanceOf(Money);
     });
 
     it('does not follow later changes to the Date it was given', () => {
