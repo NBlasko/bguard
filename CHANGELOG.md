@@ -55,8 +55,8 @@ or `maxKeys(-1)` used to build a schema whose JSON Schema no validator would com
 **`toJSONSchema` keeps every rule when two set the same keyword.** An assertion's keyword used to replace
 the one already there: a second `pattern` replaced the first, and `minArrayLength(1)` on a two-element
 tuple replaced its `minItems: 2`, so the document accepted values bguard rejects. The newer one now goes
-into `allOf`. The one exception is `integer()` narrowing `type: 'number'`, so a nullable integer is still
-`type: ['integer', 'null']`. A `default` in the output is now a copy, so editing the document does not
+into `allOf`, once. The one exception is `integer()` narrowing a numeric type — `'number'`, or a list
+such as `oneOfTypes(['number', 'string'])` — so a nullable integer is still `type: ['integer', 'null']`. A `default` in the output is now a copy, so editing the document does not
 change the schema's default.
 
 ### Fixed
@@ -66,7 +66,14 @@ change the schema's default.
 default under a schema that does not rebuild it, such as `oneOfTypes(['object'])`. And only the top level
 of the value given to `default()` was copied, so changing a nested object afterwards changed the schema.
 A default is now deep-copied when it is set and on every use — plain objects, arrays and Dates, from any
-realm; class instances are kept as they are, prototype and all.
+realm, symbol keys included; class instances are kept as they are, prototype and all.
+
+**`date()` accepted an object that only claimed to be a Date.** Its check trusted
+`Object.prototype.toString`, which `Symbol.toStringTag` can set to anything, and then called the object's
+own `getTime`, so `{ [Symbol.toStringTag]: 'Date', getTime: () => 0 }` passed. What a value is — a Date,
+a boxed string — is now asked of the engine (`Date.prototype.getTime.call` and the like), which checks
+an internal slot no object can fake and which works for values from any realm. `coerceString` and the
+copying of defaults use the same checks, so such an object no longer makes either throw.
 
 ### Internal
 

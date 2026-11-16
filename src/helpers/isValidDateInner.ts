@@ -1,6 +1,7 @@
+import { _timeOf } from './intrinsics';
+
+/** Whether a value is a real, valid Date, from any realm; see `_timeOf`. */
 export function isValidDateInner(d: unknown) {
-  return (
-    // @ts-expect-error we expect d to have getTime method
-    Object.prototype.toString.call(d) === '[object Date]' && !isNaN(typeof d?.getTime === 'function' && d.getTime())
-  );
+  const time = _timeOf(d);
+  return time !== undefined && !Number.isNaN(time);
 }

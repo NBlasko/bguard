@@ -1,7 +1,7 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
 import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
-import { _checkKeyCount } from '../../helpers/checkKeyCount';
+import { _checkKeyCount, _countDefinedKeys } from '../../helpers/checkKeyCount';
 
 const maxKeysErrorMessage = 'The received number of keys is greater than expected';
 const maxKeysErrorKey = 'o:maxKeys';
@@ -32,10 +32,10 @@ const maxKeysErrorKey = 'o:maxKeys';
 export const maxKeys = (expected: number): RequiredValidation<Record<string, unknown>> => {
   // Infinity is allowed and means no limit, as it did before counts were checked: `maxKeys(limit ??
   // Infinity)` is a reasonable thing to write. It has no JSON Schema form, so it is left out there.
-  if (expected !== Infinity) _checkKeyCount('maxKeys', expected);
+  _checkKeyCount('maxKeys', expected, { allowInfinity: true });
   const validation = (receivedObject: Record<string, unknown>, ctx: ExceptionContext) => {
     // Keys holding undefined send nothing and are not counted, as in minKeys.
-    const keysCount = Object.keys(receivedObject).filter((key) => receivedObject[key] !== undefined).length;
+    const keysCount = _countDefinedKeys(receivedObject);
     if (keysCount > expected) {
       ctx.addIssue(expected, keysCount, maxKeysErrorKey);
     }

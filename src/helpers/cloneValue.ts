@@ -1,3 +1,4 @@
+import { _isPlainObject, _timeOf } from './intrinsics';
 import { setOwnProperty } from './setOwnProperty';
 
 /**
@@ -17,10 +18,9 @@ export function _cloneValue<T>(value: T, seen = new Map<object, unknown>()): T {
   if (value === null || typeof value !== 'object') return value;
   if (seen.has(value)) return seen.get(value) as T;
 
-  // By tag and prototype shape rather than `instanceof` and `=== Object.prototype`, which are false for a
-  // Date or a plain object made in another realm (an iframe, a `vm` context, a worker).
-  if (Object.prototype.toString.call(value) === '[object Date]')
-    return new Date(Date.prototype.getTime.call(value)) as T;
+  // Asked of the engine, not the value: see `./intrinsics`.
+  const time = _timeOf(value);
+  if (time !== undefined) return new Date(time) as T;
 
   if (Array.isArray(value)) {
     const copy: unknown[] = [];
@@ -29,16 +29,17 @@ export function _cloneValue<T>(value: T, seen = new Map<object, unknown>()): T {
     return copy as T;
   }
 
-  // A plain object's prototype is null or some realm's Object.prototype, whose own prototype is null. A
-  // class instance has its class's prototype in between.
-  const prototype: unknown = Object.getPrototypeOf(value);
-  if (prototype !== null && Object.getPrototypeOf(prototype) !== null) return value;
+  if (!_isPlainObject(value)) return value;
 
-  // The copy is made in this realm: null stays null, and any Object.prototype becomes this one.
-  const copy = (prototype === null ? Object.create(null) : {}) as Record<string, unknown>;
+  // The copy is made in this realm: no prototype stays none, and any Object.prototype becomes this one.
+  const copy = (Object.getPrototypeOf(value) === null ? Object.create(null) : {}) as Record<string, unknown>;
   seen.set(value, copy);
-  for (const key of Object.keys(value)) {
-    setOwnProperty(copy, key, _cloneValue((value as Record<string, unknown>)[key], seen));
+  const source = value as Record<PropertyKey, unknown>;
+  for (const key of Object.keys(source)) setOwnProperty(copy, key, _cloneValue(source[key], seen));
+  // Symbol keys too, which `Object.keys` leaves out; they cannot be `__proto__`, so a plain write is safe.
+  for (const symbol of Object.getOwnPropertySymbols(source)) {
+    if (Object.prototype.propertyIsEnumerable.call(source, symbol))
+      (copy as Record<PropertyKey, unknown>)[symbol] = _cloneValue(source[symbol], seen);
   }
   return copy as T;
 }

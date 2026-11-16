@@ -179,6 +179,14 @@ describe('toJSONSchema', () => {
       });
     });
 
+    it('does not repeat an allOf entry that is already there', () => {
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(1), minArrayLength(1)))).toMatchObject({
+        minItems: 2,
+        allOf: [{ minItems: 1 }],
+      });
+      expect(bare(tuple([string(), string()]).custom(minArrayLength(1), minArrayLength(1))).allOf).toHaveLength(1);
+    });
+
     it("does not repeat a keyword an assertion sets to the tuple's own value", () => {
       expect(bare(tuple([string(), string()]).custom(minArrayLength(2)))).not.toHaveProperty('allOf');
     });

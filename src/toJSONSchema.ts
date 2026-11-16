@@ -39,48 +39,44 @@ interface Context {
 }
 
 /**
- * The keywords the schema's assertions carry, combined. Two assertions can carry the same keyword — a
- * `regExp` and an `isAlphaNumeric` both set `pattern` — and `Object.assign` let the second silently
- * replace the first, so the document dropped a rule bguard enforced. A keyword that is already taken
- * with a different value goes into `allOf` instead, where every entry has to hold, as in bguard.
+ * Adds one keyword to a schema under construction, where every rule has to hold, as it does in bguard.
+ *
+ * `Object.assign` let a keyword that was already there be replaced: a second `pattern` replaced the
+ * first, and `minArrayLength(1)` on a two-element tuple replaced its `minItems: 2`, so the document
+ * accepted values bguard rejects. A keyword already present with a different value goes into `allOf`
+ * instead, unless that exact entry is there already.
+ *
+ * The one replacement is `integer()` narrowing a numeric type. It has to stay in `type`, not `allOf`:
+ * `nullable()` adds `'null'` to `type`, and an `allOf: [{ type: 'integer' }]` beside it would still
+ * reject null. A number type list such as `oneOfTypes(['number', 'string'])` narrows to `'integer'`
+ * too, since `integer()` rejects anything that is not one.
  */
-function constraintsOf(schemaData: ValidatorContext): JSONSchema {
-  const constraints: JSONSchema = {};
-  const extra: JSONSchema[] = [];
+function addKeyword(target: JSONSchema, allOf: JSONSchema[], keyword: string, value: unknown): void {
+  const current = target[keyword];
+  const numeric = current === 'number' || (Array.isArray(current) && current.includes('number'));
+
+  if (!(keyword in target) || (keyword === 'type' && value === 'integer' && numeric)) {
+    target[keyword] = value;
+    return;
+  }
+
+  const entry = JSON.stringify(value);
+  if (JSON.stringify(current) === entry) return;
+  if (allOf.some((existing) => JSON.stringify(existing[keyword]) === entry)) return;
+  allOf.push({ [keyword]: value });
+}
+
+/** The schema's own structure with the keywords its assertions carry added; see `addKeyword`. */
+function withConstraints(base: JSONSchema, schemaData: ValidatorContext): JSONSchema {
+  const result: JSONSchema = { ...base };
+  const allOf: JSONSchema[] = [];
 
   for (const validation of schemaData.requiredValidations) {
     const carried = (validation as ConstrainedValidation).jsonSchema;
     if (!carried) continue;
-
-    for (const [keyword, value] of Object.entries(carried)) {
-      if (!(keyword in constraints)) constraints[keyword] = value;
-      else if (JSON.stringify(constraints[keyword]) !== JSON.stringify(value)) extra.push({ [keyword]: value });
-    }
+    for (const [keyword, value] of Object.entries(carried)) addKeyword(result, allOf, keyword, value);
   }
 
-  if (extra.length) constraints.allOf = extra;
-  return constraints;
-}
-
-/**
- * Adds the assertions' keywords to what the schema's structure already says, by the same rule as
- * `constraintsOf`: a keyword the structure already has with a different value goes into `allOf`. A
- * tuple's own `minItems: 2` was replaced by a `minArrayLength(1)` on it, so the document accepted a
- * one-element tuple. The one deliberate replacement is `integer()` narrowing `type: 'number'`, which
- * keeps a nullable integer expressible as `type: ['integer', 'null']`.
- */
-function withConstraints(base: JSONSchema, constraints: JSONSchema): JSONSchema {
-  const result: JSONSchema = { ...base };
-  const extra: JSONSchema[] = [];
-
-  for (const [keyword, value] of Object.entries(constraints)) {
-    if (keyword === 'allOf') continue;
-    if (!(keyword in result) || (keyword === 'type' && result.type === 'number' && value === 'integer'))
-      result[keyword] = value;
-    else if (JSON.stringify(result[keyword]) !== JSON.stringify(value)) extra.push({ [keyword]: value });
-  }
-
-  const allOf = [...((constraints.allOf as JSONSchema[] | undefined) ?? []), ...extra];
   if (allOf.length) result.allOf = allOf;
   return result;
 }
@@ -192,7 +188,7 @@ function generate(schema: CommonSchema, context: Context): JSONSchema {
   const literal = literalOf(schemaData);
 
   // A literal already says everything about the value, so the type is redundant beside it.
-  let result: JSONSchema = literal ? { ...base, ...literal } : withConstraints(base, constraintsOf(schemaData));
+  let result: JSONSchema = literal ? { ...base, ...literal } : withConstraints(base, schemaData);
   if (literal && result.type) delete result.type;
 
   if (schemaData.isNullable) {

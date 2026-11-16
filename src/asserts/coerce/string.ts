@@ -1,3 +1,4 @@
+import { _timeOf, _unbox } from '../../helpers/intrinsics';
 import { string } from '../string/index';
 
 /**
@@ -12,12 +13,6 @@ import { string } from '../string/index';
  * `CommonSchema`, which silently dropped the methods only the concrete classes define — `equalTo`,
  * `oneOfValues`, `onlyTrue`, `onlyFalse`.
  */
-// The built-in tag of a value, which is the same in every realm: `instanceof Date` is false for a Date
-// made in an iframe, a `vm` context or a worker, and comparing against this realm's intrinsics fails the
-// same way.
-const tagOf = (value: unknown): string => Object.prototype.toString.call(value);
-const boxedPrimitives = new Set(['[object String]', '[object Number]', '[object Boolean]', '[object BigInt]']);
-
 /**
  * @description Coerces the received value to a string before validating it. Finite numbers, booleans and
  * bigints are passed through `String`, and so are their boxed forms (`new String('a')`). A Date becomes
@@ -37,22 +32,19 @@ const boxedPrimitives = new Set(['[object String]', '[object Number]', '[object 
 export const coerceString = () =>
   string().transformBeforeValidation<unknown>((input) => {
     if (input === null || typeof input === 'string') return input as string;
-    const tag = tagOf(input);
 
-    // A boxed primitive is its primitive; `valueOf` is its own in every realm.
-    const received: unknown =
-      typeof input === 'object' && boxedPrimitives.has(tag) ? (input as { valueOf(): unknown }).valueOf() : input;
+    // A boxed primitive is its primitive. Both checks ask the engine, so a Date or a boxed string from
+    // another realm is recognised, and an object merely claiming to be one is not; see `intrinsics`.
+    const received = _unbox(input);
     if (typeof received === 'string') return received;
     // NaN and ±Infinity pass through for string() to reject: `'NaN'` is not text anyone sent.
     if (typeof received === 'number')
       return Number.isFinite(received) ? String(received) : (input as unknown as string);
     if (typeof received === 'boolean' || typeof received === 'bigint') return String(received);
 
-    if (tag === '[object Date]') {
-      const time = Date.prototype.getTime.call(input);
-      // `toISOString` throws on an invalid Date, which a coercion must never do; that one passes through.
-      return Number.isNaN(time) ? (input as unknown as string) : new Date(time).toISOString();
-    }
+    const time = _timeOf(input);
+    // `toISOString` throws on an invalid Date, which a coercion must never do; that one passes through.
+    if (time !== undefined && !Number.isNaN(time)) return new Date(time).toISOString();
 
     // Anything else passes through for string() to reject by type.
     return input as unknown as string;

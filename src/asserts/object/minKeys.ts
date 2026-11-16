@@ -1,7 +1,7 @@
 import type { ExceptionContext, RequiredValidation } from '../../core';
 import { _constrain } from '../../helpers/jsonSchemaConstraint';
 import { setToDefaultLocale } from '../../translationMap';
-import { _checkKeyCount } from '../../helpers/checkKeyCount';
+import { _checkKeyCount, _countDefinedKeys } from '../../helpers/checkKeyCount';
 
 const minKeysErrorMessage = 'The received number of keys is less than expected';
 const minKeysErrorKey = 'o:minKeys';
@@ -32,7 +32,7 @@ const minKeysErrorKey = 'o:minKeys';
 export const minKeys = (expected: number): RequiredValidation<Record<string, unknown>> => {
   _checkKeyCount('minKeys', expected);
   return _constrain({ minProperties: expected }, (receivedObject: Record<string, unknown>, ctx: ExceptionContext) => {
-    const keysCount = Object.keys(receivedObject).filter((key) => receivedObject[key] !== undefined).length;
+    const keysCount = _countDefinedKeys(receivedObject);
     if (keysCount < expected) {
       ctx.addIssue(expected, keysCount, minKeysErrorKey);
     }
