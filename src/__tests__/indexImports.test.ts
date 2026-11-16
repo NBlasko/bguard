@@ -20,6 +20,7 @@ describe('Library exports', () => {
       'flattenErrors',
       'treeifyErrors',
       'readsAffectedBy',
+      'setDefaultLanguage',
 
       // array
       'array',
@@ -64,11 +65,13 @@ describe('Library exports', () => {
       'min',
       'minExcluded',
       'positive',
+      'integer',
       'negative',
 
       // object
       'object',
       'maxKeys',
+      'minKeys',
       'pick',
       'omit',
       'partial',
@@ -87,6 +90,13 @@ describe('Library exports', () => {
       'isValidDate',
       'isValidDateTime',
       'isValidTime',
+      'isAlpha',
+      'isAlphaNumeric',
+      'isNumeric',
+      'isHexColor',
+      'isPhoneNumber',
+      'isCreditCard',
+      'isJson',
       'lowerCase',
       'maxLength',
       'minLength',

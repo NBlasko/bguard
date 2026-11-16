@@ -1,8 +1,54 @@
 # bguard
 
-## Unreleased
+## 0.13.0 New string, number and object assertions, a guide to writing your own, and stricter `coerceString`
+
+### Added
+
+Nine assertions, each with a translation key, a default message, and a JSON Schema mapping where one
+exists. Every one that maps onto a keyword is checked against `ajv` in the test suite.
+
+| Assertion | Import | Accepts | JSON Schema |
+|---|---|---|---|
+| `isAlpha()` | `bguard/string/isAlpha` | letters in any script: `Đorđe`, `Ђорђе`, `Zoë` | `pattern` |
+| `isAlphaNumeric()` | `bguard/string/isAlphaNumeric` | letters in any script and decimal digits | `pattern` |
+| `isNumeric()` | `bguard/string/isNumeric` | a plain decimal number: `-12.5`, `.5`; no exponent, spaces or separators | `pattern` |
+| `isHexColor()` | `bguard/string/isHexColor` | `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` | `pattern` |
+| `isPhoneNumber()` | `bguard/string/isPhoneNumber` | E.164: `+381641234567`. The format only, not whether the number exists | `pattern` |
+| `isCreditCard()` | `bguard/string/isCreditCard` | 12–19 digits, optionally grouped by spaces or hyphens, with a valid Luhn check digit | — |
+| `isJson()` | `bguard/string/isJson` | any JSON text `JSON.parse` reads, primitives included | — |
+| `integer()` | `bguard/number/integer` | a number with no fractional part | `type: 'integer'` |
+| `minKeys(n)` | `bguard/object/minKeys` | an object with at least `n` keys; the counterpart of `maxKeys` | `minProperties` |
+
+`isAlpha` and `isAlphaNumeric` take combining marks after a letter, so `é` written as `e` + U+0301 is a
+letter. `isAlphaNumeric` takes decimal digits in any script (`١٢٣`) but not other numerals such as `½` or
+`Ⅻ`. `isCreditCard` keeps the number out of its issue's `expected` and default message.
+
+**A guide to writing a custom assertion** that takes part in everything the built-in ones do: a key, a
+default message, translations, `setDefaultLanguage`, the `code` on each issue, and Standard Schema. It
+replaces the earlier example, which was never typechecked and described `addIssue` as always throwing.
+
+### Changed
+
+**`coerceString` converts only numbers, booleans, bigints and Dates.** `String` turned anything into
+text — `'[object Object]'` for an object, `''` for an empty array, a function's source code — and none
+of it is what anyone sent. Arrays, objects, functions, symbols and invalid Dates are now rejected by
+type. A Date becomes its ISO form, `2021-01-01T00:00:00.000Z`, rather than `String(date)`'s local time
+with a time-zone name, which read differently on every server.
+
+### Fixed
+
+**A Date default came back as the same object on every parse.** `date().default(new Date(0))` handed out
+one instance, so `setFullYear` on one result moved the default for every later parse; changing the Date
+passed to `default` afterwards did the same. Objects and arrays were already rebuilt on each parse, and a
+Date is now copied.
 
 ### Internal
+
+- Thirty tests for `default()`: which values it replaces (and that `null` is not one of them), where it
+  applies — properties, array holes, tuples, records, unions — how it meets transforms and coercion, when
+  the default itself is refused, and the types it produces.
+- The test that every assertion has a translation case used to compare against a hand-kept count. It
+  now finds every exported function with a `key` and names the one that is missing.
 
 - The package is built with tsup 9 (was 8). The JavaScript output is the same apart from chunk names and
   import order. Declaration files now re-export types as `export type { X }` instead of

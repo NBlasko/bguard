@@ -58,6 +58,13 @@ Table of contents
           * [contains](#assert_contains_string)
           * [email](#assert_email_string)
           * [endsWith](#assert_endswith_string)
+          * [isAlpha](#assert_isalpha_string)
+          * [isAlphaNumeric](#assert_isalphanumeric_string)
+          * [isCreditCard](#assert_iscreditcard_string)
+          * [isHexColor](#assert_ishexcolor_string)
+          * [isJson](#assert_isjson_string)
+          * [isNumeric](#assert_isnumeric_string)
+          * [isPhoneNumber](#assert_isphonenumber_string)
           * [isValidDate](#assert_isvaliddate_string)
           * [isValidDateTime](#assert_isvaliddatetime_string)
           * [isValidTime](#assert_isvalidtime_string)
@@ -77,6 +84,7 @@ Table of contents
      * [number](#assertdir_number)
           * [equalTo](#assert_number_method_equalto)
           * [oneOfValues](#assert_number_method_oneofvalues)
+          * [integer](#assert_integer_number)
           * [max](#assert_max_number)
           * [maxExcluded](#assert_maxexcluded_number)
           * [min](#assert_min_number)
@@ -103,6 +111,7 @@ Table of contents
           * [allowUnrecognized](#assert_object_method_allowunrecognized)
           * [extend](#assert_extend_object)
           * [maxKeys](#assert_maxkeys_object)
+          * [minKeys](#assert_minkeys_object)
           * [omit](#assert_omit_object)
           * [partial](#assert_partial_object)
           * [pick](#assert_pick_object)
@@ -802,6 +811,10 @@ anything into a value:
 - `coerceNumber()` and `coerceBigInt()` convert strings, booleans, bigints/numbers and Dates. An empty or
   whitespace-only string is rejected rather than read as `0`, which is what `Number('')` returns — an
   empty form field is not a zero. So are arrays and objects: `Number([])` is `0` and `Number([5])` is `5`.
+- `coerceString()` converts numbers, booleans and bigints, and turns a Date into its ISO form
+  (`2021-01-01T00:00:00.000Z`) rather than the local, time-zone-dependent text `String(date)` gives.
+  Arrays, objects and functions are rejected: `String` makes them `'[object Object]'`, `''` or source
+  code.
 - `coerceDate()` converts strings and numbers (a timestamp in milliseconds). A numeric date naming a day
   that does not exist, such as `2021-02-30` or `02/30/2021`, is rejected rather than rolled over into
   March 2nd as `new Date` does. A boolean is rejected too; `new Date(true)` is 1 ms after the epoch.
@@ -963,39 +976,73 @@ Library built-in assertions are imported from specific paths for better tree-sha
 
 ### <a id="h3_create_custom_assertions"> Create Custom Assertions </a>
 
-Bguard allows developers to create custom validation functions that can be integrated seamlessly with the library's existing functionality. Below is a detailed example demonstrating how to create a custom validation function, `minLength`, and how to properly document and map error messages for translations.
+An assertion is a function that receives the value and an `ExceptionContext`, and reports a problem
+with `ctx.addIssue`. Giving it a translation key and a default message is what lets it take part in
+everything the built-in ones do: translations, `setDefaultLanguage`, the `code` on every issue, and
+Standard Schema. Four steps:
 
-Example: Creating a `minLength` Custom Validation
+**1. Write the check.** A factory returns the validation, so the assertion can take arguments.
+`ctx.addIssue(expected, received, key)` reports the failure. Under `getAllErrors` it is collected and
+validation carries on; otherwise it stops the parse.
 
-```typescript
-import { ExceptionContext, RequiredValidation } from 'bguard/core';
-import { setToDefaultLocale } from 'bguard/translationMap';
+**2. Give it a key and a default message, and register them.** The key identifies the failure in every
+language and is what an issue's `code` holds. Use a prefix of your own (`app:`, the name of your
+project): `s:`, `n:`, `o:`, `c:` and the other short ones belong to bguard. `setToDefaultLocale`
+registers the default message once, when the module is first imported.
 
-const minLengthErrorMessage = 'The received value {{r}} is shorter than the expected length {{e}}';
-const minLengthErrorKey = 'customPrefix:minLength';
+**3. Translate it** like any built-in message, with `setLocale`. A locale only needs the keys it
+translates; the rest fall back to the default messages.
 
-export const minLength =
-  (expected: number): RequiredValidation =>
-  (received: string, ctx: ExceptionContext) => {
-    if (received.length < expected) {
-      ctx.addIssue(expected, received, minLengthErrorKey);
-    }
-  };
+**4. Use it** with `.custom(...)`, and pick the language per parse with `lng`, or once for everything
+with `setDefaultLanguage` — which is also what validation through Standard Schema follows.
 
-minLength.key = minLengthErrorKey;
-minLength.message = minLengthErrorMessage;
-setToDefaultLocale(minLength);
+```typeScript
+import { parse, setDefaultLanguage, setLocale, setToDefaultLocale, string } from 'bguard';
+import type { ExceptionContext, RequiredValidation } from 'bguard/core';
+
+// 1. The check
+const evenLengthKey = 'app:evenLength';
+
+export const evenLength = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
+  if (received.length % 2 !== 0) ctx.addIssue('an even length', received.length, evenLengthKey);
+};
+
+// 2. Key and default message, registered once
+evenLength.key = evenLengthKey;
+evenLength.message = 'The value has {{r}} characters, but {{e}} is required';
+setToDefaultLocale(evenLength);
+
+// 3. A translation
+setLocale('sr', { 'app:evenLength': 'Tekst ima {{r}} znakova, a potreban je paran broj' });
+
+// 4. Use
+const code = string().custom(evenLength());
+
+parse(code, 'abc');
+// [[{ code: 'app:evenLength', message: 'The value has 3 characters, but an even length is required', … }], null]
+
+parse(code, 'abc', { lng: 'sr' });
+// message: 'Tekst ima 3 znakova, a potreban je paran broj'
+
+setDefaultLanguage('sr');
+code['~standard'].validate('abc');
+// { issues: [{ code: 'app:evenLength', message: 'Tekst ima 3 znakova, a potreban je paran broj', … }] }
 ```
 
-Explanation
+What goes into a message:
 
-- Error Key (`minLength.key`): This key (`'customPrefix:minLength'`) uniquely identifies the validation and is used for mapping error messages, especially when supporting multiple languages. It's essential to avoid collisions with built-in assertions, which use prefixes like `s:`, `n:`, and `b:` etc. More on that in [Common and Custom Translations](#common_and_custom_translations).
+- `{{e}}` is the first argument of `addIssue`, `{{r}}` the second, and `{{p}}` the path to the value,
+  such as `.user.name`. Any other `{{name}}` is left as it is.
+- `{{r}}` puts the received value into the message. Leave it out for anything that may be secret, and
+  pass a description rather than the value as `expected` when comparing against another field: issues
+  are often logged or returned to the client. Above, the length is reported, not the text.
+- For a one-off rule in a single-language app, the message itself can serve as the key:
+  `ctx.addIssue('an even length', received, 'The length must be even')` reports that text as both the
+  `code` and the `message`. It cannot be translated later without changing the call, so prefer a key for
+  anything reused.
 
-- Error Message (`minLength.message`): The message supports [interpolation](#translation), where `{{e}}` will be replaced by the expected value, and `{{r}}` will be replaced by the received value during validation .
-
-- Exception Handling (`ctx.addIssue`): This method is responsible for throwing the error when the validation fails.
-
-- Localization Support (`setToDefaultLocale`): This function registers the default error message with its associated key. If you later decide to support multiple languages, you can easily map this key to different messages.
+An assertion that has to wait for something, such as a database lookup, is registered with
+`customAsync` instead and runs under `parseAsync`; see [Async Validation](#h3_async).
 
  - Using `ctx.ref` to Reference Other Properties: The `ctx.ref` method allows you to reference other properties in the input object during validation. It takes either a property-access callback — which is type-checked and returns the property's own type, see [Typed Cross-Field References](#h3_typed_ref) — or a string, with each level of nesting separated by a dot (.). However, it's important to note that `ctx.ref` retrieves the <b>original</b> value from the object before any transformations (e.g., `transformBeforeValidation`). This ensures that validations based on cross-property references work consistently, regardless of any transformations applied before validation.
  ```typescript
@@ -1014,11 +1061,13 @@ const loginSchema = object({
 
 - Key Points for Developers:
 
-  1. Always create unique error keys for custom validations to avoid potential conflicts with Bguard's built-in validations.
-  2. Custom validations should use prefixes other than `s:`, `n:`, `b:`, and similar ones reserved for Bguard's internal validations.
-  3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
-     For single-language applications, you can override the default message by directly passing your custom message to `addIssue` method.
-  4. If we have a nested object { foo: { bar: 'baz' } }, we should use `ctx.ref('foo.bar')` to access the value 'baz' in custom assertions.
+  1. Give every custom assertion a unique key with a prefix of your own; the short prefixes (`s:`, `n:`,
+     `b:`, `o:`, `c:` and similar) are reserved for bguard's built-in assertions.
+  2. `setToDefaultLocale` throws on a key that is already registered, which is what catches two
+     assertions sharing one.
+  3. For a nested object `{ foo: { bar: 'baz' } }`, `ctx.ref('foo.bar')` reaches `'baz'` — or, type-checked,
+     `ctx.ref((root: Root) => root.foo.bar)`.
+
 ### <a id="h3_typed_ref"> Typed Cross-Field References </a>
 
 `ctx.ref` takes a property-access callback as well as a string. Prefer the callback: it is checked
@@ -1503,6 +1552,143 @@ import { endsWith } from 'bguard/string/endsWith';
 * _See_ Error Translation Key = 's:endsWith'
         
         
+##### <a id="assert_isalpha_string"> isAlpha </a>
+        
+```typescript
+import { isAlpha } from 'bguard/string/isAlpha';
+```
+        
+* _Description_ Asserts that a string is made of letters only, in any script: `Đorđe`, `Ђорђе` and
+ `Zoë` pass, while digits, spaces, hyphens and punctuation do not. The empty string is rejected.
+* _Throws_ {ValidationError} if the received string contains anything other than letters.
+* _Example_
+```typescript
+ const schema = string().custom(isAlpha());
+ parseOrFail(schema, 'Đorđe');    // Valid
+ parseOrFail(schema, 'Ana Marija'); // Throws an error: 'The received value must contain only letters'
+ parseOrFail(schema, 'R2D2');     // Throws an error: 'The received value must contain only letters'
+```
+* _See_ Error Translation Key = 's:isAlpha'
+        
+        
+##### <a id="assert_isalphanumeric_string"> isAlphaNumeric </a>
+        
+```typescript
+import { isAlphaNumeric } from 'bguard/string/isAlphaNumeric';
+```
+        
+* _Description_ Asserts that a string is made of letters and digits only. Letters may be in any script,
+ as in `isAlpha`; spaces, hyphens, underscores and punctuation are rejected, and so is the empty string.
+* _Throws_ {ValidationError} if the received string contains anything other than letters and digits.
+* _Example_
+```typescript
+ const schema = string().custom(isAlphaNumeric());
+ parseOrFail(schema, 'Šifra2024'); // Valid
+ parseOrFail(schema, 'user_name'); // Throws an error: 'The received value must contain only letters and digits'
+```
+* _See_ Error Translation Key = 's:isAlphaNumeric'
+        
+        
+##### <a id="assert_iscreditcard_string"> isCreditCard </a>
+        
+```typescript
+import { isCreditCard } from 'bguard/string/isCreditCard';
+```
+        
+* _Description_ Asserts that a string is a plausible payment card number: 12 to 19 digits, optionally
+ grouped by spaces or hyphens, whose last digit is the correct Luhn check digit. This catches typos; it
+ does not say that the card exists, nor which network issued it. The value is returned as received, with
+ its separators.
+* _Throws_ {ValidationError} if the received string is not a valid card number.
+* _Example_
+```typescript
+ const schema = string().custom(isCreditCard());
+ parseOrFail(schema, '4111 1111 1111 1111'); // Valid
+ parseOrFail(schema, '4111 1111 1111 1112'); // Throws an error: the check digit is wrong
+```
+* _See_ Error Translation Key = 's:isCreditCard'
+        
+        
+##### <a id="assert_ishexcolor_string"> isHexColor </a>
+        
+```typescript
+import { isHexColor } from 'bguard/string/isHexColor';
+```
+        
+* _Description_ Asserts that a string is a hexadecimal color as CSS writes it: `#` followed by 3, 4, 6 or
+ 8 hex digits (`#fff`, `#ffff`, `#ffffff`, `#ffffff80`), in either case. The `#` is required.
+* _Throws_ {ValidationError} if the received string is not a hexadecimal color.
+* _Example_
+```typescript
+ const schema = string().custom(isHexColor());
+ parseOrFail(schema, '#1E90FF'); // Valid
+ parseOrFail(schema, '1E90FF');  // Throws an error: 'The received value is not a hexadecimal color'
+ parseOrFail(schema, '#12345');  // Throws an error: 'The received value is not a hexadecimal color'
+```
+* _See_ Error Translation Key = 's:isHexColor'
+        
+        
+##### <a id="assert_isjson_string"> isJson </a>
+        
+```typescript
+import { isJson } from 'bguard/string/isJson';
+```
+        
+* _Description_ Asserts that a string is valid JSON text, as `JSON.parse` reads it. Any JSON value counts,
+ including `'42'`, `'"text"'`, `'true'` and `'null'`, not only objects and arrays. The value is returned
+ as the string it was; parse it yourself, or in a `transformBeforeValidation`, if you need the data.
+* _Throws_ {ValidationError} if the received string is not valid JSON.
+* _Example_
+```typescript
+ const schema = string().custom(isJson());
+ parseOrFail(schema, '{"a":[1,2]}'); // Valid
+ parseOrFail(schema, "{'a':1}");     // Throws an error: 'The received value is not valid JSON'
+```
+* _See_ Error Translation Key = 's:isJson'
+        
+        
+##### <a id="assert_isnumeric_string"> isNumeric </a>
+        
+```typescript
+import { isNumeric } from 'bguard/string/isNumeric';
+```
+        
+* _Description_ Asserts that a string is a plain decimal number: an optional `+` or `-`, ASCII digits and
+ an optional fraction after a `.`. Exponents (`1e5`), whitespace, thousands separators, `Infinity` and
+ the empty string are rejected. For digits only, use `regExp(/^\d+$/)`.
+* _Throws_ {ValidationError} if the received string is not a plain decimal number.
+* _Example_
+```typescript
+ const schema = string().custom(isNumeric());
+ parseOrFail(schema, '-12.5'); // Valid
+ parseOrFail(schema, '1e5');   // Throws an error: 'The received value is not a numeric string'
+ parseOrFail(schema, '1,000'); // Throws an error: 'The received value is not a numeric string'
+```
+* _See_ Error Translation Key = 's:isNumeric'
+        
+        
+##### <a id="assert_isphonenumber_string"> isPhoneNumber </a>
+        
+```typescript
+import { isPhoneNumber } from 'bguard/string/isPhoneNumber';
+```
+        
+* _Description_ Asserts that a string is a phone number in the international E.164 format: a `+`, the
+ country code, and the subscriber number, with no spaces or punctuation and at most 15 digits
+ (`+381641234567`). This checks the format only, not that the number exists or fits its country's
+ numbering plan, which needs per-country metadata such as libphonenumber's. Strip spaces, dashes and
+ brackets before validating, for example with `transformBeforeValidation`.
+* _Throws_ {ValidationError} if the received string is not in E.164 format.
+* _Example_
+```typescript
+ const schema = string().custom(isPhoneNumber());
+ parseOrFail(schema, '+381641234567'); // Valid
+ parseOrFail(schema, '064 123 4567');  // Throws an error: no country code, and spaces
+ parseOrFail(schema, '+0641234567');   // Throws an error: a country code never starts with 0
+```
+* _See_ Error Translation Key = 's:isPhoneNumber'
+        
+        
 ##### <a id="assert_isvaliddate_string"> isValidDate </a>
         
 ```typescript
@@ -1853,6 +2039,25 @@ import { number } from 'bguard/number';
  number().oneOfValues([5, 7]); // Infers the type 5 | 7
 ```
    
+        
+##### <a id="assert_integer_number"> integer </a>
+        
+```typescript
+import { integer } from 'bguard/number/integer';
+```
+        
+* _Description_ Asserts that a number is an integer: it has no fractional part. `5` and `5.0` pass, `5.5`
+ does not. Integers beyond `Number.MAX_SAFE_INTEGER` pass as well, though they cannot all be told apart;
+ add `max(Number.MAX_SAFE_INTEGER)` if that matters. In JSON Schema this becomes `type: 'integer'`.
+* _Throws_ {ValidationError} if the received number has a fractional part.
+* _Example_
+```typescript
+ const schema = number().custom(integer());
+ parseOrFail(schema, 42);  // Valid
+ parseOrFail(schema, 4.2); // Throws an error: 'The received value is not an integer'
+```
+* _See_ Error Translation Key = 'n:integer'
+        
         
 ##### <a id="assert_max_number"> max </a>
         
@@ -2340,6 +2545,30 @@ import { maxKeys } from 'bguard/object/maxKeys';
  parseOrFail(schema, { name: 'John', email: 'john@example.com', address: '123 Main St' });
 ```
 * _See_ Error Translation Key = 'o:maxKeys'
+        
+        
+##### <a id="assert_minkeys_object"> minKeys </a>
+        
+```typescript
+import { minKeys } from 'bguard/object/minKeys';
+```
+        
+* _Description_ Ensures that the object has at least the specified number of keys. The counterpart of
+ `maxKeys`, and most useful on an object whose properties are all optional, or on a `record`: "send at
+ least one of these".
+* _Param_ {number} expected - The minimum number of keys the object must have.
+* _Throws_ {ValidationError} if the number of the received keys is less than the expected value.
+* _Example_
+```typescript
+ const schema = object({
+   email: string().optional(),
+   phone: string().optional(),
+ }).custom(minKeys(1));
+
+ parseOrFail(schema, { email: 'a@b.co' }); // Valid
+ parseOrFail(schema, {});                  // Throws an error: at least one key is required
+```
+* _See_ Error Translation Key = 'o:minKeys'
         
         
 ##### <a id="assert_omit_object"> omit </a>

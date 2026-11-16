@@ -1,3 +1,4 @@
+import * as bguard from '../';
 import { parse, setLocale } from '../';
 import { CommonSchema, RequiredValidation } from '../core';
 
@@ -17,6 +18,15 @@ import { dateMin } from '../asserts/date/dateMin';
 
 import { equalTo } from '../asserts/mix/equalTo';
 import { oneOfValues } from '../asserts/mix/oneOfValues';
+import { integer } from '../asserts/number/integer';
+import { minKeys } from '../asserts/object/minKeys';
+import { isAlpha } from '../asserts/string/isAlpha';
+import { isAlphaNumeric } from '../asserts/string/isAlphaNumeric';
+import { isNumeric } from '../asserts/string/isNumeric';
+import { isHexColor } from '../asserts/string/isHexColor';
+import { isPhoneNumber } from '../asserts/string/isPhoneNumber';
+import { isCreditCard } from '../asserts/string/isCreditCard';
+import { isJson } from '../asserts/string/isJson';
 
 import { number } from '../asserts/number';
 import { max } from '../asserts/number/max';
@@ -113,6 +123,16 @@ const cases: Case[] = [
   { name: 'positive', key: positive.key, assert: positive(), schema: onNumber, invalid: -1 },
 
   { name: 'maxKeys', key: maxKeys.key, assert: maxKeys(0), schema: onObject, invalid: { a: 'x' } },
+  { name: 'minKeys', key: minKeys.key, assert: minKeys(2), schema: onObject, invalid: { a: 'x' } },
+  { name: 'integer', key: integer.key, assert: integer(), schema: onNumber, invalid: 1.5 },
+
+  { name: 'isAlpha', key: isAlpha.key, assert: isAlpha(), schema: onString, invalid: 'a1' },
+  { name: 'isAlphaNumeric', key: isAlphaNumeric.key, assert: isAlphaNumeric(), schema: onString, invalid: 'a_1' },
+  { name: 'isNumeric', key: isNumeric.key, assert: isNumeric(), schema: onString, invalid: '1e5' },
+  { name: 'isHexColor', key: isHexColor.key, assert: isHexColor(), schema: onString, invalid: 'fff' },
+  { name: 'isPhoneNumber', key: isPhoneNumber.key, assert: isPhoneNumber(), schema: onString, invalid: '064' },
+  { name: 'isCreditCard', key: isCreditCard.key, assert: isCreditCard(), schema: onString, invalid: '1234' },
+  { name: 'isJson', key: isJson.key, assert: isJson(), schema: onString, invalid: '{' },
 
   { name: 'atLeastOneDigit', key: atLeastOneDigit.key, assert: atLeastOneDigit(), schema: onString, invalid: 'abc' },
   {
@@ -169,8 +189,14 @@ describe('built-in assert translation keys', () => {
   // those cannot be re-registered afterwards. See clearLocales in translationMap.ts.
 
   it('covers every assert that declares a translation key', () => {
-    // Guards against an assert being added without a matching case above.
-    expect(cases).toHaveLength(40);
+    // Guards against an assert being added without a matching case above. Every export that carries a
+    // translation `key` is an assert, so the list is compared with the package itself rather than with a
+    // count that has to be bumped by hand.
+    const exported = Object.entries(bguard)
+      .filter(([, value]) => typeof value === 'function' && typeof (value as { key?: unknown }).key === 'string')
+      .map(([name]) => name)
+      .sort();
+    expect(cases.map((c) => c.name).sort()).toEqual(exported);
     expect(new Set(cases.map((c) => c.key)).size).toBe(cases.length);
     expect(cases.every((c) => typeof c.key === 'string' && c.key.length > 0)).toBe(true);
   });

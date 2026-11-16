@@ -373,8 +373,10 @@ function innerCheck(schema: CommonSchema, receivedValue: unknown, exCtx: Excepti
 
     // Carry on with the default as the received value rather than returning it. Returning it handed
     // every parse the same array or object, so mutating one result changed what later parses gave
-    // back; going through validation rebuilds containers and yields a fresh value each time.
-    receivedValue = schemaData.defaultValue;
+    // back; going through validation rebuilds containers and yields a fresh value each time. A Date is
+    // not a container and is not rebuilt, so it is copied here: `setFullYear` on one parse's result
+    // used to move the default of every later parse.
+    receivedValue = snapshot(schemaData.defaultValue);
   }
 
   // Checked here, AFTER absence has been dealt with, and that placement is the whole subtlety. An
@@ -822,7 +824,8 @@ export class CommonSchema {
     }
 
     const next = this.clone();
-    next[ctxSymbol].defaultValue = defaultValue;
+    // Copied for the same reason, so changing the Date passed in afterwards does not change the schema.
+    next[ctxSymbol].defaultValue = snapshot(defaultValue);
     return next as WithDefault<this>;
   }
 

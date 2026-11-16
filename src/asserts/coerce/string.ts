@@ -13,8 +13,13 @@ import { string } from '../string/index';
  * `oneOfValues`, `onlyTrue`, `onlyFalse`.
  */
 /**
- * @description Coerces the received value to a string before validating it. Anything that is not
- * already a string is passed through `String`.
+ * @description Coerces the received value to a string before validating it. Numbers, booleans and
+ * bigints are passed through `String`, and a Date becomes its ISO form (`2021-01-01T00:00:00.000Z`).
+ *
+ * Anything else — an array, an object, a function, a symbol, an invalid Date — is rejected by type.
+ * `String` turns all of them into something (`'[object Object]'`, `''` for an empty array, a function's
+ * source code), and none of it is text anyone sent. `String(date)` was rejected for a different reason:
+ * it gives the local time with a time-zone name, so the same instant read differently on every server.
  *
  * @returns A string schema that accepts `unknown` as its input type.
  * @example
@@ -23,11 +28,11 @@ import { string } from '../string/index';
 export const coerceString = () =>
   string().transformBeforeValidation<unknown>((received) => {
     if (received === null || typeof received === 'string') return received as string;
-    try {
+    if (typeof received === 'number' || typeof received === 'boolean' || typeof received === 'bigint')
       return String(received);
-    } catch {
-      // An object with no prototype has no toString, and String() throws on it. The value passes through
-      // for string() to reject by type, rather than the parse failing with an unexplained error.
-      return received as string;
-    }
+    // `toISOString` throws on an invalid Date, which a coercion must never do; that one passes through.
+    if (received instanceof Date && !Number.isNaN(received.getTime())) return received.toISOString();
+    // Anything else passes through for string() to reject by type — including an object with no
+    // prototype, on which `String` throws.
+    return received as string;
   });

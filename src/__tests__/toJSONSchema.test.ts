@@ -31,6 +31,11 @@ import { maxArrayLength } from '../asserts/array/maxArrayLength';
 import { minArrayLength } from '../asserts/array/minArrayLength';
 import { maxKeys } from '../asserts/object/maxKeys';
 import { contains } from '../asserts/string/contains';
+import { integer } from '../asserts/number/integer';
+import { isHexColor } from '../asserts/string/isHexColor';
+import { isPhoneNumber } from '../asserts/string/isPhoneNumber';
+import { isCreditCard } from '../asserts/string/isCreditCard';
+import { isJson } from '../asserts/string/isJson';
 
 /** Most cases read better without the dialect line, which is asserted separately. */
 const bare = (schema: CommonSchema) => toJSONSchema(schema, { dialect: null });
@@ -96,6 +101,13 @@ describe('toJSONSchema', () => {
       ['maxExcluded', number().custom(maxExcluded(9)), { type: 'number', exclusiveMaximum: 9 }],
       ['positive', number().custom(positive()), { type: 'number', exclusiveMinimum: 0 }],
       ['negative', number().custom(negative()), { type: 'number', exclusiveMaximum: 0 }],
+      ['integer', number().custom(integer()), { type: 'integer' }],
+      [
+        'isHexColor',
+        string().custom(isHexColor()),
+        { type: 'string', pattern: '^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$' },
+      ],
+      ['isPhoneNumber', string().custom(isPhoneNumber()), { type: 'string', pattern: '^\\+[1-9]\\d{1,14}$' }],
       [
         'minArrayLength',
         array(string()).custom(minArrayLength(2)),
@@ -135,6 +147,17 @@ describe('toJSONSchema', () => {
         minLength: 2,
         maxLength: 9,
       });
+    });
+
+    it('turns an integer with nullable into an integer-or-null type', () => {
+      expect(bare(number().custom(integer()).nullable())).toEqual({ type: ['integer', 'null'] });
+    });
+
+    it.each([
+      ['isCreditCard', isCreditCard()],
+      ['isJson', isJson()],
+    ])('leaves out %s, which no keyword can express', (_name, assert) => {
+      expect(bare(string().custom(assert))).toEqual({ type: 'string' });
     });
 
     it('leaves out an assertion with no equivalent', () => {

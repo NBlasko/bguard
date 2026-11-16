@@ -702,6 +702,10 @@ anything into a value:
 - `coerceNumber()` and `coerceBigInt()` convert strings, booleans, bigints/numbers and Dates. An empty or
   whitespace-only string is rejected rather than read as `0`, which is what `Number('')` returns — an
   empty form field is not a zero. So are arrays and objects: `Number([])` is `0` and `Number([5])` is `5`.
+- `coerceString()` converts numbers, booleans and bigints, and turns a Date into its ISO form
+  (`2021-01-01T00:00:00.000Z`) rather than the local, time-zone-dependent text `String(date)` gives.
+  Arrays, objects and functions are rejected: `String` makes them `'[object Object]'`, `''` or source
+  code.
 - `coerceDate()` converts strings and numbers (a timestamp in milliseconds). A numeric date naming a day
   that does not exist, such as `2021-02-30` or `02/30/2021`, is rejected rather than rolled over into
   March 2nd as `new Date` does. A boolean is rejected too; `new Date(true)` is 1 ms after the epoch.
@@ -863,39 +867,73 @@ Library built-in assertions are imported from specific paths for better tree-sha
 
 ### <a id="h3_create_custom_assertions"> Create Custom Assertions </a>
 
-Bguard allows developers to create custom validation functions that can be integrated seamlessly with the library's existing functionality. Below is a detailed example demonstrating how to create a custom validation function, `minLength`, and how to properly document and map error messages for translations.
+An assertion is a function that receives the value and an `ExceptionContext`, and reports a problem
+with `ctx.addIssue`. Giving it a translation key and a default message is what lets it take part in
+everything the built-in ones do: translations, `setDefaultLanguage`, the `code` on every issue, and
+Standard Schema. Four steps:
 
-Example: Creating a `minLength` Custom Validation
+**1. Write the check.** A factory returns the validation, so the assertion can take arguments.
+`ctx.addIssue(expected, received, key)` reports the failure. Under `getAllErrors` it is collected and
+validation carries on; otherwise it stops the parse.
 
-```typescript
-import { ExceptionContext, RequiredValidation } from 'bguard/core';
-import { setToDefaultLocale } from 'bguard/translationMap';
+**2. Give it a key and a default message, and register them.** The key identifies the failure in every
+language and is what an issue's `code` holds. Use a prefix of your own (`app:`, the name of your
+project): `s:`, `n:`, `o:`, `c:` and the other short ones belong to bguard. `setToDefaultLocale`
+registers the default message once, when the module is first imported.
 
-const minLengthErrorMessage = 'The received value {{r}} is shorter than the expected length {{e}}';
-const minLengthErrorKey = 'customPrefix:minLength';
+**3. Translate it** like any built-in message, with `setLocale`. A locale only needs the keys it
+translates; the rest fall back to the default messages.
 
-export const minLength =
-  (expected: number): RequiredValidation =>
-  (received: string, ctx: ExceptionContext) => {
-    if (received.length < expected) {
-      ctx.addIssue(expected, received, minLengthErrorKey);
-    }
-  };
+**4. Use it** with `.custom(...)`, and pick the language per parse with `lng`, or once for everything
+with `setDefaultLanguage` — which is also what validation through Standard Schema follows.
 
-minLength.key = minLengthErrorKey;
-minLength.message = minLengthErrorMessage;
-setToDefaultLocale(minLength);
+```typeScript
+import { parse, setDefaultLanguage, setLocale, setToDefaultLocale, string } from 'bguard';
+import type { ExceptionContext, RequiredValidation } from 'bguard/core';
+
+// 1. The check
+const evenLengthKey = 'app:evenLength';
+
+export const evenLength = (): RequiredValidation<string> => (received: string, ctx: ExceptionContext) => {
+  if (received.length % 2 !== 0) ctx.addIssue('an even length', received.length, evenLengthKey);
+};
+
+// 2. Key and default message, registered once
+evenLength.key = evenLengthKey;
+evenLength.message = 'The value has {{r}} characters, but {{e}} is required';
+setToDefaultLocale(evenLength);
+
+// 3. A translation
+setLocale('sr', { 'app:evenLength': 'Tekst ima {{r}} znakova, a potreban je paran broj' });
+
+// 4. Use
+const code = string().custom(evenLength());
+
+parse(code, 'abc');
+// [[{ code: 'app:evenLength', message: 'The value has 3 characters, but an even length is required', … }], null]
+
+parse(code, 'abc', { lng: 'sr' });
+// message: 'Tekst ima 3 znakova, a potreban je paran broj'
+
+setDefaultLanguage('sr');
+code['~standard'].validate('abc');
+// { issues: [{ code: 'app:evenLength', message: 'Tekst ima 3 znakova, a potreban je paran broj', … }] }
 ```
 
-Explanation
+What goes into a message:
 
-- Error Key (`minLength.key`): This key (`'customPrefix:minLength'`) uniquely identifies the validation and is used for mapping error messages, especially when supporting multiple languages. It's essential to avoid collisions with built-in assertions, which use prefixes like `s:`, `n:`, and `b:` etc. More on that in [Common and Custom Translations](#common_and_custom_translations).
+- `{{e}}` is the first argument of `addIssue`, `{{r}}` the second, and `{{p}}` the path to the value,
+  such as `.user.name`. Any other `{{name}}` is left as it is.
+- `{{r}}` puts the received value into the message. Leave it out for anything that may be secret, and
+  pass a description rather than the value as `expected` when comparing against another field: issues
+  are often logged or returned to the client. Above, the length is reported, not the text.
+- For a one-off rule in a single-language app, the message itself can serve as the key:
+  `ctx.addIssue('an even length', received, 'The length must be even')` reports that text as both the
+  `code` and the `message`. It cannot be translated later without changing the call, so prefer a key for
+  anything reused.
 
-- Error Message (`minLength.message`): The message supports [interpolation](#translation), where `{{e}}` will be replaced by the expected value, and `{{r}}` will be replaced by the received value during validation .
-
-- Exception Handling (`ctx.addIssue`): This method is responsible for throwing the error when the validation fails.
-
-- Localization Support (`setToDefaultLocale`): This function registers the default error message with its associated key. If you later decide to support multiple languages, you can easily map this key to different messages.
+An assertion that has to wait for something, such as a database lookup, is registered with
+`customAsync` instead and runs under `parseAsync`; see [Async Validation](#h3_async).
 
  - Using `ctx.ref` to Reference Other Properties: The `ctx.ref` method allows you to reference other properties in the input object during validation. It takes either a property-access callback — which is type-checked and returns the property's own type, see [Typed Cross-Field References](#h3_typed_ref) — or a string, with each level of nesting separated by a dot (.). However, it's important to note that `ctx.ref` retrieves the <b>original</b> value from the object before any transformations (e.g., `transformBeforeValidation`). This ensures that validations based on cross-property references work consistently, regardless of any transformations applied before validation.
  ```typescript
@@ -914,11 +952,13 @@ const loginSchema = object({
 
 - Key Points for Developers:
 
-  1. Always create unique error keys for custom validations to avoid potential conflicts with Bguard's built-in validations.
-  2. Custom validations should use prefixes other than `s:`, `n:`, `b:`, and similar ones reserved for Bguard's internal validations.
-  3. The `minLengthErrorMessage` serves as the default message. If you want to provide translations, you can do so by mapping the error key in the translationMap.
-     For single-language applications, you can override the default message by directly passing your custom message to `addIssue` method.
-  4. If we have a nested object { foo: { bar: 'baz' } }, we should use `ctx.ref('foo.bar')` to access the value 'baz' in custom assertions.
+  1. Give every custom assertion a unique key with a prefix of your own; the short prefixes (`s:`, `n:`,
+     `b:`, `o:`, `c:` and similar) are reserved for bguard's built-in assertions.
+  2. `setToDefaultLocale` throws on a key that is already registered, which is what catches two
+     assertions sharing one.
+  3. For a nested object `{ foo: { bar: 'baz' } }`, `ctx.ref('foo.bar')` reaches `'baz'` — or, type-checked,
+     `ctx.ref((root: Root) => root.foo.bar)`.
+
 ### <a id="h3_typed_ref"> Typed Cross-Field References </a>
 
 `ctx.ref` takes a property-access callback as well as a string. Prefer the callback: it is checked

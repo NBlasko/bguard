@@ -165,8 +165,21 @@ describe('coerce', () => {
       [3, '3'],
       ['x', 'x'],
       [true, 'true'],
+      [10n, '10'],
+      [new Date(Date.UTC(2021, 0, 1)), '2021-01-01T00:00:00.000Z'],
     ])('turns %p into %p', (received, expected) => {
       expect(parseOrFail(coerce.string(), received)).toBe(expected);
+    });
+
+    it.each([
+      ['an object, which String makes [object Object]', { a: 1 }],
+      ['an empty array, which String makes the empty string', []],
+      ['an array, which String joins with commas', ['a', 'b']],
+      ['a function, which String turns into its source code', () => 1],
+      ['a symbol', Symbol('x')],
+      ['an invalid Date, on which toISOString throws', new Date(NaN)],
+    ])('rejects %s', (_name, received) => {
+      expect(parse(coerce.string(), received)[0]![0]!.code).toBe('c:invalidType');
     });
 
     it('leaves null for nullable to decide', () => {
