@@ -179,6 +179,15 @@ describe('toJSONSchema', () => {
       });
     });
 
+    it('does not repeat a pattern that two assertions both add', () => {
+      // regExp(/b/) twice gave allOf: [{ pattern: 'b' }, { pattern: 'b' }].
+      expect(bare(string().custom(regExp(/a/), regExp(/b/), regExp(/b/)))).toEqual({
+        type: 'string',
+        pattern: 'a',
+        allOf: [{ pattern: 'b' }],
+      });
+    });
+
     it('does not repeat an allOf entry that is already there', () => {
       expect(bare(tuple([string(), string()]).custom(minArrayLength(1), minArrayLength(1)))).toMatchObject({
         minItems: 2,

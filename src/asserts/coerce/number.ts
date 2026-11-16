@@ -1,3 +1,4 @@
+import { _timeOf } from '../../helpers/intrinsics';
 import { number } from '../number/index';
 
 /**
@@ -34,9 +35,12 @@ export const coerceNumber = () =>
     // `Number('')` and `Number('  ')` are 0, so an empty form field used to arrive as a real zero. A
     // string with nothing in it holds no number, and becomes NaN like any other unreadable string.
     if (typeof received === 'string') return received.trim() === '' ? NaN : Number(received);
-    // A boolean is 0 or 1, a bigint its value, a Date its timestamp.
-    if (typeof received === 'boolean' || typeof received === 'bigint' || received instanceof Date)
-      return Number(received);
+    // A boolean is 0 or 1, a bigint its value.
+    if (typeof received === 'boolean' || typeof received === 'bigint') return Number(received);
+    // A Date its timestamp, read from the engine: `instanceof` missed a Date from another realm, and
+    // `Number()` on an object built from Date.prototype threw.
+    const time = _timeOf(received);
+    if (time !== undefined) return time;
     // Anything else passes through for number() to reject by type. `Number` read `[]` and `['']` as 0 and
     // `[5]` as 5, and threw on a Symbol, which a coercion must never do.
     return received as number;

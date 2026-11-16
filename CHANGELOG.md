@@ -72,8 +72,14 @@ realm, symbol keys included; class instances are kept as they are, prototype and
 `Object.prototype.toString`, which `Symbol.toStringTag` can set to anything, and then called the object's
 own `getTime`, so `{ [Symbol.toStringTag]: 'Date', getTime: () => 0 }` passed. What a value is — a Date,
 a boxed string — is now asked of the engine (`Date.prototype.getTime.call` and the like), which checks
-an internal slot no object can fake and which works for values from any realm. `coerceString` and the
-copying of defaults use the same checks, so such an object no longer makes either throw.
+an internal slot no object can fake and which works for values from any realm. Every coercion, the
+copying of defaults and of issue values use the same checks, so such an object no longer makes any of
+them throw, and `coerceNumber` and `coerceBigInt` now read a Date from another realm too.
+
+**`dateMin` and `dateMax` compared with `<` and `>`**, which call each Date's own `valueOf`: a real Date
+given a fake `valueOf` passed `date()` and then faked the bound. They now compare timestamps read from the
+engine. The bound is read once, when the schema is built, so changing the Date passed to `dateMin`
+afterwards no longer moves it.
 
 ### Internal
 

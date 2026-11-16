@@ -21,9 +21,10 @@ export function _checkKeyCount(name: string, expected: number, { allowInfinity =
  * `maxProperties` would never see it either. Shared by `minKeys` and `maxKeys` so the two cannot drift.
  */
 export function _countDefinedKeys(received: Record<string, unknown>): number {
+  // `Object.keys` rather than `for…in`, which also walks every enumerable key up the prototype chain only
+  // to throw the inherited ones away.
+  const keys = Object.keys(received);
   let count = 0;
-  for (const key in received) {
-    if (Object.prototype.hasOwnProperty.call(received, key) && received[key] !== undefined) count++;
-  }
+  for (let i = 0; i < keys.length; i++) if (received[keys[i]!] !== undefined) count++;
   return count;
 }

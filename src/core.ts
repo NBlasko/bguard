@@ -1,5 +1,6 @@
 import { isValidDateInner } from './helpers/isValidDateInner';
 import { _cloneValue } from './helpers/cloneValue';
+import { _timeOf } from './helpers/intrinsics';
 import {
   BaseType,
   MetaContext,
@@ -1104,8 +1105,8 @@ export function parse<T extends CommonSchema>(
  */
 function snapshot(value: unknown): unknown {
   if (Array.isArray(value)) return [...value];
-  if (value instanceof Date) return new Date(value.getTime());
-  return value;
+  const time = _timeOf(value);
+  return time === undefined ? value : new Date(time);
 }
 
 /**

@@ -7,8 +7,12 @@ import { oneOfTypes } from '../asserts/mix';
 import { object } from '../asserts/object';
 import { _cloneValue } from '../helpers/cloneValue';
 import { integer } from '../asserts/number/integer';
+import { ExceptionContext } from '../core';
 import { RequiredValidation } from '../core';
 import { _isPlainObject, _timeOf, _unbox } from '../helpers/intrinsics';
+import { _countDefinedKeys } from '../helpers/checkKeyCount';
+import { dateMin } from '../asserts/date/dateMin';
+import { dateMax } from '../asserts/date/dateMax';
 
 /**
  * Values that claim to be something they are not, through `Symbol.toStringTag` or a method of their own,
@@ -112,5 +116,87 @@ describe('_cloneValue and symbol keys', () => {
     const hidden = Symbol('hidden');
     const value = Object.defineProperty({ plain: 1 }, hidden, { value: 1, enumerable: false });
     expect(Object.getOwnPropertySymbols(_cloneValue(value))).toEqual([]);
+  });
+});
+
+// Found in the review of b662c35.
+describe('review of b662c35', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('asks the engine about a Date only when the tag says Date, so plain objects cost no exception', () => {
+    // Every nested object of a copied default used to be passed to Date.prototype.getTime.call, which
+    // threw and was caught, once per object on every parse.
+    const getTime = jest.spyOn(Date.prototype, 'getTime');
+    const nested = Array.from({ length: 50 }, (_, i) => ({ i, inner: { list: [{ deep: i }] } }));
+    _cloneValue(nested);
+    expect(getTime).not.toHaveBeenCalled();
+  });
+
+  it('asks the engine about a box only when the tag names a box', () => {
+    const valueOfs = [
+      jest.spyOn(String.prototype, 'valueOf'),
+      jest.spyOn(Number.prototype, 'valueOf'),
+      jest.spyOn(Boolean.prototype, 'valueOf'),
+    ];
+    parse(coerce.string(), { a: 1 });
+    parse(coerce.string(), [1, 2]);
+    for (const spy of valueOfs) expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('coerceNumber reads a Date from another realm, and rejects an object built from Date.prototype', () => {
+    expect(parseOrFail(coerce.number(), runInNewContext('new Date(5)'))).toBe(5);
+    // Number() on this threw inside the coercion.
+    expect(parse(coerce.number(), Object.create(Date.prototype))[0]![0]!.code).toBe('c:invalidType');
+  });
+
+  it('coerceBigInt reads a Date from another realm', () => {
+    expect(parseOrFail(coerce.bigint(), runInNewContext('new Date(5)'))).toBe(5n);
+  });
+
+  it("an issue's expected Date is a copy even when the Date came from another realm", () => {
+    // Reported straight through addIssue, so it is snapshot's copy and nothing else that is checked.
+    const bound = runInNewContext('new Date(0)') as Date;
+    const schema = date().custom((received: Date, ctx: ExceptionContext) => {
+      ctx.addIssue(bound, received, 'u:afterBound');
+    });
+    const issue = parse(schema, new Date(1000))[0]![0]!;
+    expect(issue.expected).not.toBe(bound);
+    expect((issue.expected as Date).getTime()).toBe(0);
+  });
+
+  it('dateMin compares the real timestamp, not what a Date with its own valueOf claims', () => {
+    // `>` called the received Date's own valueOf, so this 1970 date passed a 2023 minimum.
+    const disguised = Object.assign(new Date(0), { valueOf: () => 8.64e15 });
+    expect(parse(date().custom(dateMin('2023-01-01')), disguised)[0]![0]!.code).toBe('dt:min');
+    expect(
+      parse(date().custom(dateMax('2023-01-01')), Object.assign(new Date('2030-01-01'), { valueOf: () => 0 }))[0]![0]!
+        .code,
+    ).toBe('dt:max');
+  });
+
+  it('a date bound does not move when the Date passed to it changes afterwards', () => {
+    const bound = new Date('2023-01-01');
+    const schema = date().custom(dateMin(bound));
+    bound.setFullYear(1990);
+    expect(parse(schema, new Date('2000-01-01'))[0]![0]!.code).toBe('dt:min');
+  });
+
+  it('a date bound reports nothing for a value that is not a Date, which date() has already reported', () => {
+    const [errors] = parse(date().custom(dateMin('2023-01-01'), dateMax('2024-01-01')), 'x', { getAllErrors: true });
+    const codes = errors!.map((error) => error.code);
+    expect(codes).toContain('c:date');
+    expect(codes).not.toContain('dt:min');
+    expect(codes).not.toContain('dt:max');
+  });
+
+  it('copies the enumerable symbol keys of an array as well', () => {
+    const tag = Symbol('tag');
+    const copy = _cloneValue(Object.assign([1], { [tag]: { n: 1 } }));
+    expect((copy as unknown as Record<symbol, unknown>)[tag]).toEqual({ n: 1 });
+  });
+
+  it('counts only own keys for minKeys and maxKeys, not inherited ones', () => {
+    const value = Object.assign(Object.create({ inherited: 1 }) as Record<string, unknown>, { own: 1 });
+    expect(_countDefinedKeys(value)).toBe(1);
   });
 });
