@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # required for npm provenance
+      id-token: write # trusted publishing: the job proves its identity to npm over OIDC, so no token exists
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -37,7 +37,13 @@ jobs:
       - name: test:coverage
         run: npm run test:coverage
 
+      # Trusted publishing needs npm 11.5.1+, and Node 22 ships npm 10.
+      - name: npm with trusted publishing
+        run: npm install -g npm@^11.5.1
+
+      # Publishes over OIDC, with no token to expire or leak. An npm token used to live here; write tokens
+      # now expire after 90 days, and one did, failing the 0.11.0 release. Provenance is attached
+      # automatically. The trusted publisher on npmjs.com has to allow `npm publish`, not only
+      # `npm stage publish`, or this step is rejected.
       - name: publish
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
+        run: npm publish --access public
