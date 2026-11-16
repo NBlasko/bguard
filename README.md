@@ -892,8 +892,20 @@ The document is a faithful description of what it can express, not a complete on
 Pass `dialect: null` to leave out `$schema`, which is what you want when embedding the result in an
 OpenAPI `components.schemas` entry.
 
-> **Verified against a real validator:** the generated documents are cross-checked with `ajv` over 70
-> values across 19 schemas, so a JSON Schema validator agrees with bguard about which values pass.
+For dates, times and patterns, where the two cannot agree exactly, bguard is the stricter side: a value
+bguard accepts passes the generated document too. `isValidDateTime` rejects leap seconds and a lowercase `t`/`z`,
+which `format: 'date-time'` allows. `isValidTime` is emitted as a `pattern`, because JSON Schema's
+`format: 'time'` requires an offset that `isValidTime` rejects. A `regExp` with an `i`, `m`, `s`, `y` or
+`v` flag is left out, since a `pattern` cannot carry flags.
+
+`email` and `validUrl` are the exception: they are looser than `format: 'email'` and `format: 'uri'`.
+Both accept non-ASCII text, and `email` accepts characters such as `(` or `<` in the local part, all of
+which those formats reject.
+
+> **Verified against a real validator:** the generated documents are cross-checked with `ajv` and
+> `ajv-formats`. `isValidDate` agrees with `format: 'date'` on every year/month/day combination tried
+> (over a million), and no `isValidDateTime` value out of 300,000 random ones passes bguard while
+> failing `format: 'date-time'`.
 
 ### <a id="h3_literals"> Literals </a>
 
@@ -1410,7 +1422,8 @@ import { contains } from 'bguard/string/contains';
 import { email } from 'bguard/string/email';
 ```
         
-* _Description_ Asserts that a string value matches the email pattern. The pattern checks for a basic email format.
+* _Description_ Asserts that a string value matches the email pattern. The pattern checks for a basic email format:
+ no whitespace, exactly one `@`, a domain with at least one dot, and no empty or dot-edged parts.
 * _Throws_ {ValidationError} if the received value does not match the email pattern.
 * _Example_
 ```typescript
@@ -1445,7 +1458,8 @@ import { endsWith } from 'bguard/string/endsWith';
 import { isValidDate } from 'bguard/string/isValidDate';
 ```
         
-* _Description_ Asserts that a string is a valid date in the format YYYY-MM-DD.
+* _Description_ Asserts that a string is a valid date in the format YYYY-MM-DD (RFC 3339 `full-date`).
+ Any four-digit year is accepted, and the day has to exist: `2021-02-29` and `2020-04-31` are rejected.
 * _Throws_ {ValidationError} if the received string is not a valid date.
 * _Example_
 ```typescript
@@ -1453,6 +1467,7 @@ import { isValidDate } from 'bguard/string/isValidDate';
  parseOrFail(schema, "2020-01-01"); // Valid
  parseOrFail(schema, "2020-1-1");   // Throws an error: 'The received value is not a valid date'
  parseOrFail(schema, "2020-01-32"); // Throws an error: 'The received value is not a valid date'
+ parseOrFail(schema, "2021-02-29"); // Throws an error: 2021 is not a leap year
 ```
 * _See_ Error Translation Key = 's:isValidDate'
         
@@ -1467,6 +1482,10 @@ import { isValidDateTime } from 'bguard/string/isValidDateTime';
 * _Param_ {DateTimeOptions} options Options to control the validation:
  - `offset`: If `true`, allows timezone offsets in the datetime string.
  - `precision`: Specify the exact number of fractional second digits allowed (e.g., 3 for milliseconds).
+   `0` forbids a fraction. Anything but a non-negative integer throws a `BuildSchemaError`.
+
+ Every part is range-checked and the day has to exist, so `2021-02-29T00:00:00Z` and
+ `2020-01-01T24:00:00Z` are rejected. Leap seconds are rejected too, since a Date cannot hold one.
 * _Throws_ {ValidationError} if the received value is not a valid datetime string according to the options.
 * _Example_
 ```typescript
@@ -1493,6 +1512,8 @@ import { isValidTime } from 'bguard/string/isValidTime';
         
 * _Description_ Asserts that a string is a valid time in the format HH:mm:ss, with optional fractional seconds.
 * _Param_ {IsValidTimeOptions} options Optional settings to configure the validation.
+ - `precision`: the exact number of fractional second digits required. `0` forbids a fraction. Anything
+   but a non-negative integer throws a `BuildSchemaError`.
 * _Throws_ {ValidationError} if the received string is not a valid time.
 * _Example_
 ```typescript
@@ -1568,7 +1589,8 @@ import { regExp } from 'bguard/string/regExp';
 ```
         
 * _Description_ Asserts that a string value matches a specified regular expression pattern.
-* _Param_ {RegExp} expected The regular expression pattern that the string value should match.
+* _Param_ {RegExp} expected The regular expression pattern that the string value should match. A `g` or
+ `y` flag does not make validation stateful: every value is tested from the start of the string.
 * _Throws_ {ValidationError} if the received value does not match the expected pattern.
 * _Example_
 ```typescript
@@ -1741,7 +1763,7 @@ import { validUrl } from 'bguard/string/validUrl';
  parseOrFail(schema, 'ftp://example.com');   // Throws an error
  parseOrFail(schema, 'http:example.com');    // Throws an error
 ```
-* _See_ Error Translation Key = 's:url'
+* _See_ Error Translation Key = 's:validUrl'
         
 #### <a id="assertdir_number"> number </a>
    

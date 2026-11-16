@@ -79,7 +79,17 @@ describe('toJSONSchema', () => {
       ['uuid', string().custom(uuid()), { type: 'string', format: 'uuid' }],
       ['isValidDate', string().custom(isValidDate()), { type: 'string', format: 'date' }],
       ['isValidDateTime', string().custom(isValidDateTime()), { type: 'string', format: 'date-time' }],
-      ['isValidTime', string().custom(isValidTime()), { type: 'string', format: 'time' }],
+      [
+        'isValidTime',
+        string().custom(isValidTime()),
+        { type: 'string', pattern: '^(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?$' },
+      ],
+      [
+        'isValidTime with a precision',
+        string().custom(isValidTime({ precision: 3 })),
+        { type: 'string', pattern: '^(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}$' },
+      ],
+      ['regExp with a flag a pattern keeps', string().custom(regExp(/^a.c$/gu)), { type: 'string', pattern: '^a.c$' }],
       ['min', number().custom(min(1)), { type: 'number', minimum: 1 }],
       ['max', number().custom(max(9)), { type: 'number', maximum: 9 }],
       ['minExcluded', number().custom(minExcluded(1)), { type: 'number', exclusiveMinimum: 1 }],
@@ -130,6 +140,17 @@ describe('toJSONSchema', () => {
     it('leaves out an assertion with no equivalent', () => {
       // JSON Schema has no "contains this substring" keyword, so it is absent rather than approximated.
       expect(bare(string().custom(contains('x')))).toEqual({ type: 'string' });
+    });
+
+    it('does not map isValidTime to the time format, whose values all carry an offset', () => {
+      // JSON Schema `time` is RFC 3339 full-time, which requires an offset; isValidTime rejects one. With
+      // `format: 'time'` the generated document rejected every value bguard accepted.
+      expect(bare(string().custom(isValidTime()))).not.toHaveProperty('format');
+    });
+
+    it.each([['i'], ['m'], ['s'], ['y']])('leaves out a regExp whose %s flag a pattern would lose', (flags) => {
+      // A pattern carries no flags, so `/abc/i` as `pattern: "abc"` would reject `ABC`, which bguard accepts.
+      expect(bare(string().custom(regExp(new RegExp('abc', flags))))).toEqual({ type: 'string' });
     });
   });
 

@@ -20,7 +20,10 @@ import { validUrl } from '../asserts/string/validUrl';
 import { isValidDateTime } from '../asserts/string/isValidDateTime';
 import { isValidDate } from '../asserts/string/isValidDate';
 import { isValidTime } from '../asserts/string/isValidTime';
-import { parseOrFail } from '../core';
+import { email } from '../asserts/string/email';
+import { regExp } from '../asserts/string/regExp';
+import { parse, parseOrFail } from '../core';
+import { BuildSchemaError } from '../exceptions';
 
 describe('Custom String Asserts', () => {
   it('should be all lower case', () => {
@@ -268,7 +271,90 @@ describe('Custom String Asserts', () => {
       expect(() => parseOrFail(textSchema, 'http:example.com')).toThrow('The received value is not a valid URL');
       expect(() => parseOrFail(textSchema, '')).toThrow('The received value is not a valid URL');
     });
+
+    it.each([
+      ['a host of only dots', 'http://...'],
+      ['a host of only a hyphen', 'http://-'],
+      ['a label starting with a hyphen', 'http://-a.com'],
+      ['a label ending with a hyphen', 'http://a-.com'],
+      ['an empty label', 'http://a..com'],
+      ['a port above 65535', 'http://a.com:65536'],
+      ['a port of six digits', 'http://a.com:100000'],
+      ['whitespace in the path', 'http://a.com/a b'],
+    ])('rejects %s', (_name, value) => {
+      expect(() => parseOrFail(string().custom(validUrl()), value)).toThrow('The received value is not a valid URL');
+    });
+
+    it.each([
+      ['a query with no path', 'http://a.com?x=1'],
+      ['a fragment with no path', 'https://a.com#top'],
+      ['the highest port', 'http://a.com:65535'],
+      ['a hyphen inside a label', 'https://my-site.example.com/'],
+      ['a fully qualified name', 'http://example.com./'],
+      ['a single label', 'http://localhost:3000/'],
+    ])('accepts %s', (_name, value) => {
+      expect(parseOrFail(string().custom(validUrl()), value)).toBe(value);
+    });
+
+    it('matches the protocol literally rather than as a regex', () => {
+      // It was spliced into the regex unescaped, so the `.` in `a.b` matched any character.
+      const schema = string().custom(validUrl('a.b'));
+      expect(parseOrFail(schema, 'a.b://host')).toBe('a.b://host');
+      expect(() => parseOrFail(schema, 'axb://host')).toThrow('The received value is not a valid URL');
+
+      const plus = string().custom(validUrl('git+ssh'));
+      expect(parseOrFail(plus, 'git+ssh://host')).toBe('git+ssh://host');
+      expect(() => parseOrFail(plus, 'gitssh://host')).toThrow('The received value is not a valid URL');
+    });
   });
+
+  describe('email', () => {
+    it.each([
+      ['whitespace in the local part', 'a b@c.d'],
+      ['a line break', 'a\n@b.c'],
+      ['a tab', 'a@b\t.c'],
+      ['two dots in the domain', 'a@b..c'],
+      ['two dots in the local part', 'a..b@c.d'],
+      ['a leading dot', '.a@b.c'],
+      ['a trailing dot in the local part', 'a.@b.c'],
+      ['a trailing dot in the domain', 'a@b.c.'],
+      ['a leading dot in the domain', 'a@.b.c'],
+      ['two @ signs', 'a@b@c.d'],
+      ['no dot in the domain', 'a@b'],
+    ])('rejects %s', (_name, value) => {
+      expect(() => parseOrFail(string().custom(email()), value)).toThrow(
+        'The received value does not match the required email pattern',
+      );
+    });
+
+    it.each([['a@b.c'], ['first.last+tag@sub.example.co.uk'], ['ünïcødé@example.com']])('accepts %s', (value) => {
+      expect(parseOrFail(string().custom(email()), value)).toBe(value);
+    });
+  });
+
+  describe('regExp', () => {
+    it.each([['g'], ['y'], ['gy']])('gives the same answer on every parse with the %s flag', (flags) => {
+      // `test` on a global or sticky regex resumes from `lastIndex`, so the same value used to pass and
+      // fail on alternate parses.
+      const schema = string().custom(regExp(new RegExp('a', flags)));
+      const results = [1, 2, 3, 4].map(() => parse(schema, 'a')[0] === null);
+      expect(results).toEqual([true, true, true, true]);
+    });
+
+    it("leaves the caller's regex untouched", () => {
+      const pattern = /a/g;
+      pattern.lastIndex = 5;
+      parse(string().custom(regExp(pattern)), 'a');
+      expect(pattern.lastIndex).toBe(5);
+    });
+
+    it('keeps the meaning of the sticky flag', () => {
+      // Sticky anchors the match at the start, which a rewound copy still does.
+      const schema = string().custom(regExp(/a/y));
+      expect(() => parseOrFail(schema, 'ba')).toThrow('The received value does not match the required text pattern');
+    });
+  });
+
   describe('isValidDateTime', () => {
     it('should pass for valid ISO 8601 datetime strings without offset', () => {
       const schema = string().custom(isValidDateTime());
@@ -296,6 +382,67 @@ describe('Custom String Asserts', () => {
       expect(() => parseOrFail(schema, '2024-01-01T00:00:00Z')).toThrow(ValidationError);
       expect(() => parseOrFail(schema, '2024-01-01T00:00:00.250816Z')).toThrow(ValidationError);
     });
+
+    // From the report in #21, plus the neighbouring cases. Each part used to be any two digits.
+    it.each([
+      ['a February 29th outside a leap year', '2021-02-29T00:00:00Z'],
+      ['a February 29th in a century that is not a leap year', '1900-02-29T00:00:00Z'],
+      ['an April 31st', '2020-04-31T00:00:00Z'],
+      ['month 00', '2020-00-01T00:00:00Z'],
+      ['month 13', '2020-13-01T00:00:00Z'],
+      ['day 00', '2020-01-00T00:00:00Z'],
+      ['hour 24', '2020-01-01T24:00:00Z'],
+      ['hour 25', '2020-01-01T25:00:00Z'],
+      ['minute 60', '2020-01-01T23:60:00Z'],
+      ['second 60, a leap second a Date cannot hold', '2016-12-31T23:59:60Z'],
+      ['every part out of range', '9999-99-99T99:99:99Z'],
+      ['a bare dot for a fraction', '2020-01-01T00:00:00.Z'],
+    ])('rejects %s', (_name, value) => {
+      expect(() => parseOrFail(string().custom(isValidDateTime()), value)).toThrow(
+        'The received value is not a valid ISO 8601 datetime string',
+      );
+    });
+
+    it.each([
+      ['a February 29th in a leap year', '2020-02-29T00:00:00Z'],
+      ['a February 29th in a 400th year', '2000-02-29T00:00:00Z'],
+      ['the last moment of a day', '2020-12-31T23:59:59.999Z'],
+      ['a year before 1900', '1800-01-01T00:00:00Z'],
+      ['a year after 2099', '2100-01-01T00:00:00Z'],
+      ['year 0000', '0000-01-01T00:00:00Z'],
+    ])('accepts %s', (_name, value) => {
+      expect(parseOrFail(string().custom(isValidDateTime()), value)).toBe(value);
+    });
+
+    it.each([
+      ['hours 25', '2020-01-01T00:00:00+25:00'],
+      ['minutes 60', '2020-01-01T00:00:00+23:60'],
+      ['both out of range', '2020-01-01T00:00:00+25:60'],
+      ['hours 24 in the HHMM form', '2020-01-01T00:00:00-2400'],
+      ['hours 24 in the HH form', '2020-01-01T00:00:00+24'],
+      ['three digits', '2020-01-01T00:00:00+030'],
+    ])('rejects an offset with %s', (_name, value) => {
+      expect(() => parseOrFail(string().custom(isValidDateTime({ offset: true })), value)).toThrow(
+        'The received value is not a valid ISO 8601 datetime string',
+      );
+    });
+
+    it.each([['+23:59'], ['-23:59'], ['-00:00'], ['+2359'], ['+23']])('accepts the offset %s', (offset) => {
+      const value = `2020-01-01T00:00:00${offset}`;
+      expect(parseOrFail(string().custom(isValidDateTime({ offset: true })), value)).toBe(value);
+    });
+
+    it('forbids a fraction when the precision is 0', () => {
+      const schema = string().custom(isValidDateTime({ precision: 0 }));
+      expect(parseOrFail(schema, '2020-01-01T00:00:00Z')).toBe('2020-01-01T00:00:00Z');
+      expect(() => parseOrFail(schema, '2020-01-01T00:00:00.Z')).toThrow(ValidationError);
+      expect(() => parseOrFail(schema, '2020-01-01T00:00:00.1Z')).toThrow(ValidationError);
+    });
+
+    it.each([[-1], [1.5], [NaN], [Infinity]])('refuses the precision %s when the schema is built', (precision) => {
+      expect(() => isValidDateTime({ precision })).toThrow(BuildSchemaError);
+      expect(() => isValidDateTime({ precision })).toThrow('precision must be a non-negative integer');
+    });
   });
 
   describe('isValidDate', () => {
@@ -313,6 +460,39 @@ describe('Custom String Asserts', () => {
       expect(() => parseOrFail(schema, '2024-13-01')).toThrow(); // invalid (month out of range)
       expect(() => parseOrFail(schema, '20-01-01')).toThrow(); // invalid (year too short)
       expect(() => parseOrFail(schema, '2024/01/01')).toThrow(); // invalid (wrong delimiter)
+    });
+
+    // From the report in #21. The day was checked against 01–31 whatever the month.
+    it.each([
+      ['a February 29th outside a leap year', '2021-02-29'],
+      ['a February 29th in a century that is not a leap year', '1900-02-29'],
+      ['a February 30th', '2020-02-30'],
+      ['an April 31st', '2020-04-31'],
+      ['a June 31st', '2020-06-31'],
+      ['a September 31st', '2020-09-31'],
+      ['a November 31st', '2020-11-31'],
+      ['day 00', '2020-01-00'],
+      ['month 00', '2020-00-01'],
+      ['a five-digit year', '10000-01-01'],
+    ])('rejects %s', (_name, value) => {
+      expect(() => parseOrFail(string().custom(isValidDate()), value)).toThrow(
+        'The received value is not a valid date',
+      );
+    });
+
+    // The year was limited to 1900–2099, which RFC 3339 does not do.
+    it.each([
+      ['a February 29th in a leap year', '2020-02-29'],
+      ['a February 29th in a 400th year', '2000-02-29'],
+      ['a December 31st', '2020-12-31'],
+      ['the last day of a 30-day month', '2020-04-30'],
+      ['a February 28th outside a leap year', '2021-02-28'],
+      ['a year before 1900', '1800-01-01'],
+      ['a year after 2099', '2100-01-01'],
+      ['year 0000', '0000-01-01'],
+      ['year 9999', '9999-12-31'],
+    ])('accepts %s', (_name, value) => {
+      expect(parseOrFail(string().custom(isValidDate()), value)).toBe(value);
     });
   });
 
@@ -362,6 +542,29 @@ describe('Custom String Asserts', () => {
 
       expect(() => parseOrFail(schema, '12:34:56')).not.toThrow(); // Valid time
       expect(() => parseOrFail(schema, '23:59:59.999')).not.toThrow(); // Valid time with milliseconds
+    });
+
+    it('reports one issue, not two, for a malformed value when a precision is set', () => {
+      // A second check for the dot used to add a duplicate issue under getAllErrors.
+      const [errors] = parse(string().custom(isValidTime({ precision: 3 })), 'xx', { getAllErrors: true });
+      expect(errors).toHaveLength(1);
+    });
+
+    it('forbids a fraction when the precision is 0', () => {
+      const schema = string().custom(isValidTime({ precision: 0 }));
+      expect(parseOrFail(schema, '12:00:00')).toBe('12:00:00');
+      expect(() => parseOrFail(schema, '12:00:00.')).toThrow('The received value is not a valid time');
+      expect(() => parseOrFail(schema, '12:00:00.1')).toThrow('The received value is not a valid time');
+    });
+
+    it.each([['24:00:00'], ['23:60:00'], ['23:59:60'], ['12:00:00.']])('rejects %s', (value) => {
+      expect(() => parseOrFail(string().custom(isValidTime()), value)).toThrow(
+        'The received value is not a valid time',
+      );
+    });
+
+    it.each([[-1], [2.5]])('refuses the precision %s when the schema is built', (precision) => {
+      expect(() => isValidTime({ precision })).toThrow(BuildSchemaError);
     });
   });
 });

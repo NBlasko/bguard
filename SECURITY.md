@@ -108,3 +108,6 @@ Only the latest release is supported. Please upgrade before reporting.
 Thanks to the people who have reported issues here:
 
 - **Madiba Security Lab, Concordia University** — prototype pollution via `setLocale` (fixed in 0.10.0).
+- **`trackoor`, [UCSB PLSE](https://ucsbplse.github.io/)** — `isValidDate` and `isValidDateTime` accepting
+  nonexistent dates and out-of-range times (#21, fixed in 0.11.0). Not a security issue, but a precise
+  report that led to fixing the same class of problem in four other assertions.
