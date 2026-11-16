@@ -13,6 +13,10 @@ on:
 # it hands over a tarball and nothing else.
 #
 # `publish` holds `id-token: write`, installs nothing from the project, and publishes that tarball.
+#
+# What this does not prevent: code running in `build` can still change `lib/` before it is packed, and
+# that tarball is published as it is. The split stops a compromised package from publishing a version of
+# its choosing, not from tampering with this one.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -68,9 +72,10 @@ jobs:
           node-version: 22.x
           registry-url: https://registry.npmjs.org
 
-      # Trusted publishing needs npm 11.5.1+, and Node 22 ships npm 10.
+      # Trusted publishing needs npm 11.5.1+, and Node 22 ships npm 10. Pinned to an exact version: this job
+      # holds the publish permission, so a later npm release, good or bad, should not run here unreviewed.
       - name: npm with trusted publishing
-        run: npm install -g npm@^11.5.1
+        run: npm install -g npm@11.21.2
 
       - name: download tarball
         uses: actions/download-artifact@v4

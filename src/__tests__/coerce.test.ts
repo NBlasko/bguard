@@ -189,6 +189,14 @@ describe('coerce', () => {
       ['2/29/2021'],
       ['2021-00-10'],
       ['13/01/2021'],
+      // Found in review: the same rollover through other separators and shapes.
+      ['2021/02/30'],
+      ['2021.02.30'],
+      [' 2021-02-30'],
+      ['+002021-02-30'],
+      ['02-30-2021'],
+      ['02.30.2021'],
+      ['2021/02/30 10:00'],
     ])('rejects %p, a day that does not exist, rather than rolling it into the next month', (received) => {
       // new Date('2021-02-30') is March 2nd.
       expect(parse(coerce.date(), received)[0]![0]!.code).toBe('c:date');
@@ -199,6 +207,10 @@ describe('coerce', () => {
       ['2021-12-31T23:59:59Z', '2021-12-31T23:59:59.000Z'],
       ['2021-2-3', null],
       ['02/28/2021', null],
+      ['2021/02/28', null],
+      [' 2021-02-28', null],
+      ['02-28-2021', null],
+      ['+002020-02-29', '2020-02-29T00:00:00.000Z'],
     ])('still reads %p, a day that exists', (received, iso) => {
       const parsed = parseOrFail(coerce.date(), received);
       expect(parsed.getTime()).toBe(new Date(received).getTime());

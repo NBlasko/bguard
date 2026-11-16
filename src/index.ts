@@ -5,6 +5,7 @@ export type {
   StandardSchemaResult,
   StandardSchemaIssue,
   BguardStandardIssue,
+  BguardStandardFailure,
   BguardStandardProps,
   BguardStandardResult,
 } from './standardSchema';

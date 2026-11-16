@@ -1,19 +1,22 @@
 import { _isCalendarDay } from '../../helpers/calendar';
 import { date } from '../date/index';
 
-// `new Date` rolls a day the month does not have into the next month: `2021-02-30` is March 2nd. These
-// are the two shapes it does that for with a year, month and day that can be read off the string: ISO
-// `YYYY-MM-DD` (also with one-digit parts, and with a time after it), and the US `MM/DD/YYYY`.
-const isoDay = /^(\d{4})-(\d{1,2})-(\d{1,2})(?!\d)/;
-const usDay = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?!\d)/;
+// `new Date` rolls a day the month does not have into the next month: `2021-02-30` is March 2nd. This
+// catches every numeric shape it reads that way: year first (`2021-02-30`, `2021/02/30`, `2021.02.30`,
+// `+002021-02-30`) and month first (`02/30/2021`, `02-30-2021`, `02.30.2021`), with one- or two-digit
+// parts, leading whitespace, and anything after. Month-first is how V8 reads all three separators, so a
+// day-first date such as `30.01.2021` is not a date to it either. Shapes with a month name
+// (`Feb 30 2021`) are not checked.
+const yearFirst = /^\s*([+-]\d{6}|\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?!\d)/;
+const monthFirst = /^\s*(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})(?!\d)/;
 
 function namesMissingDay(received: string): boolean {
-  const iso = isoDay.exec(received);
-  const us = iso ? null : usDay.exec(received);
-  const parts = iso ? [iso[1], iso[2], iso[3]] : us ? [us[3], us[1], us[2]] : null;
+  const ymd = yearFirst.exec(received);
+  const mdy = ymd ? null : monthFirst.exec(received);
+  const parts = ymd ? [ymd[1], ymd[2], ymd[3]] : mdy ? [mdy[3], mdy[1], mdy[2]] : null;
   if (!parts) return false;
   const [year, month, day] = parts.map(Number) as [number, number, number];
-  return month < 1 || month > 12 || !_isCalendarDay(year, month, day);
+  return !_isCalendarDay(year, month, day);
 }
 
 /**
@@ -32,9 +35,10 @@ function namesMissingDay(received: string): boolean {
  * @description Coerces the received value to a Date before validating it. Anything that is not already
  * a Date is passed through `new Date`.
  *
- * An unreadable value becomes an invalid Date, which `date()` rejects. So does a string naming a day
- * that does not exist, such as `2021-02-30` or `02/30/2021`, which `new Date` would roll over into
- * March 2nd. Other string formats are read exactly as `new Date` reads them.
+ * An unreadable value becomes an invalid Date, which `date()` rejects. So does a numeric date naming a
+ * day that does not exist, such as `2021-02-30`, `2021/02/30` or `02/30/2021`, which `new Date` would
+ * roll over into March 2nd. A date written with a month name (`Feb 30 2021`) is read exactly as
+ * `new Date` reads it.
  *
  * @returns A date schema that accepts `unknown` as its input type.
  * @example

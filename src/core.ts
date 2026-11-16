@@ -260,7 +260,13 @@ export class ExceptionContext {
     return ref;
   }
 
-  public addIssue(expected: unknown, received: unknown, messageKey: string): never | void {
+  public addIssue(expectedValue: unknown, received: unknown, messageKey: string): never | void {
+    // An issue is handed to the caller, and from Standard Schema to whatever library asked. The expected
+    // value is often the schema's own state — the type list of `number()`, the array given to
+    // `oneOfValues`, the Date given to `dateMax` — and so was `meta`. Changing them on an issue changed
+    // the schema: pushing `'string'` onto a `number()` issue's `expected` made it accept strings.
+    const expected = snapshot(expectedValue);
+    const meta = this.meta && { ...this.meta };
     const rawMessage = this.t[messageKey] ?? messageKey;
     const message = replacePlaceholders(rawMessage, { e: expected, r: received, p: this.pathToError });
 
@@ -272,13 +278,13 @@ export class ExceptionContext {
         path: this.path,
         code: messageKey,
         message,
-        meta: this.meta,
+        meta,
       });
 
       return;
     }
 
-    throw new ValidationError(expected, received, this.pathToError, message, this.meta, this.path, messageKey);
+    throw new ValidationError(expected, received, this.pathToError, message, meta, this.path, messageKey);
   }
 }
 
@@ -1081,6 +1087,16 @@ export function parse<T extends CommonSchema>(
     // Anything else came from a custom assert, which can throw whatever it likes.
     return [[unexpectedError()], null];
   }
+}
+
+/**
+ * A copy of the mutable values asserts report as `expected`, so an issue does not share them with the
+ * schema. Arrays and Dates are what the built-in asserts pass; anything else is returned as it is.
+ */
+function snapshot(value: unknown): unknown {
+  if (Array.isArray(value)) return [...value];
+  if (value instanceof Date) return new Date(value.getTime());
+  return value;
 }
 
 /**

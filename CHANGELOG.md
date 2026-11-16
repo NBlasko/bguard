@@ -29,7 +29,16 @@ translate or branch on. The new type is `BguardStandardIssue`, and `~standard` i
 `BguardStandardProps`, a narrower `StandardSchemaProps`, so the fields are readable without a cast.
 
 `received` is left out of these issues on purpose. It is the raw input, which may be a password, and
-Standard Schema issues are routinely logged or returned to clients. `parse` still reports it.
+Standard Schema issues are routinely logged or returned to clients. `parse` still reports it. This only
+covers what bguard adds: a custom rule decides what goes into `expected` and its message. The README's
+password-confirmation example used to report the password itself as `expected`, and now reports
+`'the same password'` instead.
+
+**An issue no longer shares objects with its schema.** `expected` was often the schema's own state — the
+type list of `number()`, the array given to `oneOfValues`, the Date given to `dateMax` — and `meta` was
+the schema's own object. Changing them on an issue changed the schema: pushing `'string'` onto a
+`number()` issue's `expected` made that schema accept strings. This was true of `parse` before 0.12.0
+too, and would have reached every Standard Schema consumer with this release. Issues now get copies.
 
 ### Changed
 
@@ -67,8 +76,10 @@ them.
   thousands of mostly invalid inputs from a seeded generator, and no value bguard accepts may fail the
   generated document. Run against the 0.10.0 validators, it fails ten of its nineteen tests.
 - The publish workflow is split into two jobs. `build` runs `npm ci`, the build and the tests, and hands
-  over a tarball. `publish` is the only job that can publish, and it installs nothing from the project.
-  A compromised devDependency can no longer request the token that publishes bguard.
+  over a tarball. `publish` is the only job that can publish, installs nothing from the project, and uses
+  an exact npm version. A compromised devDependency can no longer request the token and publish a
+  version of its choosing. It can still tamper with the build output before it is packed, which this
+  does not prevent.
 - README notes about `toJSONSchema` that 0.11.0 added straight to `README.md` were moved into its source,
   `scripts/readmeStart.md`; regenerating the README would otherwise have reverted them.
 

@@ -7,6 +7,10 @@ import { object } from '../asserts/object';
 import { string } from '../asserts/string';
 import { minLength } from '../asserts/string/minLength';
 import { min } from '../asserts/number/min';
+import { date } from '../asserts/date';
+import { dateMax } from '../asserts/date/dateMax';
+import { ValidationError } from '../exceptions';
+import { _isCalendarDay } from '../helpers/calendar';
 
 /**
  * Refining a schema returns a new schema. Without that, a schema could not be shared between
@@ -181,5 +185,59 @@ describe('schema immutability', () => {
     // The two branches did not pick up each other's refinement.
     expect(hasErrors(parse(withMinOptional, null))).toBe(true);
     expect(hasErrors(parse(withMinNullable, undefined))).toBe(true);
+  });
+});
+
+/**
+ * An issue goes to the caller, and through Standard Schema to whatever library asked. Its `expected` and
+ * `meta` used to be the schema's own objects, so changing an issue changed the schema.
+ */
+describe('issues do not share state with the schema', () => {
+  it("a number() issue's expected type list", () => {
+    const schema = number();
+    (parse(schema, 'x')[0]![0]!.expected as string[]).push('string');
+    expect(hasErrors(parse(schema, 'x'))).toBe(true);
+  });
+
+  it('the same list reached through Standard Schema', () => {
+    const schema = number();
+    const result = schema['~standard'].validate('x');
+    if (result instanceof Promise || !result.issues) throw new Error('expected a synchronous failure');
+    (result.issues[0]!.expected as string[]).push('string');
+    expect(hasErrors(parse(schema, 'x'))).toBe(true);
+  });
+
+  it('the array given to oneOfValues', () => {
+    const schema = string().oneOfValues(['a', 'b']);
+    (parse(schema, 'z')[0]![0]!.expected as string[]).push('z');
+    expect(hasErrors(parse(schema, 'z'))).toBe(true);
+  });
+
+  it('the Date given to dateMax', () => {
+    const schema = date().custom(dateMax(new Date('2020-01-01')));
+    (parse(schema, new Date('2021-01-01'))[0]![0]!.expected as Date).setFullYear(2030);
+    expect(hasErrors(parse(schema, new Date('2021-01-01')))).toBe(true);
+  });
+
+  it('the meta of the failing schema', () => {
+    const schema = string().id('name');
+    parse(schema, 1)[0]![0]!.meta!.id = 'changed';
+    expect(parse(schema, 1)[0]![0]!.meta).toEqual({ id: 'name' });
+  });
+
+  it('the same, when the issue is thrown rather than collected', () => {
+    const schema = number();
+    try {
+      parseOrFail(schema, 'x');
+    } catch (error) {
+      ((error as ValidationError).expected as string[]).push('string');
+    }
+    expect(hasErrors(parse(schema, 'x'))).toBe(true);
+  });
+});
+
+describe('_isCalendarDay', () => {
+  it.each([[0], [13], [-1]])('is false for month %p rather than falling through to 31 days', (month) => {
+    expect(_isCalendarDay(2021, month, 5)).toBe(false);
   });
 });

@@ -659,7 +659,10 @@ failure: the `code` (such as `s:minLength`, stable across languages, so a form c
 on it), the `expected` value, the dotted `pathToError`, and `meta` when the schema has an `id` or
 `description`. The type is `BguardStandardIssue`. The `received` value is deliberately left out, since
 it may be a password and Standard Schema issues are often logged or sent back to a client; `parse`
-still reports it.
+still reports it. That only covers what bguard adds: a custom rule decides what goes into `expected` and
+into its message (where `{{r}}` is the received value), so a rule comparing against another field should
+report a description of it rather than its value — see the password example in
+[Create Custom Assertions](#h3_create_custom_assertions).
 
 `validate` takes only a value, so it cannot be given an `lng`. Its messages follow the language set
 with [`setDefaultLanguage`](#h4_using_translation).
@@ -988,7 +991,9 @@ const loginSchema = object({
   password: string().custom(minLength(8)),
   confirmPassword: string().custom((received, ctx) => {
     if (received !== ctx.ref('password')) {
-      ctx.addIssue(ctx.ref('password'), received, 'Not equal to password');
+      // Describe what was expected rather than reporting the password itself: an issue may be logged
+      // or sent back to the client.
+      ctx.addIssue('the same password', received, 'Not equal to password');
     }
   })
 });
