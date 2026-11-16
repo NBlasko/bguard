@@ -17,6 +17,11 @@ on:
 # What this does not prevent: code running in `build` can still change `lib/` before it is packed, and
 # that tarball is published as it is. The split stops a compromised package from publishing a version of
 # its choosing, not from tampering with this one.
+#
+# Actions are pinned to a commit SHA here, unlike in ci.yml: a tag can be moved to other code, and this
+# workflow produces what gets published. The tag each SHA was taken from is in the comment beside it.
+# No npm cache in either job, as setup-node recommends for publishing: whatever a poisoned cache put in
+# node_modules would end up in the tarball.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,13 +31,15 @@ jobs:
       publish: ${{ steps.release.outputs.publish }}
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false # nothing here pushes, so the token is not left on disk for npm ci
 
       - name: node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22.x
-          cache: 'npm'
+          node-version: 24.x
+          package-manager-cache: false
 
       # Every merge to main runs this workflow, and a merge that does not bump the version (docs, CI,
       # dependencies) used to fail at the publish step. Such a merge now skips publishing instead. The
@@ -72,7 +79,7 @@ jobs:
 
       - name: upload tarball
         if: steps.release.outputs.publish == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: package
           path: bguard-*.tgz
@@ -88,18 +95,20 @@ jobs:
       id-token: write # trusted publishing: the job proves its identity to npm over OIDC, so no token exists
     steps:
       - name: node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22.x
+          node-version: 24.x
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
 
-      # Trusted publishing needs npm 11.5.1+, and Node 22 ships npm 10. Pinned to an exact version: this job
-      # holds the publish permission, so a later npm release, good or bad, should not run here unreviewed.
+      # Trusted publishing needs npm 11.5.1+. Node 24 ships an npm 11, but which one depends on the patch
+      # release the runner resolves, so it is pinned to an exact version: this job holds the publish
+      # permission, and a later npm release, good or bad, should not run here unreviewed.
       - name: npm with trusted publishing
         run: npm install -g npm@11.21.2
 
       - name: download tarball
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: package
 

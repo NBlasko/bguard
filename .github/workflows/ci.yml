@@ -7,14 +7,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # bguard has no runtime dependencies and ships for every maintained Node, so it is tested on the
+    # maintenance LTS (22) and the active LTS (24). Releases are built on 24.
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.x', '24.x']
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: setup-node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 22.x
+          node-version: ${{ matrix.node }}
           cache: 'npm'
 
       - name: ci
@@ -32,7 +40,9 @@ jobs:
       - name: test:coverage
         run: npm run test:coverage
 
+      # Once per commit: two matrix jobs reporting the same commit would overwrite each other.
       - name: coveralls
+        if: matrix.node == '24.x'
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.github_token }}

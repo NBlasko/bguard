@@ -1,5 +1,21 @@
 # bguard
 
+## Unreleased
+
+### Internal
+
+- The package is built with tsup 9 (was 8). The JavaScript output is the same apart from chunk names and
+  import order. Declaration files now re-export types as `export type { X }` instead of
+  `export { type X }`, which TypeScript has read since 3.8 rather than 4.5.
+- CI runs on Node 22 and 24; releases are built and published on Node 24. GitHub Actions are on their
+  current majors (checkout v7, setup-node v7, upload-artifact v7, download-artifact v8), which run on
+  Node 24 rather than the deprecated Node 20.
+- The publish workflow pins its actions to commit SHAs, does not use the npm cache (setup-node's advice
+  for publishing, since a poisoned cache would end up in the tarball), and does not leave the git token
+  on disk after checkout.
+- `@changesets/cli` and the `release:package` and `change:*` scripts are removed. They were never used:
+  a release is a merge to `main` with a new version.
+
 ## 0.12.0 Translated messages through Standard Schema, issue codes for forms, and `email`/`validUrl` that agree with their JSON Schema formats
 
 ### Added
